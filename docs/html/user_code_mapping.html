@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BharatBasket User & Identity DB-Code Mapping</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    :root {
+        --bg-main: #0b0f19;
+        --bg-card: #151e33;
+        --bg-editor: #0c1020;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent: #3b82f6;
+        --accent-glow: rgba(59, 130, 246, 0.15);
+        --accent-green: #10b981;
+        --accent-gold: #f59e0b;
+        --accent-red: #ef4444;
+        --border-color: #2e3b5e;
+        --code-keyword: #ff79c6;
+        --code-string: #f1fa8c;
+        --code-comment: #6272a4;
+        --code-func: #50fa7b;
+        --code-class: #8be9fd;
+        --code-var: #f8f8f2;
+    }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 40px 20px;
+        overflow-x: hidden;
+    }
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        padding: 30px;
+        position: relative;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+    }
+    .header-left h1 {
+        font-size: 24px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
+    }
+    .header-left p {
+        font-size: 14px;
+        color: var(--text-sub);
+    }
+    .status-badge {
+        background-color: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .content-grid {
+        display: grid;
+        grid-template-columns: 7fr 5fr;
+        gap: 25px;
+    }
+    /* macOS-style Window Decorator */
+    .editor-wrapper {
+        background-color: var(--bg-editor);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .editor-titlebar {
+        background-color: rgba(15, 23, 42, 0.8);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    .window-dots {
+        display: flex;
+        gap: 8px;
+    }
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .dot-red { background-color: var(--accent-red); }
+    .dot-yellow { background-color: var(--accent-gold); }
+    .dot-green { background-color: var(--accent-green); }
+    .file-path {
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+        color: var(--text-sub);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: 500;
+    }
+    .code-container {
+        padding: 20px;
+        overflow-x: auto;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--code-var);
+    }
+    .code-line {
+        display: flex;
+    }
+    .line-num {
+        width: 30px;
+        color: var(--code-comment);
+        text-align: right;
+        margin-right: 20px;
+        user-select: none;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        padding-right: 8px;
+    }
+    .line-content {
+        white-space: pre;
+    }
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .side-card {
+        background-color: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    .side-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+    }
+    .table-badge {
+        background-color: var(--accent-glow);
+        border: 1px solid var(--accent);
+        color: #93c5fd;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: 'Fira Code', monospace;
+        font-weight: 600;
+    }
+    .op-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    .op-read { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .op-write { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .op-delete { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    
+    .table-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .table-item {
+        background-color: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 12px;
+    }
+    .table-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .table-item-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .flow-step {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .flow-num {
+        background-color: var(--accent);
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .flow-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .keyword { color: var(--code-keyword); font-weight: 600; }
+    .string { color: var(--code-string); }
+    .comment { color: var(--code-comment); font-style: italic; }
+    .func { color: var(--code-func); }
+    .class { color: var(--code-class); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>BharatBasket DB-Code Mapping: User & Identity Module</h1>
+                <p>Maps table interactions for user accounts, credentials, OTP verification, address book, and shopping sessions (Cart & Wishlist)</p>
+            </div>
+            <div class="header-right">
+                <span class="status-badge">Identity Module</span>
+            </div>
+        </div>
+        <div class="content-grid">
+            <div class="editor-wrapper">
+                <div class="editor-titlebar">
+                    <div class="window-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="file-path">backend/models/user.py</div>
+                </div>
+                <div class="code-container">
+                    <div class="code-line"><span class="line-num">1</span><span class="line-content"><span class="keyword">class</span> <span class="class">UserModel</span>(db.Model):</span></div>
+                    <div class="code-line"><span class="line-num">2</span><span class="line-content">    __tablename__ = <span class="string">'users'</span></span></div>
+                    <div class="code-line"><span class="line-num">3</span><span class="line-content">    id = db.Column(db.Integer, primary_key=<span class="keyword">True</span>)</span></div>
+                    <div class="code-line"><span class="line-num">4</span><span class="line-content">    email = db.Column(db.String(<span class="keyword">120</span>), unique=<span class="keyword">True</span>, nullable=<span class="keyword">False</span>)</span></div>
+                    <div class="code-line"><span class="line-num">5</span><span class="line-content">    password = db.Column(db.String(<span class="keyword">128</span>), nullable=<span class="keyword">False</span>)</span></div>
+                    <div class="code-line"><span class="line-num">6</span><span class="line-content">    address = db.relationship(<span class="string">'DeliveryAddress'</span>, backref=<span class="string">'user'</span>, uselist=<span class="keyword">False</span>, cascade=<span class="string">'all, delete-orphan'</span>)</span></div>
+                    <div class="code-line"><span class="line-num">7</span><span class="line-content">    cart = db.relationship(<span class="string">'Cart'</span>, backref=<span class="string">'user'</span>, uselist=<span class="keyword">False</span>, cascade=<span class="string">'all, delete-orphan'</span>)</span></div>
+                    <div class="code-line"><span class="line-num">8</span><span class="line-content"></span></div>
+                    <div class="code-line"><span class="line-num">9</span><span class="line-content">    <span class="keyword">@staticmethod</span></span></div>
+                    <div class="code-line"><span class="line-num">10</span><span class="line-content">    <span class="keyword">def</span> <span class="func">create_user</span>(name, email, password, mobile, address_dict, is_admin=<span class="keyword">False</span>):</span></div>
+                    <div class="code-line"><span class="line-num">11</span><span class="line-content">        <span class="comment"># Password hashing via bcrypt</span></span></div>
+                    <div class="code-line"><span class="line-num">12</span><span class="line-content">        hashed_pwd = bcrypt.generate_password_hash(password).decode(<span class="string">'utf-8'</span>)</span></div>
+                    <div class="code-line"><span class="line-num">13</span><span class="line-content">        user = <span class="class">UserModel</span>(full_name=name, email=email, password=hashed_pwd, phone=mobile, is_admin=is_admin)</span></div>
+                    <div class="code-line"><span class="line-num">14</span><span class="line-content">        db.session.add(user)</span></div>
+                    <div class="code-line"><span class="line-num">15</span><span class="line-content">        db.session.flush() <span class="comment"># Get user.id</span></span></div>
+                    <div class="code-line"><span class="line-num">16</span><span class="line-content">        </span></div>
+                    <div class="code-line"><span class="line-num">17</span><span class="line-content">        <span class="comment"># Add Delivery Address</span></span></div>
+                    <div class="code-line"><span class="line-num">18</span><span class="line-content">        addr = <span class="class">DeliveryAddress</span>(user_id=user.id, street=address_dict.get(<span class="string">'street'</span>), </span></div>
+                    <div class="code-line"><span class="line-num">19</span><span class="line-content">                               city=address_dict.get(<span class="string">'city'</span>), state=address_dict.get(<span class="string">'state'</span>), </span></div>
+                    <div class="code-line"><span class="line-num">20</span><span class="line-content">                               pincode=address_dict.get(<span class="string">'pincode'</span>))</span></div>
+                    <div class="code-line"><span class="line-num">21</span><span class="line-content">        db.session.add(addr)</span></div>
+                    <div class="code-line"><span class="line-num">22</span><span class="line-content">        </span></div>
+                    <div class="code-line"><span class="line-num">23</span><span class="line-content">        <span class="comment"># Initialize Empty Cart</span></span></div>
+                    <div class="code-line"><span class="line-num">24</span><span class="line-content">        cart = <span class="class">Cart</span>(user_id=user.id)</span></div>
+                    <div class="code-line"><span class="line-num">25</span><span class="line-content">        db.session.add(cart)</span></div>
+                    <div class="code-line"><span class="line-num">26</span><span class="line-content">        db.session.commit()</span></div>
+                    <div class="code-line"><span class="line-num">27</span><span class="line-content">        <span class="keyword">return</span> user.to_dict()</span></div>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="side-card">
+                    <h3>Mapped Database Tables</h3>
+                    <div class="table-list">
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">users</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Stores profile data, login info, and status indicators. Triggers cascade deletes on sessions.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">delivery_addresses</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Linked one-to-one to user. Handles street address, city, state, and pin code. Deleted if user profile is dropped.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">carts</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Assigned one-to-one to user to manage active cart items. Created on registration.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-card">
+                    <h3>Data Flow Diagram</h3>
+                    <div class="flow-step">
+                        <div class="flow-num">1</div>
+                        <div class="flow-desc">Front-end calls /register or checkout-login endpoint.</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <div class="flow-desc">Backend hashes password using bcrypt & inserts row in users table.</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-num">3</div>
+                        <div class="flow-desc">Linked rows are concurrently written in delivery_addresses and carts.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

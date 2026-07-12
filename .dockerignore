@@ -1,0 +1,68 @@
+# .dockerignore — Files excluded from the Docker build context
+# Keep this in sync with .gitignore
+
+# Version control
+.git/
+.gitignore
+
+# GitHub Actions (not needed inside the image)
+.github/
+
+# Python virtual environments and caches
+venv/
+.venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Secrets — must come from server .env, never baked into the image
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+backend_app.log
+flask_server.log
+
+# Uploaded media (served from a Docker volume, not the image)
+backend/static/uploads/
+
+# Node (frontend is built separately)
+frontend/
+node_modules/
+dist/
+
+# Database dumps and one-off scripts
+*.sql
+*.dump
+migrate_mysql_to_neon.py
+hi_recovered.json
+railway_backup.sql
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Tests (optional — remove this line if you want tests in the image)
+tests/
+
+# Documentation
+docs/
+README.md
+RUN.md
+
+# Scratch
+scratch/

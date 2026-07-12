@@ -1,0 +1,90 @@
+name: Deploy to PROD
+
+# ─────────────────────────────────────────────────────────────────────────────
+# This file lives in the PROD repository, not the QA repository.
+# It is triggered when the QA "Promote QA to PROD" workflow pushes to main.
+# Copy this file into the PROD repository at: .github/workflows/deploy-prod.yml
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevent concurrent production deployments
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements/base.txt
+
+      - name: Run tests
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+          SECRET_KEY: "ci-test-secret-not-real"
+          FLASK_APP: "backend.app"
+          APP_ENV: "test"
+          DEBUG: "false"
+        run: |
+          if [ -d tests ] && ls tests/test_*.py &>/dev/null; then
+            python -m pytest tests/ -v --tb=short
+          else
+            echo "No test files found – skipping."
+          fi
+
+  deploy:
+    name: Deploy to PROD Server
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code (for commit SHA only)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Print commit being deployed
+        run: |
+          echo "Deploying commit: $(git rev-parse HEAD)"
+          echo "Commit message:   $(git log -1 --pretty=%s)"
+
+      - name: Install SSH client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Configure SSH key and known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.PROD_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Run deployment script on PROD server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=30 \
+              "${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }}" \
+              "bash /opt/ss-jewellery/deploy/deploy.sh"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

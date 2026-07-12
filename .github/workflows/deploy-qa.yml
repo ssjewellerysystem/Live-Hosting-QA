@@ -1,0 +1,75 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevent two QA deployments from running simultaneously
+concurrency:
+  group: deploy-qa
+  cancel-in-progress: false      # Queue rather than cancel; set true to skip
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements/base.txt
+
+      - name: Run tests
+        env:
+          # Provide a minimal config so Flask can import without a real DB
+          DATABASE_URL: "sqlite:///:memory:"
+          SECRET_KEY: "ci-test-secret-not-real"
+          FLASK_APP: "backend.app"
+          APP_ENV: "test"
+          DEBUG: "false"
+        run: |
+          if [ -d tests ] && ls tests/test_*.py &>/dev/null; then
+            python -m pytest tests/ -v --tb=short
+          else
+            echo "No test files found – skipping."
+          fi
+
+  deploy:
+    name: Deploy to QA Server
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install SSH client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Configure SSH key and known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.QA_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.QA_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Run deployment script on QA server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=30 \
+              "${{ secrets.QA_USER }}@${{ secrets.QA_HOST }}" \
+              "bash /opt/ss-jewellery/deploy/deploy.sh"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

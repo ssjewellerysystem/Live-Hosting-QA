@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BharatBasket Customer Support DB-Code Mapping</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    :root {
+        --bg-main: #0b0f19;
+        --bg-card: #151e33;
+        --bg-editor: #0c1020;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent: #3b82f6;
+        --accent-glow: rgba(59, 130, 246, 0.15);
+        --accent-green: #10b981;
+        --accent-gold: #f59e0b;
+        --accent-red: #ef4444;
+        --border-color: #2e3b5e;
+        --code-keyword: #ff79c6;
+        --code-string: #f1fa8c;
+        --code-comment: #6272a4;
+        --code-func: #50fa7b;
+        --code-class: #8be9fd;
+        --code-var: #f8f8f2;
+    }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 40px 20px;
+        overflow-x: hidden;
+    }
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        padding: 30px;
+        position: relative;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+    }
+    .header-left h1 {
+        font-size: 24px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
+    }
+    .header-left p {
+        font-size: 14px;
+        color: var(--text-sub);
+    }
+    .status-badge {
+        background-color: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .content-grid {
+        display: grid;
+        grid-template-columns: 7fr 5fr;
+        gap: 25px;
+    }
+    /* macOS-style Window Decorator */
+    .editor-wrapper {
+        background-color: var(--bg-editor);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .editor-titlebar {
+        background-color: rgba(15, 23, 42, 0.8);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    .window-dots {
+        display: flex;
+        gap: 8px;
+    }
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .dot-red { background-color: var(--accent-red); }
+    .dot-yellow { background-color: var(--accent-gold); }
+    .dot-green { background-color: var(--accent-green); }
+    .file-path {
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+        color: var(--text-sub);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: 500;
+    }
+    .code-container {
+        padding: 20px;
+        overflow-x: auto;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--code-var);
+    }
+    .code-line {
+        display: flex;
+    }
+    .line-num {
+        width: 30px;
+        color: var(--code-comment);
+        text-align: right;
+        margin-right: 20px;
+        user-select: none;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        padding-right: 8px;
+    }
+    .line-content {
+        white-space: pre;
+    }
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .side-card {
+        background-color: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    .side-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+    }
+    .table-badge {
+        background-color: var(--accent-glow);
+        border: 1px solid var(--accent);
+        color: #93c5fd;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: 'Fira Code', monospace;
+        font-weight: 600;
+    }
+    .op-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    .op-read { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .op-write { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .op-delete { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    
+    .table-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .table-item {
+        background-color: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 12px;
+    }
+    .table-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .table-item-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .flow-step {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .flow-num {
+        background-color: var(--accent);
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .flow-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .keyword { color: var(--code-keyword); font-weight: 600; }
+    .string { color: var(--code-string); }
+    .comment { color: var(--code-comment); font-style: italic; }
+    .func { color: var(--code-func); }
+    .class { color: var(--code-class); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>BharatBasket DB-Code Mapping: Customer Support Module</h1>
+                <p>Maps customer inquiries, ticket workflows, customer care responses, and FAQs</p>
+            </div>
+            <div class="header-right">
+                <span class="status-badge">Helpdesk Module</span>
+            </div>
+        </div>
+        <div class="content-grid">
+            <div class="editor-wrapper">
+                <div class="editor-titlebar">
+                    <div class="window-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="file-path">backend/routes/support.py</div>
+                </div>
+                <div class="code-container">
+                    <div class="code-line"><span class="line-num">1</span><span class="line-content"><span class="keyword">@support_bp.route</span>(<span class="string">'/messages/&lt;int:id&gt;/reply'</span>, methods=[<span class="string">'POST'</span>])</span></div>
+                    <div class="code-line"><span class="line-num">2</span><span class="line-content"><span class="keyword">@admin_required</span></span></div>
+                    <div class="code-line"><span class="line-num">3</span><span class="line-content"><span class="keyword">def</span> <span class="func">add_reply</span>(id):</span></div>
+                    <div class="code-line"><span class="line-num">4</span><span class="line-content">    # 1. Look up support ticket</span></div>
+                    <div class="code-line"><span class="line-num">5</span><span class="line-content">    msg = <span class="class">SupportMessageModel</span>.query.get_or_404(id)</span></div>
+                    <div class="code-line"><span class="line-num">6</span><span class="line-content">    </span></div>
+                    <div class="code-line"><span class="line-num">7</span><span class="line-content">    # 2. Append reply to replies table</span></div>
+                    <div class="code-line"><span class="line-num">8</span><span class="line-content">    reply = <span class="class">SupportReplyModel</span>(support_id=msg.id, sender=<span class="string">'Admin'</span>, message=text)</span></div>
+                    <div class="code-line"><span class="line-num">9</span><span class="line-content">    db.session.add(reply)</span></div>
+                    <div class="code-line"><span class="line-num">10</span><span class="line-content">    </span></div>
+                    <div class="code-line"><span class="line-num">11</span><span class="line-content">    # 3. Transition ticket status to Responded</span></div>
+                    <div class="code-line"><span class="line-num">12</span><span class="line-content">    msg.status = <span class="string">'Responded'</span></span></div>
+                    <div class="code-line"><span class="line-num">13</span><span class="line-content">    db.session.commit()</span></div>
+                    <div class="code-line"><span class="line-num">14</span><span class="line-content">    <span class="keyword">return</span> jsonify(reply.to_dict())</span></div>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="side-card">
+                    <h3>Mapped Database Tables</h3>
+                    <div class="table-list">
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">support_messages</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Stores initial queries received from customers, including contact information and open/resolved status indicators.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">support_replies</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Stores communication history (replies) linked to support messages. Cascade deleted if the main ticket is cleared.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">faqs</span>
+                                <span class="op-badge op-read">Read</span>
+                            </div>
+                            <div class="table-item-desc">Stores frequently asked questions and answers served on the customer help center.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-card">
+                    <h3>Workflows</h3>
+                    <div class="flow-step">
+                        <div class="flow-num">1</div>
+                        <div class="flow-desc">Customer submits support form -> row written to support_messages.</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-num">2</div>
+                        <div class="flow-desc">Admin sends reply -> row written to support_replies; parent status updated.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

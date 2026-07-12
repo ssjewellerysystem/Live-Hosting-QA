@@ -1,0 +1,685 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@config "../tailwind.config.js";
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-50: #FAFAFA;
+  --color-emerald-100: #F2E8D9;
+  --color-emerald-200: #E2D2BE;
+  --color-emerald-300: #D4A75F;
+  --color-emerald-400: #BF934B;
+  --color-emerald-500: #3F1D5A;
+  --color-emerald-600: #2E1442;
+  --color-emerald-700: #1E0C2C;
+  
+  --color-teal-50: #FAFAFA;
+  --color-teal-100: #F2E8D9;
+  --color-teal-200: #E2D2BE;
+  --color-teal-300: #D4A75F;
+  --color-teal-400: #BF934B;
+  --color-teal-500: #D4A75F;
+  --color-teal-600: #BF934B;
+  --color-teal-700: #a97e3c;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Enforce the theme system colors based on user specifications */
+html, body {
+  background-color: #FFFFFF !important;
+  color: #1F1F1F !important;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+html.dark, html.dark body {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  overflow-x: hidden;
+}
+
+/* Light mode overrides for premium pure white and section light gray */
+html:not(.dark) .bg-white,
+html:not(.dark) .bg-slate-50,
+html:not(.dark) .bg-slate-50\/50,
+html:not(.dark) .bg-gray-50,
+html:not(.dark) .bg-gray-50\/50 {
+  background-color: #FFFFFF !important;
+}
+
+html:not(.dark) .bg-slate-100,
+html:not(.dark) .bg-slate-200,
+html:not(.dark) .bg-gray-100,
+html:not(.dark) .bg-gray-200,
+html:not(.dark) .bg-slate-100\/80,
+html:not(.dark) .bg-white\/70,
+html:not(.dark) .bg-white\/80 {
+  background-color: #FAFAFA !important;
+}
+
+html:not(.dark) .text-slate-800,
+html:not(.dark) .text-slate-900,
+html:not(.dark) .text-gray-900,
+html:not(.dark) .text-slate-700 {
+  color: #1F1F1F !important;
+}
+
+html:not(.dark) .border-slate-150,
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-gray-200,
+html:not(.dark) .border-slate-300 {
+  border-color: #F2E8D9 !important;
+}
+
+/* Force backgrounds on standard containers in dark mode */
+.dark .bg-slate-50,
+.dark .bg-slate-900,
+.dark .bg-slate-950,
+.dark .bg-white,
+.dark .bg-slate-900\/95,
+.dark .bg-white\/95,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-950\/20 {
+  background-color: #111827 !important;
+}
+
+/* Force card backgrounds in dark mode */
+.dark .bg-slate-800,
+.dark .bg-white\/70,
+.dark .bg-white\/80 {
+  background-color: #1f2937 !important;
+}
+
+/* Force borders in dark mode */
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300,
+.dark .border-slate-800,
+.dark .border-white\/40,
+.dark .border-t,
+.dark .border-b,
+.dark .border {
+  border-color: #374151 !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Custom styles for glowing glass effects */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Product Grid Responsiveness */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .product-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ==========================================================================
+   PREMIUM LUXURY JEWELRY EXPERIENCE ANIMATIONS
+   ========================================================================== */
+
+/* GPU-Accelerated Shimmer for Premium Skeleton Loader */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-premium {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.dark .skeleton-premium {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Luxury Gold Shimmer Effect for Buttons */
+@keyframes gold-shimmer-sweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gold-shimmer-btn {
+  background: linear-gradient(
+    270deg,
+    #D4A75F,
+    #F2E8D9,
+    #BF934B,
+    #D4A75F
+  );
+  background-size: 300% 300%;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, background-position;
+}
+
+.gold-shimmer-btn:hover {
+  background-position: 100% 50%;
+  transform: scale(1.02);
+  box-shadow: 0 10px 25px rgba(212, 167, 95, 0.35);
+}
+
+.gold-shimmer-btn:active {
+  transform: scale(0.98);
+}
+
+/* Slow Floating Effect on Jewelry Images */
+@keyframes float-slow {
+  0% {
+    transform: translateY(0px) translateZ(0);
+  }
+  50% {
+    transform: translateY(-8px) translateZ(0);
+  }
+  100% {
+    transform: translateY(0px) translateZ(0);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Soft Glow Sweep for Category Circles */
+.category-gold-glow {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-gold-glow:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(212, 167, 95, 0.45);
+  border-color: #D4A75F !important;
+}
+
+/* Premium Glass Navbar Class */
+.navbar-glass-scrolled {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(242, 232, 217, 0.5) !important;
+}
+
+.dark .navbar-glass-scrolled {
+  background: rgba(17, 24, 39, 0.8) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(55, 65, 81, 0.5) !important;
+}
+
+/* Add Custom Heart Pop Animation */
+@keyframes heart-beat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.2); }
+  50% { transform: scale(0.95); }
+  75% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-heart-beat {
+  animation: heart-beat 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Add Cart Bounce Animation */
+@keyframes cart-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15) translateY(-4px); }
+}
+
+.animate-cart-bounce {
+  animation: cart-bounce 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* SSJewellery Premium Typography Brand Styles */
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-great-vibes {
+  font-family: 'Great Vibes', cursive;
+}
+
+/* Ensure smooth font smoothing for luxury feeling */
+.brand-typography-wrapper {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility to hide scrollbars for premium horizontal scroll containers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* ==========================================================================
+   LUXURY GOLD SHIMMER SWEEP & PRELOADER ANIMATIONS
+   ========================================================================== */
+
+@keyframes luxury-gold-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.luxury-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 25%,
+    rgba(242, 232, 217, 0.8) 45%,
+    rgba(212, 167, 95, 0.25) 50%,
+    rgba(242, 232, 217, 0.8) 55%,
+    rgba(255, 255, 255, 0.95) 75%
+  );
+  background-size: 200% 100%;
+  animation: luxury-gold-sweep 1.8s infinite linear;
+}
+
+.dark .luxury-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.95) 25%,
+    rgba(63, 29, 90, 0.3) 45%,
+    rgba(212, 167, 95, 0.2) 50%,
+    rgba(63, 29, 90, 0.3) 55%,
+    rgba(15, 23, 42, 0.95) 75%
+  );
+  background-size: 200% 100%;
+  animation: luxury-gold-sweep 1.8s infinite linear;
+}
+
+@keyframes shimmer-bar-slide {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.animate-shimmer-bar {
+  animation: shimmer-bar-slide 1.5s infinite ease-in-out;
+}
+
+/* ==========================================================================
+   CHECKOUT BUTTON STYLE OVERRIDES (CONTRAST AND THEME COHERENCE)
+   ========================================================================== */
+
+/* Global SSJewellery Secondary White Button */
+.btn-secondary-white {
+  background-color: #FFFFFF !important;
+  color: #5B168A !important;
+  border: 1px solid #5B168A !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.btn-secondary-white:hover {
+  background-color: #F8F5FF !important;
+  color: #5B168A !important;
+  border-color: #5B168A !important;
+}
+
+.btn-secondary-white:disabled {
+  background-color: #F3F3F3 !important;
+  color: #5B168A !important;
+  border-color: #D8D8D8 !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+/* 3D Glassmorphism Navbar capsule classes */
+.navbar-glass-3d {
+  background: #0d1b2a !important;
+  border: 1px solid rgba(212, 167, 95, 0.22) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.60) !important;
+  transform: translateY(0);
+}
+
+.navbar-glass-3d-scrolled {
+  background: #0d1b2a !important;
+  border: 1px solid rgba(212, 167, 95, 0.30) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.70) !important;
+  transform: translateY(-4px);
+}
+
+/* Force all navbar content white on both classes - always */
+.navbar-glass-3d span, 
+.navbar-glass-3d a, 
+.navbar-glass-3d button, 
+.navbar-glass-3d select,
+.navbar-glass-3d svg,
+.navbar-glass-3d-scrolled span,
+.navbar-glass-3d-scrolled a,
+.navbar-glass-3d-scrolled button,
+.navbar-glass-3d-scrolled select,
+.navbar-glass-3d-scrolled svg {
+  color: #ffffff !important;
+}
+
+.navbar-glass-3d span.font-great-vibes,
+.navbar-glass-3d .text-\[\#D4A75F\],
+.navbar-glass-3d-scrolled span.font-great-vibes,
+.navbar-glass-3d-scrolled .text-\[\#D4A75F\] {
+  color: #D4A75F !important;
+}
+
+.navbar-glass-3d input,
+.navbar-glass-3d-scrolled input {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+.navbar-glass-3d input::placeholder,
+.navbar-glass-3d-scrolled input::placeholder {
+  color: rgba(255, 255, 255, 0.40) !important;
+}
+
+/* Badge / pill overrides inside mobile navbars */
+.navbar-glass-3d .bg-\[\#D4A75F\],
+.navbar-glass-3d .bg-amber-500,
+.navbar-glass-3d-scrolled .bg-\[\#D4A75F\],
+.navbar-glass-3d-scrolled .bg-amber-500 {
+  background-color: #D4A75F !important;
+}
+
+.btn-secondary-white svg {
+  color: #5B168A !important;
+}
+
+.btn-secondary-white:disabled svg {
+  color: #5B168A !important;
+}
+
+/* ==========================================================================
+   GLOBAL STOCK STATUS BADGE STYLES (PREMIUM CONTRAST AND ALIGNMENT)
+   ========================================================================== */
+
+.stock-badge-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  height: 28px !important;
+  min-width: 72px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  border-radius: 999px !important;
+  color: #FFFFFF !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  cursor: default;
+  transition: background-color 200ms ease;
+  opacity: 1 !important;
+}
+
+.stock-badge-in-stock {
+  background-color: #15803D !important;
+  border-color: #16A34A !important;
+}
+
+.stock-badge-in-stock:hover {
+  background-color: #166534 !important;
+}
+
+.stock-badge-low-stock {
+  background-color: #D97706 !important;
+  border-color: #F59E0B !important;
+}
+
+.stock-badge-out-of-stock {
+  background-color: #DC2626 !important;
+  border-color: #EF4444 !important;
+}
+
+/* ==========================================================================
+   GLOBAL USER STATUS AND STATS OVERRIDES (DARK MODE CONTRAST)
+   ========================================================================== */
+
+.status-badge-pending, .status-badge-success, .status-badge-active {
+  height: 24px !important;
+  min-width: 60px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  transition: background-color 200ms ease !important;
+  opacity: 1 !important;
+}
+
+.status-badge-pending {
+  background-color: #F59E0B !important;
+  border: 1px solid #D97706 !important;
+  color: #FFFFFF !important;
+}
+
+.status-badge-success, .status-badge-active {
+  background-color: #166534 !important;
+  border: 1px solid #15803D !important;
+  color: #FFFFFF !important;
+}
+
+.status-badge-success {
+  font-weight: 700 !important;
+  min-width: 72px !important;
+}
+
+.status-badge-success:hover, .status-badge-active:hover {
+  background-color: #14532D !important;
+}
+
+.stats-value-highlight {
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  color: #3F1D5A !important; /* purple in light mode */
+}
+
+.dark .stats-value-highlight {
+  color: #FFFFFF !important; /* bright white in dark mode */
+}
+
+/* Force mobile navbar capsule layout to look exactly like mockup */
+@media (max-width: 1023px) {
+  .mobile-navbar-mockup {
+    background: #0d1b2a !important;
+    border: 1px solid rgba(212, 167, 95, 0.25) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.80) !important;
+  }
+  
+  .mobile-navbar-mockup span, 
+  .mobile-navbar-mockup a, 
+  .mobile-navbar-mockup button, 
+  .mobile-navbar-mockup select,
+  .mobile-navbar-mockup svg {
+    color: #ffffff !important;
+  }
+}
+
+/* ==========================================================================
+   GLOBAL DATE/TIME OVERRIDES FOR ADMIN TABLES
+   ========================================================================== */
+.admin-datetime-text {
+  font-weight: 500 !important;
+}
+
+.dark .admin-datetime-text {
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   GLOBAL TABLE TEXT OVERRIDES FOR ADMIN TABLES
+   ========================================================================== */
+.admin-table-text {
+  font-weight: 500 !important;
+}
+
+.dark .admin-table-text {
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   GLOBAL TIMESTAMP OVERRIDES FOR ADMIN TABLES
+   ========================================================================== */
+.admin-timestamp-text {
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+
+.dark .admin-timestamp-text,
+.dark .admin-timestamp-text span {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+/* ==========================================================================
+   GLOBAL AUDIT LOGS COUNT BADGE
+   ========================================================================== */
+.audit-logs-count-badge {
+  background-color: rgba(22, 101, 52, 0.18) !important;
+  border: 1px solid #166534 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  border-radius: 999px !important;
+  padding: 3px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  opacity: 1 !important;
+}
+
+/* Reusable styling for monetary values/prices in Dark Mode */
+.dark .price-amount,
+html.dark .price-amount {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   GLOBAL REUSABLE SHARED STYLES
+   ========================================================================== */
+.section-icon {
+  transition: color 200ms ease-in-out;
+}
+
+.section-icon.green-premium {
+  color: #16A34A !important;
+}
+
+.section-icon.green-premium:hover {
+  color: #15803D !important;
+}
+
+.info-text,
+.secondary-text {
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+
+.dark .info-text,
+.dark .secondary-text,
+html.dark .info-text,
+html.dark .secondary-text {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
