@@ -1,2 +1,2 @@
 # Live-Hosting-QA
-This repo is just for QA testing and prod deployment
+This repo is just for QA  testing and pro deployment replica
