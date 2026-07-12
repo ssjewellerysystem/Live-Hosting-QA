@@ -1,32 +1,58 @@
 # Caddyfile — Caddy reverse proxy configuration
+# ─────────────────────────────────────────────────────────────────────────────
 # APP_DOMAIN is injected from the server-side .env via Docker Compose env_file.
 # Caddy automatically obtains and renews TLS certificates from Let's Encrypt.
+#
+# This file is identical in QA and PROD.  Only APP_DOMAIN differs.
+# ─────────────────────────────────────────────────────────────────────────────
 
 {$APP_DOMAIN} {
-    # Forward all requests to the Flask/Gunicorn container
-    reverse_proxy app:5000 {
-        # Pass real client IP to the application
+    # ── Compression ───────────────────────────────────────────────────────────
+    encode gzip zstd
+
+    # ── Reverse proxy to the Flask/Gunicorn container ─────────────────────────
+    # The service name "backend" matches the docker-compose service name.
+    # The port matches PORT in .env (default 5000).
+    reverse_proxy backend:{$PORT:5000} {
+        # Pass the real client IP and protocol to the application
         header_up X-Real-IP          {remote_host}
         header_up X-Forwarded-For    {remote_host}
         header_up X-Forwarded-Proto  {scheme}
+        header_up X-Forwarded-Host   {host}
 
-        # Health check from Caddy's perspective
-        health_uri    /health
+        # Caddy periodically probes /health; if the upstream is unhealthy
+        # Caddy returns 502 instead of forwarding requests.
+        health_uri      /health
         health_interval 30s
         health_timeout  10s
+        health_status   200
     }
 
-    # Security headers
+    # ── Security headers ──────────────────────────────────────────────────────
     header {
+        # Force HTTPS for one year; include subdomains for API domain
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Content-Type-Options    "nosniff"
-        X-Frame-Options           "DENY"
-        X-XSS-Protection          "1; mode=block"
-        Referrer-Policy           "strict-origin-when-cross-origin"
+
+        # Prevent MIME-type sniffing
+        X-Content-Type-Options "nosniff"
+
+        # Prevent the API from being embedded in iframes (APIs don't need it)
+        X-Frame-Options "DENY"
+
+        # Legacy XSS protection header (belt-and-suspenders)
+        X-XSS-Protection "1; mode=block"
+
+        # Referrer policy — send origin only on cross-origin requests
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Permissions Policy — disable features the API does not use
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+        # Remove Caddy's server identification header
         -Server
     }
 
-    # Access logs go to stdout so Docker captures them
+    # ── Access logs → stdout so Docker captures them ─────────────────────────
     log {
         output stdout
         format json

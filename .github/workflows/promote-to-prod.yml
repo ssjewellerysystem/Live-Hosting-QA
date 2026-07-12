@@ -1,17 +1,41 @@
 name: Promote QA to PROD
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Manual trigger only.  This workflow copies approved application code from the
+# QA repository into the PROD repository, creating one commit in PROD main.
+# That commit then triggers the PROD deploy-prod.yml workflow automatically.
+#
+# Required GitHub Actions secrets (in the QA repository):
+#   PROD_REPO_TOKEN — fine-grained PAT with Contents:write on the PROD repo
+#
+# Required GitHub Actions variables (non-secret, in the QA repository):
+#   PROD_REPO — owner/repo of the PROD repository, e.g. myorg/ss-jewellery-prod
+#
+# Inputs:
+#   release_message  — Optional human-readable release note
+#   confirm          — Type PROMOTE to proceed (safety gate)
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
   workflow_dispatch:
     inputs:
       release_message:
-        description: "Optional release note (included in the PROD commit message)"
+        description: "Release note (included in the PROD commit message)"
         required: false
+        default: ""
+      confirm:
+        description: "Type PROMOTE to confirm you want to push to production"
+        required: true
         default: ""
 
 # Prevent concurrent promotions
 concurrency:
   group: promote-to-prod
   cancel-in-progress: false
+
+# Minimum permissions — this workflow does NOT need to write to the QA repo
+permissions:
+  contents: read
 
 jobs:
   promote:
@@ -20,33 +44,53 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      # ── 1. Check out the QA repository ──────────────────────────────────────
+      # ── 0. Confirmation gate ────────────────────────────────────────────────
+      - name: Verify confirmation input
+        run: |
+          if [[ "${{ github.event.inputs.confirm }}" != "PROMOTE" ]]; then
+            echo "::error::Promotion cancelled. You must type PROMOTE in the confirmation field."
+            exit 1
+          fi
+          echo "Confirmation accepted. Proceeding with promotion."
+
+      # ── 1. Check out the QA repository ─────────────────────────────────────
       - name: Checkout QA repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          path: qa
 
       - name: Capture QA commit SHA
         id: qa_sha
+        working-directory: qa
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # ── 2. Clone the PROD repository ─────────────────────────────────────────
+      - name: Print QA commit being promoted
+        run: |
+          echo "Promoting QA commit: ${{ steps.qa_sha.outputs.sha }}"
+          echo "Triggered by:        ${{ github.actor }}"
+
+      # ── 2. Clone the PROD repository ────────────────────────────────────────
       - name: Clone PROD repository
         env:
           PROD_REPO_TOKEN: ${{ secrets.PROD_REPO_TOKEN }}
         run: |
-          # Never print the token; use it only via git credential helper
+          # Use a credential helper to avoid ever printing the token.
           git config --global credential.helper store
           printf 'https://x-access-token:%s@github.com\n' "$PROD_REPO_TOKEN" \
               > ~/.git-credentials
           chmod 600 ~/.git-credentials
+
           git clone \
               --depth 1 \
               --branch main \
               "https://github.com/${{ vars.PROD_REPO }}.git" \
-              /tmp/prod-repo
+              prod-repo
 
       # ── 3. Rsync application code (exclude secrets and env-specific files) ──
+      # rsync --delete removes files from prod-repo that were deleted from QA.
+      # The exclude list prevents secrets, runtime files, and PROD workflows
+      # from being overwritten.
       - name: Synchronise code to PROD repository
         run: |
           rsync -av --delete \
@@ -54,31 +98,49 @@ jobs:
               --exclude='.github/' \
               --exclude='.env' \
               --exclude='.env.*' \
+              --exclude='!.env.example' \
               --exclude='*.log' \
+              --exclude='logs/' \
               --exclude='venv/' \
               --exclude='.venv/' \
               --exclude='__pycache__/' \
               --exclude='*.pyc' \
               --exclude='*.pyo' \
               --exclude='.pytest_cache/' \
+              --exclude='.mypy_cache/' \
+              --exclude='.ruff_cache/' \
+              --exclude='htmlcov/' \
+              --exclude='.coverage' \
+              --exclude='coverage.xml' \
               --exclude='backend/static/uploads/' \
               --exclude='node_modules/' \
               --exclude='dist/' \
+              --exclude='dist-ssr/' \
               --exclude='railway_backup.sql' \
               --exclude='hi_recovered.json' \
-              ./ /tmp/prod-repo/
+              --exclude='migrate_mysql_to_neon.py' \
+              --exclude='*.sqlite3' \
+              --exclude='*.pem' \
+              --exclude='*.key' \
+              --exclude='scratch/' \
+              qa/ prod-repo/
 
-      # ── 4. Restore PROD-specific GitHub Actions workflows ────────────────────
-      # rsync above wiped .github/ in prod-repo; restore deploy-prod.yml from git
+      # ── 4. Restore PROD-specific GitHub Actions workflow ────────────────────
+      # The rsync above deleted .github/ from prod-repo because it was excluded
+      # from the source (qa/).  We restore deploy-prod.yml from the PROD repo's
+      # own git history so it is never overwritten by promotion.
       - name: Restore PROD deployment workflow
-        working-directory: /tmp/prod-repo
+        working-directory: prod-repo
         run: |
           mkdir -p .github/workflows
-          git checkout HEAD -- .github/workflows/deploy-prod.yml 2>/dev/null || true
+          # If deploy-prod.yml exists in git history, restore it.
+          # The 2>/dev/null suppresses error if the file does not exist yet.
+          git checkout HEAD -- .github/workflows/deploy-prod.yml 2>/dev/null || \
+            echo "Note: .github/workflows/deploy-prod.yml not found in PROD repo git history."
 
-      # ── 5. Commit and push only when there are actual changes ────────────────
+      # ── 5. Commit and push only when files actually changed ─────────────────
       - name: Commit and push to PROD
-        working-directory: /tmp/prod-repo
+        working-directory: prod-repo
         env:
           PROD_REPO_TOKEN: ${{ secrets.PROD_REPO_TOKEN }}
         run: |
@@ -87,31 +149,36 @@ jobs:
 
           git add -A
 
-          # Detect real changes
+          # Detect whether there are real changes to commit
           if git diff --cached --quiet; then
-            echo "No changes to commit — PROD is already up to date."
+            echo "No changes detected — PROD repository is already up to date."
+            echo "Skipping commit and push."
             exit 0
           fi
 
+          # Build commit message
           RELEASE_MSG="${{ github.event.inputs.release_message }}"
           if [[ -n "$RELEASE_MSG" ]]; then
             FULL_MSG="chore(promote): promote QA → PROD
 
 QA commit: ${{ steps.qa_sha.outputs.sha }}
+Promoted by: ${{ github.actor }}
 Release note: $RELEASE_MSG"
           else
             FULL_MSG="chore(promote): promote QA → PROD
 
-QA commit: ${{ steps.qa_sha.outputs.sha }}"
+QA commit: ${{ steps.qa_sha.outputs.sha }}
+Promoted by: ${{ github.actor }}"
           fi
 
           git commit -m "$FULL_MSG"
 
-          # Push using the token — never force-push
+          # Push to PROD main — NEVER force-push
           git push origin main
           echo "Successfully pushed to PROD repository."
+          echo "The deploy-prod.yml workflow in the PROD repo will now trigger automatically."
 
-      # ── 6. Cleanup credentials ───────────────────────────────────────────────
+      # ── 6. Cleanup credentials ──────────────────────────────────────────────
       - name: Remove stored credentials
         if: always()
         run: rm -f ~/.git-credentials

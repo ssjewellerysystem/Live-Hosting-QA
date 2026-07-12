@@ -1,9 +1,15 @@
 # docker-compose.yml
 # ─────────────────────────────────────────────────────────────────────────────
-# Works in QA and PROD without modification.
+# Works identically in QA (Contabo, Singapore) and PROD (Oracle Cloud, Mumbai).
 # All environment-specific values come from the server-side .env file.
+#
+# Services:
+#   backend  — Flask/Gunicorn application
+#   caddy    — Reverse proxy with automatic HTTPS
+#
+# The backend port (5000) is intentionally NOT published to the host.
+# All public traffic enters through Caddy on ports 80 and 443.
 # ─────────────────────────────────────────────────────────────────────────────
-version: "3.9"
 
 networks:
   proxy_net:
@@ -12,43 +18,47 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  uploads_data:
 
 services:
 
   # ── Flask/Gunicorn application ─────────────────────────────────────────────
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
     image: ss-jewellery-backend:latest
-    container_name: ss_jewellery_app
+    container_name: ss_jewellery_backend
     restart: unless-stopped
     networks:
       - proxy_net
     # The Python port is intentionally NOT published to the host.
     # Traffic reaches the app only through the Caddy reverse proxy.
     expose:
-      - "5000"
+      - "${PORT:-5000}"
     env_file:
       - .env
     environment:
-      # These can still be overridden per-container without touching .env
+      # Ensure Python output goes to Docker logs even if .env is absent
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
+      # Set FLASK_APP so flask db commands work in docker compose run
+      FLASK_APP: "backend.app"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:${PORT:-5000}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 45s
+      start_period: 60s
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: "5"
+        max-file: "3"
     volumes:
-      # Persist uploaded media outside the container
-      - ./backend/static/uploads:/app/backend/static/uploads
+      # Persist uploaded media outside the container so it survives rebuilds.
+      # The upload directory is excluded from the Docker image via .dockerignore.
+      - uploads_data:/app/backend/static/uploads
 
   # ── Caddy reverse proxy ────────────────────────────────────────────────────
   caddy:
@@ -60,6 +70,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"    # HTTP/3 (QUIC)
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -67,8 +78,14 @@ services:
     env_file:
       - .env
     depends_on:
-      app:
+      backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     logging:
       driver: "json-file"
       options:

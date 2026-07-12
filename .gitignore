@@ -1,49 +1,79 @@
-# Python virtual environment
+# .gitignore — SS Jewellery backend
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Python virtual environments ───────────────────────────────────────────────
 venv/
 venv64/
 ENV/
 env/
 .venv/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# Node dependencies and build output
-node_modules/
-dist/
-dist-ssr/
-*.local
+# ── Python test & coverage artefacts ─────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
 
 # ── Secrets and environment files (NEVER commit these) ────────────────────────
 .env
 .env.production
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
+# Allow the example template — it contains placeholders only
+!.env.example
 
-# SSH private keys (safety net)
+# ── SSH private keys (safety net) ─────────────────────────────────────────────
 *.pem
 *.key
 id_rsa
+id_rsa.pub
 id_ed25519
+id_ed25519.pub
 deploy_key
 
-# ── Logs ──────────────────────────────────────────────────────────────────────
+# ── Runtime log files ─────────────────────────────────────────────────────────
+# Application logs must go to stdout/stderr (captured by Docker).
+# Log files must never be committed.
 *.log
 logs/
 backend_app.log
 flask_server.log
 
-# ── Database dumps ────────────────────────────────────────────────────────────
+# ── Database dumps and one-off migration scripts ──────────────────────────────
 *.sql
 *.dump
 *.bak
+*.sqlite3
+migrate_mysql_to_neon.py
+railway_backup.sql
 
 # ── Uploaded media (stored on the server volume, not in git) ──────────────────
 backend/static/uploads/
+uploads/
+media/
 
-# ── Editor / OS files ─────────────────────────────────────────────────────────
+# ── Node / frontend build artefacts ──────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+build/
+*.local
+
+# ── Docker override files (local-only, not committed) ─────────────────────────
+docker-compose.override.yml
+
+# ── Editor and OS files ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .idea/
@@ -54,30 +84,14 @@ Thumbs.db
 *.sln
 *.sw?
 
-# ── Python cache / test artefacts ─────────────────────────────────────────────
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-htmlcov/
-.coverage
-coverage.xml
-
-# ── Docker ────────────────────────────────────────────────────────────────────
-# (docker-compose.yml and Dockerfile ARE committed — only override files below)
-docker-compose.override.yml
-
-# ── Scratch / temp ────────────────────────────────────────────────────────────
-scratch/
-.git_backup/
-BB/
-
-# ── Migration artefacts (generated, not secrets) ─────────────────────────────
+# ── Migration artefacts ───────────────────────────────────────────────────────
 # Keep migrations/ in git so Alembic history is preserved.
-# Exclude only auto-generated __pycache__ inside migrations.
+# Only exclude auto-generated __pycache__ inside the migrations directory.
 migrations/__pycache__/
 migrations/versions/__pycache__/
 
 # ── Misc leftover files ───────────────────────────────────────────────────────
 hi_recovered.json
-railway_backup.sql
-migrate_mysql_to_neon.py
+scratch/
+.git_backup/
+BB/
