@@ -1,0 +1,83 @@
+# Python virtual environment
+venv/
+venv64/
+ENV/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ── Secrets and environment files (NEVER commit these) ────────────────────────
+.env
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# SSH private keys (safety net)
+*.pem
+*.key
+id_rsa
+id_ed25519
+deploy_key
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+backend_app.log
+flask_server.log
+
+# ── Database dumps ────────────────────────────────────────────────────────────
+*.sql
+*.dump
+*.bak
+
+# ── Uploaded media (stored on the server volume, not in git) ──────────────────
+backend/static/uploads/
+
+# ── Editor / OS files ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Python cache / test artefacts ─────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# (docker-compose.yml and Dockerfile ARE committed — only override files below)
+docker-compose.override.yml
+
+# ── Scratch / temp ────────────────────────────────────────────────────────────
+scratch/
+.git_backup/
+BB/
+
+# ── Migration artefacts (generated, not secrets) ─────────────────────────────
+# Keep migrations/ in git so Alembic history is preserved.
+# Exclude only auto-generated __pycache__ inside migrations.
+migrations/__pycache__/
+migrations/versions/__pycache__/
+
+# ── Misc leftover files ───────────────────────────────────────────────────────
+hi_recovered.json
+railway_backup.sql
+migrate_mysql_to_neon.py

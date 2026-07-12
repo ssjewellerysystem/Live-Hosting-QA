@@ -1,0 +1,117 @@
+name: Promote QA to PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_message:
+        description: "Optional release note (included in the PROD commit message)"
+        required: false
+        default: ""
+
+# Prevent concurrent promotions
+concurrency:
+  group: promote-to-prod
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Sync QA code → PROD repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Check out the QA repository ──────────────────────────────────────
+      - name: Checkout QA repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Capture QA commit SHA
+        id: qa_sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # ── 2. Clone the PROD repository ─────────────────────────────────────────
+      - name: Clone PROD repository
+        env:
+          PROD_REPO_TOKEN: ${{ secrets.PROD_REPO_TOKEN }}
+        run: |
+          # Never print the token; use it only via git credential helper
+          git config --global credential.helper store
+          printf 'https://x-access-token:%s@github.com\n' "$PROD_REPO_TOKEN" \
+              > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+          git clone \
+              --depth 1 \
+              --branch main \
+              "https://github.com/${{ vars.PROD_REPO }}.git" \
+              /tmp/prod-repo
+
+      # ── 3. Rsync application code (exclude secrets and env-specific files) ──
+      - name: Synchronise code to PROD repository
+        run: |
+          rsync -av --delete \
+              --exclude='.git/' \
+              --exclude='.github/' \
+              --exclude='.env' \
+              --exclude='.env.*' \
+              --exclude='*.log' \
+              --exclude='venv/' \
+              --exclude='.venv/' \
+              --exclude='__pycache__/' \
+              --exclude='*.pyc' \
+              --exclude='*.pyo' \
+              --exclude='.pytest_cache/' \
+              --exclude='backend/static/uploads/' \
+              --exclude='node_modules/' \
+              --exclude='dist/' \
+              --exclude='railway_backup.sql' \
+              --exclude='hi_recovered.json' \
+              ./ /tmp/prod-repo/
+
+      # ── 4. Restore PROD-specific GitHub Actions workflows ────────────────────
+      # rsync above wiped .github/ in prod-repo; restore deploy-prod.yml from git
+      - name: Restore PROD deployment workflow
+        working-directory: /tmp/prod-repo
+        run: |
+          mkdir -p .github/workflows
+          git checkout HEAD -- .github/workflows/deploy-prod.yml 2>/dev/null || true
+
+      # ── 5. Commit and push only when there are actual changes ────────────────
+      - name: Commit and push to PROD
+        working-directory: /tmp/prod-repo
+        env:
+          PROD_REPO_TOKEN: ${{ secrets.PROD_REPO_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          # Detect real changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit — PROD is already up to date."
+            exit 0
+          fi
+
+          RELEASE_MSG="${{ github.event.inputs.release_message }}"
+          if [[ -n "$RELEASE_MSG" ]]; then
+            FULL_MSG="chore(promote): promote QA → PROD
+
+QA commit: ${{ steps.qa_sha.outputs.sha }}
+Release note: $RELEASE_MSG"
+          else
+            FULL_MSG="chore(promote): promote QA → PROD
+
+QA commit: ${{ steps.qa_sha.outputs.sha }}"
+          fi
+
+          git commit -m "$FULL_MSG"
+
+          # Push using the token — never force-push
+          git push origin main
+          echo "Successfully pushed to PROD repository."
+
+      # ── 6. Cleanup credentials ───────────────────────────────────────────────
+      - name: Remove stored credentials
+        if: always()
+        run: rm -f ~/.git-credentials

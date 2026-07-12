@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BharatBasket Admin & Marketing DB-Code Mapping</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    :root {
+        --bg-main: #0b0f19;
+        --bg-card: #151e33;
+        --bg-editor: #0c1020;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent: #3b82f6;
+        --accent-glow: rgba(59, 130, 246, 0.15);
+        --accent-green: #10b981;
+        --accent-gold: #f59e0b;
+        --accent-red: #ef4444;
+        --border-color: #2e3b5e;
+        --code-keyword: #ff79c6;
+        --code-string: #f1fa8c;
+        --code-comment: #6272a4;
+        --code-func: #50fa7b;
+        --code-class: #8be9fd;
+        --code-var: #f8f8f2;
+    }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 40px 20px;
+        overflow-x: hidden;
+    }
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        padding: 30px;
+        position: relative;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+    }
+    .header-left h1 {
+        font-size: 24px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
+    }
+    .header-left p {
+        font-size: 14px;
+        color: var(--text-sub);
+    }
+    .status-badge {
+        background-color: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .content-grid {
+        display: grid;
+        grid-template-columns: 7fr 5fr;
+        gap: 25px;
+    }
+    /* macOS-style Window Decorator */
+    .editor-wrapper {
+        background-color: var(--bg-editor);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .editor-titlebar {
+        background-color: rgba(15, 23, 42, 0.8);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    .window-dots {
+        display: flex;
+        gap: 8px;
+    }
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .dot-red { background-color: var(--accent-red); }
+    .dot-yellow { background-color: var(--accent-gold); }
+    .dot-green { background-color: var(--accent-green); }
+    .file-path {
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+        color: var(--text-sub);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: 500;
+    }
+    .code-container {
+        padding: 20px;
+        overflow-x: auto;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--code-var);
+    }
+    .code-line {
+        display: flex;
+    }
+    .line-num {
+        width: 30px;
+        color: var(--code-comment);
+        text-align: right;
+        margin-right: 20px;
+        user-select: none;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        padding-right: 8px;
+    }
+    .line-content {
+        white-space: pre;
+    }
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .side-card {
+        background-color: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    .side-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+    }
+    .table-badge {
+        background-color: var(--accent-glow);
+        border: 1px solid var(--accent);
+        color: #93c5fd;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: 'Fira Code', monospace;
+        font-weight: 600;
+    }
+    .op-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    .op-read { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .op-write { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .op-delete { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    
+    .table-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .table-item {
+        background-color: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 12px;
+    }
+    .table-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .table-item-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .flow-step {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .flow-num {
+        background-color: var(--accent);
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .flow-desc {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.4;
+    }
+    .keyword { color: var(--code-keyword); font-weight: 600; }
+    .string { color: var(--code-string); }
+    .comment { color: var(--code-comment); font-style: italic; }
+    .func { color: var(--code-func); }
+    .class { color: var(--code-class); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>BharatBasket DB-Code Mapping: Admin & Marketing Module</h1>
+                <p>Maps system administration audit logs, administrative system alerts, banners, and coupon promotions</p>
+            </div>
+            <div class="header-right">
+                <span class="status-badge">System Administration</span>
+            </div>
+        </div>
+        <div class="content-grid">
+            <div class="editor-wrapper">
+                <div class="editor-titlebar">
+                    <div class="window-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="file-path">backend/routes/admin.py</div>
+                </div>
+                <div class="code-container">
+                    <div class="code-line"><span class="line-num">1</span><span class="line-content"><span class="keyword">@admin_bp.route</span>(<span class="string">'/users/&lt;id&gt;/status'</span>, methods=[<span class="string">'PUT'</span>])</span></div>
+                    <div class="code-line"><span class="line-num">2</span><span class="line-content"><span class="keyword">@admin_required</span></span></div>
+                    <div class="code-line"><span class="line-num">3</span><span class="line-content"><span class="keyword">def</span> <span class="func">update_user_status</span>(id):</span></div>
+                    <div class="code-line"><span class="line-num">4</span><span class="line-content">    # 1. Update user block status in user model</span></div>
+                    <div class="code-line"><span class="line-num">5</span><span class="line-content">    user = <span class="class">UserModel</span>.query.get(int(id))</span></div>
+                    <div class="code-line"><span class="line-num">6</span><span class="line-content">    user.is_blocked = data.get(<span class="string">'is_blocked'</span>)</span></div>
+                    <div class="code-line"><span class="line-num">7</span><span class="line-content">    </span></div>
+                    <div class="code-line"><span class="line-num">8</span><span class="line-content">    # 2. Write User Status Audit Trail</span></div>
+                    <div class="code-line"><span class="line-num">9</span><span class="line-content">    audit = <span class="class">UserStatusAuditLog</span>(user_id=user.id, admin_id=admin, </span></div>
+                    <div class="code-line"><span class="line-num">10</span><span class="line-content">                               status_changed_to=status, reason=reason)</span></div>
+                    <div class="code-line"><span class="line-num">11</span><span class="line-content">    db.session.add(audit)</span></div>
+                    <div class="code-line"><span class="line-num">12</span><span class="line-content">    </span></div>
+                    <div class="code-line"><span class="line-num">13</span><span class="line-content">    # 3. Write General System Admin Action Log</span></div>
+                    <div class="code-line"><span class="line-num">14</span><span class="line-content">    log_admin_action(<span class="string">"User Blocked"</span>, <span class="string">"User Management"</span>, f<span class="string">"Blocked User: {user.email}"</span>)</span></div>
+                    <div class="code-line"><span class="line-num">15</span><span class="line-content">    db.session.commit()</span></div>
+                    <div class="code-line"><span class="line-num">16</span><span class="line-content">    <span class="keyword">return</span> jsonify({<span class="string">"success"</span>: <span class="keyword">True</span>})</span></div>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="side-card">
+                    <h3>Mapped Database Tables</h3>
+                    <div class="table-list">
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">admins</span>
+                                <span class="op-badge op-read">Read</span>
+                            </div>
+                            <div class="table-item-desc">Holds credentials for authorized staff members, administrators, and dashboard managers.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">admin_audit_logs</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Maintains read-only logs of critical operations executed by admin personnel.</div>
+                        </div>
+                        <div class="table-item">
+                            <div class="table-item-header">
+                                <span class="table-badge">coupons</span>
+                                <span class="op-badge op-write">Write</span>
+                            </div>
+                            <div class="table-item-desc">Stores promotion codes, percentage/fixed discounts, minimum thresholds, and flags.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-card">
+                    <h3>Audit System Design</h3>
+                    <div class="flow-step">
+                        <div class="flow-num">L</div>
+                        <div class="flow-desc">Every mutation on user statuses triggers logging to user_status_audit_logs.</div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-num">A</div>
+                        <div class="flow-desc">Every general administration action creates an entry in admin_audit_logs.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+# docker-compose.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Works in QA and PROD without modification.
+# All environment-specific values come from the server-side .env file.
+# ─────────────────────────────────────────────────────────────────────────────
+version: "3.9"
+
+networks:
+  proxy_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+services:
+
+  # ── Flask/Gunicorn application ─────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ss-jewellery-backend:latest
+    container_name: ss_jewellery_app
+    restart: unless-stopped
+    networks:
+      - proxy_net
+    # The Python port is intentionally NOT published to the host.
+    # Traffic reaches the app only through the Caddy reverse proxy.
+    expose:
+      - "5000"
+    env_file:
+      - .env
+    environment:
+      # These can still be overridden per-container without touching .env
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    volumes:
+      # Persist uploaded media outside the container
+      - ./backend/static/uploads:/app/backend/static/uploads
+
+  # ── Caddy reverse proxy ────────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: ss_jewellery_caddy
+    restart: unless-stopped
+    networks:
+      - proxy_net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file:
+      - .env
+    depends_on:
+      app:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

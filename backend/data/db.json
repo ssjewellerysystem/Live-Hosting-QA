@@ -1,0 +1,617 @@
+{
+  "users": [
+    {
+      "name": "Irshad",
+      "email": "guest_test_email@gmail.com",
+      "password": "$2b$12$DCO/K0hBvc1Xw6bn67o4s.nM5q8PjvR96lhsL27BQcchnHe791Ar.",
+      "mobile": "9876543210",
+      "address": {
+        "street": "123, Green Meadows",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "pincode": "560001"
+      },
+      "wishlist": [],
+      "cart": [],
+      "is_admin": true,
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2364"
+      }
+    },
+    {
+      "name": "Rahul Sharma",
+      "email": "customer@bharatbasket.com",
+      "password": "$2b$12$wc3OGZZ461lSMDZFYuktM.0TBK9oSzlFJElOg1QbhC8hKUA4et3Qq",
+      "mobile": "9123456789",
+      "address": {
+        "street": "45 Green Meadows Apartment",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "pincode": "110001"
+      },
+      "wishlist": [],
+      "cart": [],
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2365"
+      }
+    },
+    {
+      "name": "Guest User Test",
+      "email": "guesttest@gmail.com",
+      "password": "",
+      "mobile": "9988776655",
+      "address": {
+        "street": "Flat 404, Sea Breeze Apartments, Marine Drive",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400020"
+      },
+      "wishlist": [],
+      "cart": [],
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a134d0b8e54f8ced0ce211e"
+      }
+    },
+    {
+      "name": "rahul sharma",
+      "email": "9892424931@bharatbasket.com",
+      "password": "",
+      "mobile": "9892424931",
+      "address": {
+        "street": "",
+        "city": "",
+        "state": "",
+        "pincode": ""
+      },
+      "wishlist": [],
+      "cart": [],
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a13506e8e54f8ced0ce2121"
+      }
+    },
+    {
+      "name": "rahul sharma ",
+      "email": "9241098210@bharatbasket.com",
+      "password": "",
+      "mobile": "9241098210",
+      "address": {
+        "street": "",
+        "city": "",
+        "state": "",
+        "pincode": ""
+      },
+      "wishlist": [],
+      "cart": [],
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a13c9fb599e9b965e711ece"
+      }
+    },
+    {
+      "name": "irshad",
+      "email": "9823135123@bharatbasket.com",
+      "password": "",
+      "mobile": "9823135123",
+      "address": {
+        "street": "",
+        "city": "",
+        "state": "",
+        "pincode": ""
+      },
+      "wishlist": [],
+      "cart": [],
+      "saved_for_later": [],
+      "notifications": [],
+      "is_blocked": false,
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a13d34279afbdc10e875e7c"
+      }
+    },
+    {
+      "name": "Rahul Sharma",
+      "email": "9894612431@bharatbasket.com",
+      "password": "",
+      "mobile": "9894612431",
+      "address": {
+        "street": "Asind ",
+        "city": "asind",
+        "state": "rajasthan ",
+        "pincode": "311301"
+      },
+      "wishlist": [],
+      "cart": [],
+      "saved_for_later": [],
+      "notifications": [],
+      "is_blocked": false,
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a14486317d0032140a9ee18"
+      }
+    },
+    {
+      "name": "irshad@786",
+      "email": "9829178219@bharatbasket.com",
+      "password": "",
+      "mobile": "9829178219",
+      "address": {
+        "street": "",
+        "city": "",
+        "state": "",
+        "pincode": ""
+      },
+      "wishlist": [],
+      "cart": [],
+      "saved_for_later": [],
+      "notifications": [],
+      "is_blocked": false,
+      "is_admin": false,
+      "_id": {
+        "$oid": "6a144d5717d0032140a9ee1a"
+      }
+    }
+  ],
+  "products": [
+    {
+      "name": "BharatPhone Pro X5",
+      "category": "Electronics",
+      "price": 54999.0,
+      "discount": 10,
+      "stock": 19,
+      "description": "The ultimate Indian-engineered smartphone with a super AMOLED 120Hz display, triple 108MP camera array, and local language support options. Runs on a powerful octa-core chipset with massive battery backup.",
+      "images": [
+        "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.589898"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2366"
+      }
+    },
+    {
+      "name": "BharatAcoustics Wireless Buds",
+      "category": "Electronics",
+      "price": 2499.0,
+      "discount": 20,
+      "stock": 99,
+      "description": "True wireless earbuds with hybrid Active Noise Cancellation (ANC), 30-hour combined playback battery life, and IPX7 sweat resistance. Super deep bass customized for classical and modern beats.",
+      "images": [
+        "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.589924"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2367"
+      }
+    },
+    {
+      "name": "VedicSmart LED 4K TV 55\"",
+      "category": "Electronics",
+      "price": 38999.0,
+      "discount": 15,
+      "stock": 12,
+      "description": "Ultra high definition 4K Smart TV with Dolby Vision, integrated subwoofers, built-in Alexa/Google Assistant support, and access to all standard streaming apps pre-installed. Sleek frameless design.",
+      "images": [
+        "https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.589951"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2368"
+      }
+    },
+    {
+      "name": "Premium Organic Basmati Rice",
+      "category": "Grocery",
+      "price": 299.0,
+      "discount": 5,
+      "stock": 150,
+      "description": "Traditionally harvested long-grain aromatic Basmati rice. Perfectly aged for premium flavor, ideal for biryanis, pulaos, and daily royal meals. 100% natural, pesticide-free packaging (5kg).",
+      "images": [
+        "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.589969"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2369"
+      }
+    },
+    {
+      "name": "Pure Cold Pressed Mustard Oil",
+      "category": "Grocery",
+      "price": 220.0,
+      "discount": 0,
+      "stock": 80,
+      "description": "Traditional wood-pressed Kachi Ghani mustard oil containing natural pungency, rich taste, and essential nutrients. Ideal for deep frying, saut\u00e9ing, and traditional pickle preservation.",
+      "images": [
+        "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.589984"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236a"
+      }
+    },
+    {
+      "name": "Assam CTC Masala Tea Blend",
+      "category": "Grocery",
+      "price": 350.0,
+      "discount": 12,
+      "stock": 200,
+      "description": "Robust and strong Assam black CTC tea granules mixed with real crushed ginger, cardamom, cinnamon, cloves, and black pepper. The perfect morning cup of Indian Masala Chai.",
+      "images": [
+        "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590001"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236b"
+      }
+    },
+    {
+      "name": "Handloom Banarasi Silk Saree",
+      "category": "Fashion",
+      "price": 8999.0,
+      "discount": 25,
+      "stock": 10,
+      "description": "Exquisite hand-woven Banarasi silk saree adorned with intricate gold zari brocade work. Perfect for weddings, festivals, and grand occasions. Comes with unstitched blouse material.",
+      "images": [
+        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590016"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236c"
+      }
+    },
+    {
+      "name": "Classic Indigo Cotton Kurta Set",
+      "category": "Fashion",
+      "price": 1899.0,
+      "discount": 15,
+      "stock": 45,
+      "description": "Comfortable regular-fit pure cotton Kurta for men in authentic handblock indigo print. Comes paired with premium white cotton pajamas. Breathable, durable, and stylish for semi-formal events.",
+      "images": [
+        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590029"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236d"
+      }
+    },
+    {
+      "name": "Embroidered Festive Juttis",
+      "category": "Fashion",
+      "price": 999.0,
+      "discount": 10,
+      "stock": 30,
+      "description": "Authentic leather handcrafted Mojaris/Juttis with detailed colorful thread embroidery and beadwork. Features double cushioning for comfortable all-day festival wearing.",
+      "images": [
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590042"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236e"
+      }
+    },
+    {
+      "name": "Handcrafted Terracotta Diya Set",
+      "category": "Home Decor",
+      "price": 499.0,
+      "discount": 5,
+      "stock": 60,
+      "description": "Pack of 12 beautifully hand-painted and decorated clay diyas by local potters. Perfect for festive celebrations like Diwali, poojas, or general terrace lighting.",
+      "images": [
+        "https://images.unsplash.com/photo-1605847429054-7a4f40f0970a?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590056"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f236f"
+      }
+    },
+    {
+      "name": "Jaipur Cotton Block-Print Bedhseet",
+      "category": "Home Decor",
+      "price": 1499.0,
+      "discount": 10,
+      "stock": 40,
+      "description": "Premium double king-size bedsheet woven from long-staple cotton fibers. Features traditional Sanganeri handblock motifs and includes 2 matching printed pillow covers.",
+      "images": [
+        "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590070"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2370"
+      }
+    },
+    {
+      "name": "Handwoven Jute Floor Rug",
+      "category": "Home Decor",
+      "price": 2799.0,
+      "discount": 18,
+      "stock": 20,
+      "description": "Natural biodegradable braided jute rug crafted by rural artisans. Adds a classic rustic, organic, and bohemian aesthetic to any living room, study, or bedroom floor.",
+      "images": [
+        "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=600&auto=format&fit=crop&q=80"
+      ],
+      "created_at": {
+        "$date": "2026-05-24T18:21:44.590085"
+      },
+      "_id": {
+        "$oid": "6a1341b8acb36fa4a93f2371"
+      }
+    }
+  ],
+  "orders": [
+    {
+      "order_id": "BB-747606",
+      "user_id": {
+        "$oid": "6a1341b8acb36fa4a93f2365"
+      },
+      "shipping_address": {
+        "name": "Rahul Sharma",
+        "phone": "9123456789",
+        "email": "customer@bharatbasket.com",
+        "address": "45 Green Meadows Apartment",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "pincode": "110001"
+      },
+      "items": [
+        {
+          "product_id": "6a1341b8acb36fa4a93f2366",
+          "name": "BharatPhone Pro X5",
+          "price": 49499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"
+        }
+      ],
+      "total_amount": 51974.0,
+      "order_status": "Pending",
+      "delivery_date": "29-05-2026",
+      "created_at": {
+        "$date": "2026-05-24T18:29:01.476231"
+      },
+      "_id": {
+        "$oid": "6a13436dc6474f1c28dfdcad"
+      }
+    },
+    {
+      "order_id": "BB-265382",
+      "user_id": {
+        "$oid": "6a134d0b8e54f8ced0ce211e"
+      },
+      "shipping_address": {
+        "name": "Guest User Test",
+        "phone": "9988776655",
+        "email": "guesttest@gmail.com",
+        "address": "Flat 404, Sea Breeze Apartments, Marine Drive",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400020"
+      },
+      "items": [
+        {
+          "product_id": "6a1341b8acb36fa4a93f2366",
+          "name": "BharatPhone Pro X5",
+          "price": 49499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"
+        }
+      ],
+      "total_amount": 51974.0,
+      "order_status": "Pending",
+      "status": "Pending",
+      "delivery_date": "29-05-2026",
+      "created_at": {
+        "$date": "2026-05-24T19:14:20.831200"
+      },
+      "_id": {
+        "$oid": "6a134e0c8e54f8ced0ce211f"
+      }
+    },
+    {
+      "order_id": "BB-611173",
+      "user_id": {
+        "$oid": "6a1341b8acb36fa4a93f2364"
+      },
+      "shipping_address": {
+        "name": "Guest Checkout Test",
+        "phone": "9876543210",
+        "email": "guest_test_email@gmail.com",
+        "address": "Apt 505, Galaxy Apartments, Linking Road",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400050"
+      },
+      "items": [
+        {
+          "product_id": "6a1341b8acb36fa4a93f2366",
+          "name": "BharatPhone Pro X5",
+          "price": 49499,
+          "quantity": 3,
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"
+        }
+      ],
+      "total_amount": 155922.0,
+      "order_status": "Pending",
+      "status": "Pending",
+      "delivery_date": "29-05-2026",
+      "created_at": {
+        "$date": "2026-05-24T19:20:51.946720"
+      },
+      "_id": {
+        "$oid": "6a134f938e54f8ced0ce2120"
+      }
+    },
+    {
+      "order_id": "BB-670770",
+      "user_id": {
+        "$oid": "6a1341b8acb36fa4a93f2364"
+      },
+      "shipping_address": {
+        "name": "Arjun Kumar",
+        "phone": "9876543210",
+        "email": "arjun@example.com",
+        "address": "123, Green Meadows",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "pincode": "560001"
+      },
+      "items": [
+        {
+          "product_id": "6a1341b8acb36fa4a93f2366",
+          "name": "BharatPhone Pro X5",
+          "price": 49499,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=600&auto=format&fit=crop&q=80"
+        }
+      ],
+      "total_amount": 51974.0,
+      "order_status": "Delivered",
+      "status": "Delivered",
+      "delivery_date": "May 30, 2026",
+      "created_at": {
+        "$date": "2026-05-25T03:43:46.490018"
+      },
+      "_id": {
+        "$oid": "6a13c5728d153f39d86700bf"
+      },
+      "tracking_history": [
+        {
+          "status": "Shipped",
+          "message": "Departed facility in Bangalore",
+          "updated_at": "2026-05-25T04:21:26.537057"
+        },
+        {
+          "status": "Delivered",
+          "message": "Order status changed to Delivered.",
+          "updated_at": "2026-05-25T04:25:22.863202"
+        },
+        {
+          "status": "Delivered",
+          "message": "Order status changed to Delivered.",
+          "updated_at": "2026-05-25T04:26:33.896083"
+        },
+        {
+          "status": "Shipped",
+          "message": "Delivered to Customer",
+          "updated_at": "2026-05-25T04:26:47.198633"
+        },
+        {
+          "status": "Delivered",
+          "message": "Order status changed to Delivered.",
+          "updated_at": "2026-05-25T04:27:43.615671"
+        }
+      ],
+      "carrier": "Delhivery",
+      "tracking_id": "DLV-BB-99238"
+    },
+    {
+      "order_id": "BB-641843",
+      "user_id": {
+        "$oid": "6a14486317d0032140a9ee18"
+      },
+      "shipping_address": {
+        "name": "Rahul Sharma",
+        "phone": "9894612431",
+        "email": "9894612431@bharatbasket.com",
+        "address": "Asind ",
+        "city": "asind",
+        "state": "rajasthan ",
+        "pincode": "311301"
+      },
+      "items": [
+        {
+          "product_id": "6a1341b8acb36fa4a93f2367",
+          "name": "BharatAcoustics Wireless Buds",
+          "price": 1999,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80"
+        }
+      ],
+      "total_amount": 2099.0,
+      "order_status": "Pending",
+      "status": "Pending",
+      "delivery_date": "30-05-2026",
+      "tracking_history": [
+        {
+          "status": "Pending",
+          "message": "Order placed successfully and is awaiting confirmation.",
+          "updated_at": "2026-05-25T13:04:10.957794"
+        }
+      ],
+      "return_request": {
+        "status": "None",
+        "reason": "",
+        "message": "",
+        "created_at": null
+      },
+      "created_at": {
+        "$date": "2026-05-25T13:04:10.957814"
+      },
+      "_id": {
+        "$oid": "6a1448ca17d0032140a9ee19"
+      }
+    }
+  ],
+  "coupons": [
+    {
+      "code": "WELCOME10",
+      "discount_type": "percent",
+      "discount_value": 10.0,
+      "min_order_amount": 500.0,
+      "is_active": true,
+      "created_at": {
+        "$date": "2026-05-25T04:09:05.437081"
+      },
+      "_id": {
+        "$oid": "6a13cb61a60597096a6a0cd8"
+      }
+    },
+    {
+      "code": "FLAT200",
+      "discount_type": "flat",
+      "discount_value": 200.0,
+      "min_order_amount": 1500.0,
+      "is_active": true,
+      "created_at": {
+        "$date": "2026-05-25T04:09:05.437105"
+      },
+      "_id": {
+        "$oid": "6a13cb61a60597096a6a0cd9"
+      }
+    },
+    {
+      "code": "BASKET50",
+      "discount_type": "percent",
+      "discount_value": 50.0,
+      "min_order_amount": 5000.0,
+      "is_active": true,
+      "created_at": {
+        "$date": "2026-05-25T04:09:05.437119"
+      },
+      "_id": {
+        "$oid": "6a13cb61a60597096a6a0cda"
+      }
+    }
+  ]
+}

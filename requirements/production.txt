@@ -1,0 +1,5 @@
+# Production-only packages (extends base.txt)
+-r base.txt
+
+# Production WSGI server
+gunicorn==22.0.0
