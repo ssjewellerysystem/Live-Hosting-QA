@@ -1,21 +1,30 @@
 # .dockerignore — Files excluded from the Docker build context
-# Keep this in sync with .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+# Keep this aligned with .gitignore.
+# Files listed here are never sent to the Docker daemon during `docker build`.
+# Keeping the build context small speeds up builds and prevents secrets from
+# being accidentally included in the image layers.
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Version control
+# ── Version control (never needed inside the image) ───────────────────────────
 .git/
 .gitignore
 
-# GitHub Actions (not needed inside the image)
+# ── GitHub Actions (not needed inside the image) ──────────────────────────────
 .github/
 
-# Python virtual environments and caches
+# ── Python virtual environments ───────────────────────────────────────────────
 venv/
+venv64/
 .venv/
 ENV/
 env/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -23,46 +32,52 @@ htmlcov/
 .coverage
 coverage.xml
 
-# Secrets — must come from server .env, never baked into the image
+# ── Secrets — must come from the server-side .env, never baked into the image ─
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 
-# Logs
+# ── Runtime log files ─────────────────────────────────────────────────────────
 *.log
 logs/
 backend_app.log
 flask_server.log
 
-# Uploaded media (served from a Docker volume, not the image)
+# ── Uploaded media (served from a Docker volume, not the image) ───────────────
 backend/static/uploads/
+uploads/
+media/
 
-# Node (frontend is built separately)
+# ── Node / frontend (frontend is built and deployed separately on Vercel) ──────
 frontend/
 node_modules/
 dist/
+dist-ssr/
+build/
 
-# Database dumps and one-off scripts
+# ── Database dumps and one-off scripts ────────────────────────────────────────
 *.sql
 *.dump
+*.sqlite3
 migrate_mysql_to_neon.py
 hi_recovered.json
 railway_backup.sql
 
-# Editor and OS files
+# ── Tests (optional — remove this exclusion if you want tests in the image) ───
+tests/
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+docs/
+README.md
+RUN.md
+
+# ── Editor and OS files ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 
-# Tests (optional — remove this line if you want tests in the image)
-tests/
-
-# Documentation
-docs/
-README.md
-RUN.md
-
-# Scratch
+# ── Scratch / temp ────────────────────────────────────────────────────────────
 scratch/
