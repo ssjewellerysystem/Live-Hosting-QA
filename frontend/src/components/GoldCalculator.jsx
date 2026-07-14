@@ -114,7 +114,7 @@ export const GoldCalculator = () => {
 
             {/* Purity Grid */}
             <div className="space-y-2.5">
-              <label className="block text-xs font-bold text-slate-350 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-white uppercase tracking-wide">
                 {text.purityLabel}
               </label>
               <div className="grid grid-cols-4 gap-2.5">
@@ -137,7 +137,7 @@ export const GoldCalculator = () => {
             {/* Weight Input Box */}
             <div className="space-y-3">
               <div className="flex justify-between items-baseline">
-                <label className="text-xs font-bold text-slate-350 uppercase tracking-wide">
+                <label className="text-xs font-bold text-white uppercase tracking-wide">
                   {text.weightLabel}
                 </label>
                 <div className="flex items-center space-x-1.5">
