@@ -239,20 +239,20 @@ export const Navbar = () => {
           <div className={`flex items-center justify-between gap-4 transition-all duration-500 ${isScrolled ? 'h-16' : 'h-20'}`}>
 
             {/* LEFT SECTION: Logo + SSJewellery Brand Name */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 lg:flex-1 lg:justify-start">
+            <div className="flex items-center flex-shrink-0 gap-3 sm:gap-4 lg:flex-1 lg:justify-start">
               {/* Hamburger Menu (Mobile/Tablet Only) */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="w-11 h-11 flex items-center justify-center rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors lg:hidden cursor-pointer"
                 title="Toggle Mobile Menu"
               >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
 
               {/* SSJewellery Logo and Brand Name Identity */}
               <Link to="/" className="flex items-center gap-[14px] flex-shrink-0 brand-typography-wrapper select-none group no-underline">
                 <img
-                  src="/logo.svg"
+                  src="/navbar-logo.png"
                   alt="SSJewellery Logo"
                   className="h-[46px] md:h-[56px] lg:h-[65px] w-auto object-contain flex-shrink-0"
                 />
@@ -271,7 +271,7 @@ export const Navbar = () => {
 
             {/* CENTER SECTION: Search Bar (Desktop only) */}
             <div className="hidden lg:flex justify-center w-full max-w-[500px] lg:max-w-[700px] relative">
-              <form onSubmit={handleSearchSubmit} className="w-full relative">
+              <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                   type="text"
                   placeholder={t('common.search_placeholder')}
@@ -356,7 +356,7 @@ export const Navbar = () => {
                           >
                             <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-[#F2E8D9]/50 dark:border-slate-800/80 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-xs text-slate-850 dark:text-slate-100 uppercase tracking-wide">{t('navbar.notifications')}</span>
+                              <span className="text-xs font-bold tracking-wide uppercase text-slate-850 dark:text-slate-100">{t('navbar.notifications')}</span>
                               {unreadCount > 0 && (
                                 <span className="bg-[#D4A75F] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
                                   {unreadCount}
@@ -374,7 +374,7 @@ export const Navbar = () => {
                               <span className="text-slate-300 dark:text-slate-700">|</span>
                               <button
                                 onClick={handleClearRead}
-                                className="text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline cursor-pointer bg-transparent border-none"
+                                className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline"
                                 title={t('navbar.clear_read')}
                               >
                                 {t('navbar.clear_read')}
@@ -382,10 +382,10 @@ export const Navbar = () => {
                             </div>
                           </div>
 
-                          <div className="max-h-85 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-850">
+                          <div className="overflow-y-auto divide-y max-h-85 divide-slate-100 dark:divide-slate-850">
                             {displayedNotifications.length === 0 ? (
                               <div className="py-8 text-center text-slate-400 dark:text-slate-550">
-                                <Bell className="h-8 w-8 mx-auto opacity-30 mb-2 animate-bounce" />
+                                <Bell className="w-8 h-8 mx-auto mb-2 opacity-30 animate-bounce" />
                                 <p className="text-xs font-semibold">{t('navbar.no_notifications')}</p>
                               </div>
                             ) : (
@@ -397,22 +397,22 @@ export const Navbar = () => {
                                       case 'SUPPORT_TICKET':
                                         return {
                                           bg: 'bg-indigo-555/10 text-indigo-500 dark:bg-indigo-500/20',
-                                          icon: <MessageSquare className="h-4 w-4" />
+                                          icon: <MessageSquare className="w-4 h-4" />
                                         };
                                       case 'BUY_REQUEST':
                                         return {
                                           bg: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/20',
-                                          icon: <ShoppingBag className="h-4 w-4" />
+                                          icon: <ShoppingBag className="w-4 h-4" />
                                         };
                                       case 'LOW_STOCK':
                                         return {
                                           bg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/20',
-                                          icon: <AlertTriangle className="h-4 w-4" />
+                                          icon: <AlertTriangle className="w-4 h-4" />
                                         };
                                       default:
                                         return {
                                           bg: 'bg-slate-500/10 text-slate-500 dark:bg-slate-500/20',
-                                          icon: <Bell className="h-4 w-4" />
+                                          icon: <Bell className="w-4 h-4" />
                                         };
                                     }
                                   } else {
@@ -422,24 +422,24 @@ export const Navbar = () => {
                                     if (title.includes('support') || title.includes('ticket') || title.includes('reply') || msg.includes('support') || msg.includes('ticket')) {
                                       return {
                                         bg: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/20',
-                                        icon: <MessageSquare className="h-4 w-4" />
+                                        icon: <MessageSquare className="w-4 h-4" />
                                       };
                                     }
                                     if (title.includes('buy request') || title.includes('request to buy') || msg.includes('buy request') || msg.includes('request to buy') || title.includes('request status')) {
                                       return {
                                         bg: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/20',
-                                        icon: <ShoppingBag className="h-4 w-4" />
+                                        icon: <ShoppingBag className="w-4 h-4" />
                                       };
                                     }
                                     if (title.includes('order') || msg.includes('order')) {
                                       return {
                                         bg: 'bg-[#D4A75F]/10 text-[#D4A75F] dark:bg-[#D4A75F]/20',
-                                        icon: <ShoppingCart className="h-4 w-4" />
+                                        icon: <ShoppingCart className="w-4 h-4" />
                                       };
                                     }
                                     return {
                                       bg: 'bg-slate-500/10 text-slate-500 dark:bg-slate-500/20',
-                                      icon: <Bell className="h-4 w-4" />
+                                      icon: <Bell className="w-4 h-4" />
                                     };
                                   }
                                 };
@@ -507,7 +507,7 @@ export const Navbar = () => {
                                             </button>
                                           ) : (
                                             <span className="text-[9px] font-extrabold text-[#D4A75F] flex items-center gap-0.5 bg-[#D4A75F]/10 dark:bg-[#D4A75F]/15 px-1.5 py-0.5 rounded-lg">
-                                              <Check className="h-3 w-3" />
+                                              <Check className="w-3 h-3" />
                                               <span>Read</span>
                                             </span>
                                           )}
@@ -521,7 +521,7 @@ export const Navbar = () => {
                           </div>
 
                           {isAdmin && (
-                            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-850 border-t border-slate-200/50 dark:border-slate-800/80 text-center">
+                            <div className="px-4 py-2 text-center border-t bg-slate-50 dark:bg-slate-850 border-slate-200/50 dark:border-slate-800/80">
                               <button
                                 onClick={() => {
                                   setNotificationsOpen(false);
@@ -545,7 +545,7 @@ export const Navbar = () => {
                 className="p-2 rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Toggle Light/Dark Mode"
               >
-                {isDark ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5" />}
+                {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
               </button>
 
               {/* Wishlist Icon */}
@@ -562,7 +562,7 @@ export const Navbar = () => {
                   className="relative p-2 rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   title={t('common.wishlist')}
                 >
-                  <Heart className="h-5 w-5" />
+                  <Heart className="w-5 h-5" />
                   {wishlistCount > 0 && (
                     <motion.span
                       key={`wishlist-${wishlistCount}`}
@@ -591,7 +591,7 @@ export const Navbar = () => {
                   className="relative p-2 rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   title={t('common.cart')}
                 >
-                  <ShoppingCart className="h-5 w-5" />
+                  <ShoppingCart className="w-5 h-5" />
                   {cartCount > 0 && (
                     <motion.span
                       key={`cart-${cartCount}`}
@@ -620,8 +620,8 @@ export const Navbar = () => {
                   className="p-2 rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors flex items-center space-x-1 cursor-pointer"
                   title={t('navbar.my_orders')}
                 >
-                  <ClipboardList className="h-5 w-5" />
-                  <span className="text-xs font-semibold hidden lg:inline">{t('navbar.my_orders')}</span>
+                  <ClipboardList className="w-5 h-5" />
+                  <span className="hidden text-xs font-semibold lg:inline">{t('navbar.my_orders')}</span>
                 </button>
               )}
 
@@ -716,10 +716,10 @@ export const Navbar = () => {
           }`}
         >
           <div className="px-3 sm:px-6">
-            <div className="flex items-center justify-between gap-2 sm:gap-4 h-16 md:h-20 flex-nowrap">
+            <div className="flex items-center justify-between h-16 gap-2 sm:gap-4 md:h-20 flex-nowrap">
 
               {/* LEFT SECTION: Logo + Brand Name */}
-              <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0 flex-nowrap">
+              <div className="flex items-center flex-shrink-0 gap-1 sm:gap-4 flex-nowrap">
                 {/* Mobile Menu Toggle Button */}
                 <button
                   onClick={() => setMobileMenuOpen(true)}
@@ -730,11 +730,11 @@ export const Navbar = () => {
                 </button>
                 <Link to="/" className="flex items-center gap-1.5 sm:gap-[14px] flex-shrink-0 brand-typography-wrapper select-none group no-underline flex-nowrap">
                   <img 
-                    src="/logo.svg" 
+                    src="/navbar-logo.png" 
                     alt="SSJewellery Logo" 
                     className="h-[38px] sm:h-[48px] lg:h-[65px] w-auto object-contain flex-shrink-0"
                   />
-                  <div className="hidden sm:flex items-center whitespace-nowrap">
+                  <div className="items-center hidden sm:flex whitespace-nowrap">
                     <span className="font-cinzel text-sm sm:text-xl md:text-2xl font-bold tracking-[1px] sm:tracking-[2px] text-[#3F1D5A] dark:text-[#EFE7DB] transition-colors duration-300">
                       SS
                     </span>
@@ -748,7 +748,7 @@ export const Navbar = () => {
 
               {/* CENTER SECTION: Search Bar (Desktop and Mobile) */}
               <div className="flex justify-center flex-1 max-w-[190px] sm:max-w-[280px] md:max-w-[400px] lg:max-w-[550px] relative mx-1 sm:mx-2">
-                <form onSubmit={handleSearchSubmit} className="w-full relative">
+                <form onSubmit={handleSearchSubmit} className="relative w-full">
                   <input
                     type="text"
                     placeholder={t('common.search_placeholder')}
@@ -763,7 +763,7 @@ export const Navbar = () => {
               </div>
 
               {/* RIGHT SECTION: Icons & User controls */}
-              <div className="flex items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0 flex-nowrap">
+              <div className="flex items-center flex-shrink-0 gap-1 sm:gap-2 md:gap-3 lg:gap-4 flex-nowrap">
                 {/* Language Selector (Desktop Only) */}
                 <div className="relative hidden lg:block">
                   <button
@@ -836,7 +836,7 @@ export const Navbar = () => {
                           >
                             <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-[#F2E8D9]/50 dark:border-slate-800/80 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-xs text-slate-850 dark:text-slate-100 uppercase tracking-wide">{t('navbar.notifications')}</span>
+                                <span className="text-xs font-bold tracking-wide uppercase text-slate-850 dark:text-slate-100">{t('navbar.notifications')}</span>
                                 {unreadCount > 0 && (
                                   <span className="bg-[#D4A75F] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
                                     {unreadCount}
@@ -848,22 +848,22 @@ export const Navbar = () => {
                                   {t('navbar.mark_all_read')}
                                 </button>
                                 <span className="text-slate-300 dark:text-slate-700">|</span>
-                                <button onClick={handleClearRead} className="text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline cursor-pointer bg-transparent border-none">
+                                <button onClick={handleClearRead} className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline">
                                   {t('navbar.clear_read')}
                                 </button>
                               </div>
                             </div>
 
-                            <div className="max-h-85 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-850">
+                            <div className="overflow-y-auto divide-y max-h-85 divide-slate-100 dark:divide-slate-850">
                               {displayedNotifications.length === 0 ? (
                                 <div className="py-8 text-center text-slate-400 dark:text-slate-555">
-                                  <Bell className="h-8 w-8 mx-auto opacity-30 mb-2 animate-bounce" />
+                                  <Bell className="w-8 h-8 mx-auto mb-2 opacity-30 animate-bounce" />
                                   <p className="text-xs font-semibold">{t('navbar.no_notifications')}</p>
                                 </div>
                               ) : (
                                 displayedNotifications.map((n) => {
                                   const isUnread = isAdmin ? n.status === 'unread' : !n.read;
-                                  const styles = n.type === 'SUPPORT_TICKET' ? { bg: 'bg-indigo-500/10 text-indigo-500', icon: <MessageSquare className="h-4 w-4" /> } : { bg: 'bg-slate-500/10 text-slate-500', icon: <Bell className="h-4 w-4" /> };
+                                  const styles = n.type === 'SUPPORT_TICKET' ? { bg: 'bg-indigo-500/10 text-indigo-500', icon: <MessageSquare className="w-4 h-4" /> } : { bg: 'bg-slate-500/10 text-slate-500', icon: <Bell className="w-4 h-4" /> };
                                   return (
                                     <div key={n.id} className={`p-3.5 flex gap-3 items-start transition-colors cursor-pointer text-left ${isUnread ? 'bg-[#D4A75F]/5 font-semibold' : 'hover:bg-slate-50'}`}>
                                       <div className={`p-2 rounded-xl flex-shrink-0 ${styles.bg}`}>{styles.icon}</div>
@@ -890,7 +890,7 @@ export const Navbar = () => {
                   onClick={() => setIsDark(!isDark)}
                   className="p-1.5 sm:p-2 rounded-xl text-[#3F1D5A] dark:text-[#EFE7DB] hover:bg-[#FAFAFA] dark:hover:bg-slate-800 transition-colors cursor-pointer hidden lg:block"
                 >
-                  {isDark ? <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  {isDark ? <Sun className="w-4 h-4 sm:h-5 sm:w-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:h-5 sm:w-5" />}
                 </button>
 
                 {/* Notifications Bell (Mobile) */}
@@ -932,13 +932,13 @@ export const Navbar = () => {
                                   {t('navbar.mark_all_read')}
                                 </button>
                                 <span className="text-slate-300 dark:text-slate-700">|</span>
-                                <button onClick={handleClearRead} className="text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline cursor-pointer bg-transparent border-none">
+                                <button onClick={handleClearRead} className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-rose-500 dark:text-slate-400 hover:underline">
                                   {t('navbar.clear_read')}
                                 </button>
                               </div>
                             </div>
 
-                            <div className="max-h-64 sm:max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-850">
+                            <div className="overflow-y-auto divide-y max-h-64 sm:max-h-80 divide-slate-100 dark:divide-slate-850">
                               {displayedNotifications.length === 0 ? (
                                 <div className="py-6 text-center text-slate-400 dark:text-slate-555">
                                   <Bell className="h-6 w-6 mx-auto opacity-30 mb-1.5 animate-bounce" />
@@ -1038,12 +1038,12 @@ export const Navbar = () => {
                                         {styles.icon}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-baseline gap-1">
+                                        <div className="flex items-baseline justify-between gap-1">
                                           <p className={`text-[11px] font-bold truncate ${isUnread ? 'text-slate-850 dark:text-slate-105' : 'text-slate-550 dark:text-slate-450'}`}>{n.title}</p>
-                                          <span className="text-[8px] font-semibold text-slate-450 dark:text-slate-555 flex-shrink-0 flex items-center gap-0.5"><Clock className="h-2 w-2" />{formatTimeAgo(n.created_at)}</span>
+                                          <span className="text-[8px] font-semibold text-slate-450 dark:text-slate-555 flex-shrink-0 flex items-center gap-0.5"><Clock className="w-2 h-2" />{formatTimeAgo(n.created_at)}</span>
                                         </div>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{n.description || n.message}</p>
-                                        <div className="flex justify-between items-center mt-2">
+                                        <div className="flex items-center justify-between mt-2">
                                           <div />
                                           <div>
                                             {isUnread ? (
@@ -1109,7 +1109,7 @@ export const Navbar = () => {
                       className="flex items-center space-x-1.5 p-1 rounded-xl border border-[rgba(212,167,95,0.35)] bg-[#0d1b2a] cursor-pointer hover:bg-[#162236] transition-colors"
                     >
                       <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-[#D4A75F] text-white flex items-center justify-center text-[11px] sm:text-xs font-bold uppercase shadow-md">{user.name.charAt(0)}</div>
-                      <span className="text-xs font-bold text-white hidden sm:block">{user.name}</span>
+                      <span className="hidden text-xs font-bold text-white sm:block">{user.name}</span>
                     </button>
                     <AnimatePresence>
                       {profileDropdownOpen && (
@@ -1185,7 +1185,7 @@ export const Navbar = () => {
                               }}
                               className="w-full flex items-center space-x-2 px-4 py-2.5 text-sm text-red-400 hover:bg-[rgba(239,68,68,0.10)] hover:text-red-300 transition-all duration-200 text-left cursor-pointer bg-transparent border-none mt-1 border-t border-[rgba(212,167,95,0.12)]"
                             >
-                              <LogOut className="h-4 w-4 text-red-400" />
+                              <LogOut className="w-4 h-4 text-red-400" />
                               <span>{t('navbar.sign_out')}</span>
                             </button>
                           </motion.div>
@@ -1240,10 +1240,10 @@ export const Navbar = () => {
               {/* Header */}
               <div className="flex items-center justify-between pb-5 border-b border-slate-800">
                 <div className="flex items-center gap-2 select-none">
-                  <img src="/logo.svg" alt="SS Logo" className="h-9 w-auto object-contain" />
+                  <img src="/logo.svg" alt="SS Logo" className="object-contain w-auto h-9" />
                   <div className="flex items-center">
-                    <span className="font-cinzel text-base font-bold text-white">SS</span>
-                    <span className="font-great-vibes text-lg text-white ml-1">Jewellery</span>
+                    <span className="text-base font-bold text-white font-cinzel">SS</span>
+                    <span className="ml-1 text-lg text-white font-great-vibes">Jewellery</span>
                   </div>
                 </div>
                 <button 
@@ -1255,7 +1255,7 @@ export const Navbar = () => {
               </div>
 
               {/* Body */}
-              <div className="flex-grow flex flex-col divide-y divide-slate-800/60">
+              <div className="flex flex-col flex-grow divide-y divide-slate-800/60">
                 
                 {/* Profile Prompt / Status */}
                 {user ? (
@@ -1314,16 +1314,16 @@ export const Navbar = () => {
                       </div>
                       <button
                         onClick={() => setIsDark(!isDark)}
-                        className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer flex items-center justify-center"
+                        className="flex items-center justify-center p-2 transition-colors border cursor-pointer rounded-xl text-slate-300 hover:text-white bg-slate-900 border-slate-800 hover:border-slate-700"
                         title="Toggle Theme"
                       >
-                        {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-300" />}
+                        {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="py-5 space-y-3">
-                    <p className="text-xs text-slate-400 font-medium">Log in to view special offers & orders</p>
+                    <p className="text-xs font-medium text-slate-400">Log in to view special offers & orders</p>
                     <Link
                       to="/login"
                       onClick={() => setMobileMenuOpen(false)}
@@ -1355,10 +1355,10 @@ export const Navbar = () => {
                       </div>
                       <button
                         onClick={() => setIsDark(!isDark)}
-                        className="p-2 rounded-xl text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer flex items-center justify-center"
+                        className="flex items-center justify-center p-2 transition-colors border cursor-pointer rounded-xl text-slate-300 hover:text-white bg-slate-900 border-slate-800 hover:border-slate-700"
                         title="Toggle Theme"
                       >
-                        {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-300" />}
+                        {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
                       </button>
                     </div>
                   </div>
@@ -1370,7 +1370,7 @@ export const Navbar = () => {
                   <Link 
                     to="/" 
                     onClick={() => setMobileMenuOpen(false)} 
-                    className="flex items-center gap-3 text-sm font-semibold text-slate-350 hover:text-white transition-colors no-underline"
+                    className="flex items-center gap-3 text-sm font-semibold no-underline transition-colors text-slate-350 hover:text-white"
                   >
                     <Home className="h-4.5 w-4.5 text-[#D4A75F]" />
                     <span>Home</span>
@@ -1378,7 +1378,7 @@ export const Navbar = () => {
                   <Link 
                     to="/support-center" 
                     onClick={() => setMobileMenuOpen(false)} 
-                    className="flex items-center gap-3 text-sm font-semibold text-slate-355 hover:text-white transition-colors no-underline"
+                    className="flex items-center gap-3 text-sm font-semibold no-underline transition-colors text-slate-355 hover:text-white"
                   >
                     <MessageSquare className="h-4.5 w-4.5 text-[#D4A75F]" />
                     <span>Support</span>
@@ -1390,14 +1390,14 @@ export const Navbar = () => {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Collections</span>
                   <button 
                     onClick={() => handleCategorySelect('Bridal Collection')} 
-                    className="flex items-center gap-3 text-sm font-semibold text-slate-350 hover:text-white transition-colors bg-transparent border-none cursor-pointer w-full text-left"
+                    className="flex items-center w-full gap-3 text-sm font-semibold text-left transition-colors bg-transparent border-none cursor-pointer text-slate-350 hover:text-white"
                   >
                     <Sparkles className="h-4.5 w-4.5 text-[#D4A75F]" />
                     <span>Bridal Collection</span>
                   </button>
                   <button 
                     onClick={() => handleCategorySelect('Rings')} 
-                    className="flex items-center gap-3 text-sm font-semibold text-slate-350 hover:text-white transition-colors bg-transparent border-none cursor-pointer w-full text-left"
+                    className="flex items-center w-full gap-3 text-sm font-semibold text-left transition-colors bg-transparent border-none cursor-pointer text-slate-350 hover:text-white"
                   >
                     <Sparkles className="h-4.5 w-4.5 text-[#D4A75F]" />
                     <span>Solitaire Rings</span>
@@ -1433,7 +1433,7 @@ export const Navbar = () => {
                   <div className="py-1">
                     <button
                       onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
-                      className="flex items-center justify-between w-full text-slate-350 hover:text-white transition-colors text-sm font-semibold bg-transparent border-none cursor-pointer py-2"
+                      className="flex items-center justify-between w-full py-2 text-sm font-semibold transition-colors bg-transparent border-none cursor-pointer text-slate-350 hover:text-white"
                     >
                       <div className="flex items-center gap-3">
                         <Info className="h-4.5 w-4.5 text-[#D4A75F]" />
@@ -1460,7 +1460,7 @@ export const Navbar = () => {
                   <div className="py-1">
                     <button
                       onClick={() => setMobileContactOpen(!mobileContactOpen)}
-                      className="flex items-center justify-between w-full text-slate-350 hover:text-white transition-colors text-sm font-semibold bg-transparent border-none cursor-pointer py-2"
+                      className="flex items-center justify-between w-full py-2 text-sm font-semibold transition-colors bg-transparent border-none cursor-pointer text-slate-350 hover:text-white"
                     >
                       <div className="flex items-center gap-3">
                         <Mail className="h-4.5 w-4.5 text-[#D4A75F]" />
