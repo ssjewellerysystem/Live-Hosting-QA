@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export const VideoShowcase = () => {
+export const VideoShowcase = React.memo(({ url }) => {
   const sectionRef = useRef(null);
   const videoWrapperRef = useRef(null);
 
@@ -48,7 +48,7 @@ export const VideoShowcase = () => {
         {/* Local video — autoplay, loop, muted, no controls */}
         <video
           className="absolute inset-0 w-full h-full object-cover"
-          src="/golden-stage.mp4"
+          src={url || "/golden-stage.mp4"}
           autoPlay
           loop
           muted
@@ -57,4 +57,4 @@ export const VideoShowcase = () => {
       </div>
     </section>
   );
-};
+});

@@ -167,9 +167,9 @@ export const ProductCardSkeleton = () => {
       <div className="relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-lg sm:rounded-xl flex items-center justify-center">
         <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
         <img
-          src="/logo.svg"
+          src="/loading-logo.png"
           alt="Loading..."
-          className="h-8 w-auto opacity-40 object-contain relative z-20 animate-pulse"
+          className="h-12 w-auto opacity-50 object-contain relative z-20 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
         />
       </div>
       

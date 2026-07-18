@@ -22,16 +22,21 @@ const useCounter = (target, duration = 2.5, start = false) => {
   return value;
 };
 
-const stats = [
-  { icon: Award,  label: 'Years of Craft', value: 25,   suffix: '+' },
-  { icon: Gem,    label: 'Unique Designs',  value: 1200, suffix: '+' },
-  { icon: Heart,  label: 'Happy Clients',   value: 8500, suffix: '+' },
-  { icon: Star,   label: 'Awards Won',      value: 18,   suffix: '' },
-];
+const iconMap = [Award, Gem, Heart, Star];
 
-const badges = ['BIS Hallmark Certified', 'ISO 9001:2015', 'Rajasthan Ratna Awardee', 'GIA Member'];
-
-export const OwnerShowcase = () => {
+export const OwnerShowcase = ({ 
+  image: propImage, 
+  name: propName, 
+  title: propTitle, 
+  est: propEst, 
+  bio1: propBio1, 
+  bio2: propBio2, 
+  quote: propQuote,
+  stats: propStats,
+  badges: propBadges,
+  showStatsAndBadges = true,
+  isReversed = false
+}) => {
   const sectionRef  = useRef(null);
   const portraitRef = useRef(null);
   const contentRef  = useRef(null);
@@ -39,11 +44,28 @@ export const OwnerShowcase = () => {
   const statsRef    = useRef(null);
   const [countersStarted, setCountersStarted] = useState(false);
 
+  const image = propImage || "/owner.png";
+  const name = propName || "Shri Suresh Soni";
+  const title = propTitle || "Founder & Master Craftsman";
+  const est = propEst || "Est. 1999 · Jaipur, India";
+  const bio1 = propBio1 || "With over 25 years of dedication to the ancient art of Indian jewellery, Shri Suresh Soni has transformed SS Jewellery into a hallmark of excellence trusted by families across India.";
+  const bio2 = propBio2 || "A third-generation goldsmith trained in the royal ateliers of Jaipur, he brings Kundan, Meenakari, and Jadau traditions into every handcrafted piece — blending timeless heritage with contemporary elegance.";
+  const quote = propQuote || "Every jewel we craft carries a piece of our soul — because true luxury is not just about gold, it is about the love and legacy it carries forever.";
+
+  const stats = propStats || [
+    { label: 'Years of Craft', value: 25,   suffix: '+' },
+    { label: 'Unique Designs',  value: 1200, suffix: '+' },
+    { label: 'Happy Clients',   value: 8500, suffix: '+' },
+    { label: 'Awards Won',      value: 18,   suffix: '' },
+  ];
+
+  const badges = propBadges || ['BIS Hallmark Certified', 'ISO 9001:2015', 'Rajasthan Ratna Awardee', 'GIA Member'];
+
   const counterValues = [
-    useCounter(25,   2.2, countersStarted),
-    useCounter(1200, 2.5, countersStarted),
-    useCounter(8500, 2.8, countersStarted),
-    useCounter(18,   2.0, countersStarted),
+    useCounter(Number(stats[0]?.value || 0), 2.2, countersStarted),
+    useCounter(Number(stats[1]?.value || 0), 2.5, countersStarted),
+    useCounter(Number(stats[2]?.value || 0), 2.8, countersStarted),
+    useCounter(Number(stats[3]?.value || 0), 2.0, countersStarted),
   ];
 
   useEffect(() => {
@@ -167,7 +189,7 @@ export const OwnerShowcase = () => {
         </div>
 
         {/* ── Two-column layout ── */}
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16 mb-16">
+        <div className={`flex flex-col lg:flex-row items-center gap-12 lg:gap-16 mb-16 ${isReversed ? 'lg:flex-row-reverse' : ''}`}>
 
           {/* LEFT: Portrait */}
           <div
@@ -200,8 +222,8 @@ export const OwnerShowcase = () => {
             {/* Image card — matches site card style */}
             <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl shadow-[#3F1D5A]/10 dark:shadow-[#D4A75F]/5">
               <img
-                src="/owner.png"
-                alt="SS Jewellery Owner — Shri Suresh Soni"
+                src={image}
+                alt={`SS Jewellery Owner — ${name}`}
                 className="w-full h-auto object-cover object-top no-zoom"
                 style={{ maxHeight: '480px' }}
               />
@@ -219,7 +241,7 @@ export const OwnerShowcase = () => {
               <div className="absolute bottom-5 left-0 right-0 flex justify-center z-10">
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-[#D4A75F]/30 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#D4A75F] animate-pulse" />
-                  <span className="text-[#3F1D5A] dark:text-[#D4A75F] text-[10px] font-black tracking-widest uppercase">Founder & Master Craftsman</span>
+                  <span className="text-[#3F1D5A] dark:text-[#D4A75F] text-[10px] font-black tracking-widest uppercase">{title}</span>
                 </div>
               </div>
             </div>
@@ -231,13 +253,12 @@ export const OwnerShowcase = () => {
             {/* Established tag */}
             <div className="reveal-line mb-3">
               <span className="inline-block text-[10px] tracking-[0.45em] uppercase font-black text-[#D4A75F] border border-[#D4A75F]/30 px-3.5 py-1.5 rounded-full bg-amber-500/8">
-                Est. 1999 · Jaipur, India
+                {est}
               </span>
             </div>
 
             {/* Owner name */}
             <h3 className="reveal-line font-serif font-black text-[#3F1D5A] dark:text-[#EFE7DB] leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)' }}>
-              Shri Suresh{' '}
               <span
                 style={{
                   background: 'linear-gradient(90deg, #D4A75F 0%, #BF934B 60%, #a97e3c 100%)',
@@ -245,19 +266,19 @@ export const OwnerShowcase = () => {
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                Soni
+                {name}
               </span>
             </h3>
 
             {/* Description */}
             <p className="reveal-line text-slate-600 dark:text-slate-400 leading-relaxed mb-4 max-w-xl mx-auto lg:mx-0 text-sm sm:text-base">
-              With over <span className="text-[#D4A75F] font-semibold">25 years of dedication</span> to the ancient art of Indian jewellery,
-              Shri Suresh Soni has transformed SS Jewellery into a hallmark of excellence trusted by families across India.
+              {bio1}
             </p>
-            <p className="reveal-line text-slate-500 dark:text-slate-500 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0 text-xs sm:text-sm">
-              A third-generation goldsmith trained in the royal ateliers of Jaipur, he brings Kundan, Meenakari,
-              and Jadau traditions into every handcrafted piece — blending timeless heritage with contemporary elegance.
-            </p>
+            {bio2 && (
+              <p className="reveal-line text-slate-500 dark:text-slate-500 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0 text-xs sm:text-sm">
+                {bio2}
+              </p>
+            )}
 
             {/* Quote block — matches site's card style */}
             <div
@@ -266,59 +287,62 @@ export const OwnerShowcase = () => {
             >
               <Quote className="absolute top-3 left-4 h-5 w-5 text-[#D4A75F]/30" />
               <p className="text-slate-700 dark:text-slate-300 italic font-serif text-sm sm:text-base leading-relaxed pl-3">
-                "Every jewel we craft carries a piece of our soul — because true luxury is not just about gold,
-                it is about the love and legacy it carries forever."
+                "{quote}"
               </p>
-              <p className="mt-2 pl-3 text-[#D4A75F] text-[10px] font-black tracking-widest uppercase">— Shri Suresh Soni</p>
+              <p className="mt-2 pl-3 text-[#D4A75F] text-[10px] font-black tracking-widest uppercase">— {name}</p>
             </div>
 
             {/* Achievement badges */}
-            <div className="reveal-line flex flex-wrap gap-2.5 justify-center lg:justify-start">
-              {badges.map((badge, i) => (
-                <span
-                  key={i}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide text-[#3F1D5A] dark:text-[#D4A75F] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
-                >
-                  <CheckCircle className="w-3 h-3 text-[#D4A75F]" /> {badge}
-                </span>
-              ))}
-            </div>
+            {showStatsAndBadges && (
+              <div className="reveal-line flex flex-wrap gap-2.5 justify-center lg:justify-start">
+                {badges.map((badge, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide text-[#3F1D5A] dark:text-[#D4A75F] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+                  >
+                    <CheckCircle className="w-3 h-3 text-[#D4A75F]" /> {badge}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* ── Stats row — same card style as TrustShowcase ── */}
-        <div
-          ref={statsRef}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5"
-        >
-          {stats.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div
-                key={i}
-                className="stat-card group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:border-[#D4A75F]/35 transition-all duration-300 flex flex-col items-center text-center"
-              >
-                {/* Icon block — same as TrustShowcase */}
-                <div className="p-3 bg-amber-500/10 dark:bg-amber-500/5 rounded-xl w-fit mb-4 group-hover:bg-gradient-to-r group-hover:from-[#D4A75F] group-hover:to-[#BF934B] transition-all duration-300">
-                  <Icon className="h-5 w-5 text-[#D4A75F] group-hover:text-white transition-colors duration-300" />
-                </div>
+        {showStatsAndBadges && (
+          <div
+            ref={statsRef}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5"
+          >
+            {stats.map((s, i) => {
+              const Icon = iconMap[i % iconMap.length] || Award;
+              return (
+                <div
+                  key={i}
+                  className="stat-card group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-xl hover:border-[#D4A75F]/35 transition-all duration-300 flex flex-col items-center text-center"
+                >
+                  {/* Icon block — same as TrustShowcase */}
+                  <div className="p-3 bg-amber-500/10 dark:bg-amber-500/5 rounded-xl w-fit mb-4 group-hover:bg-gradient-to-r group-hover:from-[#D4A75F] group-hover:to-[#BF934B] transition-all duration-300">
+                    <Icon className="h-5 w-5 text-[#D4A75F] group-hover:text-white transition-colors duration-300" />
+                  </div>
 
-                {/* Animated count */}
-                <div className="font-black text-[#3F1D5A] dark:text-[#EFE7DB] leading-none mb-1" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)' }}>
-                  {counterValues[i].toLocaleString()}<span className="text-[#D4A75F]">{s.suffix}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase">{s.label}</p>
+                  {/* Animated count */}
+                  <div className="font-black text-[#3F1D5A] dark:text-[#EFE7DB] leading-none mb-1" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)' }}>
+                    {counterValues[i].toLocaleString()}<span className="text-[#D4A75F]">{s.suffix}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase">{s.label}</p>
 
-                {/* Bottom accent line — same as TrustShowcase */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 w-full">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#D4A75F]">
-                    SS Jewellery ✦
-                  </span>
+                  {/* Bottom accent line — same as TrustShowcase */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 w-full">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#D4A75F]">
+                      SS Jewellery ✦
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
       </div>
     </section>
