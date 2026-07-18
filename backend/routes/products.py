@@ -93,23 +93,26 @@ def get_all_categories():
     
     result = []
     for cat in categories:
-        first_product = ProductModel.query.options(
-            joinedload(ProductModel.product_images)
-        ).filter_by(category_id=cat.id).first()
-        image_url = None
-        if first_product:
-            if first_product.product_images:
-                images_sorted = sorted(first_product.product_images, key=lambda x: x.image_order)
-                if images_sorted:
-                    image_url = images_sorted[0].image_url
-            elif first_product.images:
-                image_url = first_product.images[0] if len(first_product.images) > 0 else None
+        image_url = cat.image_url
+        if not image_url or image_url == '/logo.svg':
+            first_product = ProductModel.query.options(
+                joinedload(ProductModel.product_images)
+            ).filter_by(category_id=cat.id).first()
+            if first_product:
+                if first_product.product_images:
+                    images_sorted = sorted(first_product.product_images, key=lambda x: x.image_order)
+                    if images_sorted:
+                        image_url = images_sorted[0].image_url
+                elif first_product.images:
+                    image_url = first_product.images[0] if len(first_product.images) > 0 else None
                 
         result.append({
             "id": str(cat.id),
             "_id": str(cat.id),
             "name": cat.name,
-            "image_url": image_url
+            "name_en": cat.name_en or cat.name,
+            "name_hi": cat.name_hi or cat.name,
+            "image_url": image_url or "/logo.svg"
         })
     categories_cache.set('all_categories', result)
     return jsonify(result), 200

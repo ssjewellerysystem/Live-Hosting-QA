@@ -69,11 +69,9 @@ export const LuxuryImage = React.memo(({
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-slate-900 z-10">
           <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
           <img
-            src="/logo.svg"
+            src="/loading-logo.png"
             alt="Loading..."
-            className="h-10 w-auto opacity-50 object-contain relative z-20 animate-pulse"
-            width="40"
-            height="40"
+            className="h-14 w-auto opacity-60 object-contain relative z-20 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
           />
         </div>
       )}
@@ -82,11 +80,9 @@ export const LuxuryImage = React.memo(({
       {status === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 border border-[#F2E8D9]/40 dark:border-slate-800/80 p-4 text-center z-10">
           <img
-            src="/logo.svg"
+            src="/loading-logo.png"
             alt="Image Unavailable"
-            className="h-10 w-auto opacity-30 object-contain mb-2"
-            width="40"
-            height="40"
+            className="h-14 w-auto opacity-40 object-contain mb-2 dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
           />
           <span className="text-[10px] sm:text-xs font-semibold text-[#D4A75F] tracking-wider uppercase">
             Image Unavailable

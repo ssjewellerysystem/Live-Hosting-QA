@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  BarChart3, Plus, Edit2, Trash2, CheckCircle2, ShieldAlert,
+  BarChart3, Plus, Edit2, Trash2, CheckCircle2, ShieldAlert, User,
   ArrowUpRight, Users, ShoppingBag, Package, MessageSquare, AlertCircle, Upload, Eye, X,
   AlertTriangle, Check, RefreshCw, Calendar, DollarSign, Clock, MapPin, Lock, Unlock, Shield, Search, Image,
   Settings, Globe, Link as LinkIcon
@@ -95,6 +95,8 @@ export const AdminControl = () => {
   
   // Site Configuration states
   const [activeConfigSubTab, setActiveConfigSubTab] = useState('banners');
+  const [activeOccasionLang, setActiveOccasionLang] = useState('en');
+  const [activeOwnerIdx, setActiveOwnerIdx] = useState(0);
 
   // Report Automation states
   const [ownerEmail, setOwnerEmail] = useState('');
@@ -103,6 +105,48 @@ export const AdminControl = () => {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
   const [settingsError, setSettingsError] = useState('');
+
+  // Homepage Config states
+  const [homepageSettings, setHomepageSettings] = useState({
+    owner_image: "/owner.png",
+    owner_name: "",
+    owner_title: "",
+    owner_est: "",
+    owner_bio_1: "",
+    owner_bio_2: "",
+    owner_quote: "",
+    video_showcase_url: "",
+    luxury_gallery_items: [],
+    owner_stats: [
+      { label: 'Years of Craft', value: 25, suffix: '+' },
+      { label: 'Unique Designs', value: 1200, suffix: '+' },
+      { label: 'Happy Clients', value: 8500, suffix: '+' },
+      { label: 'Awards Won', value: 18, suffix: '' }
+    ],
+    owner_badges: ['BIS Hallmark Certified', 'ISO 9001:2015', 'Rajasthan Ratna Awardee', 'GIA Member'],
+    occasion_items_en: [],
+    occasion_items_hi: [],
+    owners_list: []
+  });
+  const [homepageLoading, setHomepageLoading] = useState(true);
+  const [homepageUpdating, setHomepageUpdating] = useState(false);
+  const [homepageError, setHomepageError] = useState('');
+  const [homepageSuccess, setHomepageSuccess] = useState('');
+
+  // Category config states
+  const [adminCategories, setAdminCategories] = useState([]);
+  const [adminCategoriesLoading, setAdminCategoriesLoading] = useState(true);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null); // null means create new
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    name_en: '',
+    name_hi: '',
+    image_url: ''
+  });
+  const [categoryError, setCategoryError] = useState('');
+  const [categorySuccess, setCategorySuccess] = useState('');
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
 
   const [reportLogs, setReportLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -649,10 +693,283 @@ export const AdminControl = () => {
     }
   };
 
+  const fetchHomepageSettings = async () => {
+    setHomepageLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/admin/settings`);
+      if (response.data) {
+        let galleryItems = [];
+        if (response.data.luxury_gallery_items) {
+          try {
+            galleryItems = JSON.parse(response.data.luxury_gallery_items);
+          } catch (e) {
+            console.error("Error parsing luxury gallery items:", e);
+          }
+        }
+        let statsItems = [
+          { label: 'Years of Craft', value: 25, suffix: '+' },
+          { label: 'Unique Designs', value: 1200, suffix: '+' },
+          { label: 'Happy Clients', value: 8500, suffix: '+' },
+          { label: 'Awards Won', value: 18, suffix: '' }
+        ];
+        if (response.data.owner_stats) {
+          try {
+            statsItems = JSON.parse(response.data.owner_stats);
+          } catch (e) {
+            console.error("Error parsing owner stats:", e);
+          }
+        }
+
+        let badgesItems = ['BIS Hallmark Certified', 'ISO 9001:2015', 'Rajasthan Ratna Awardee', 'GIA Member'];
+        if (response.data.owner_badges) {
+          try {
+            badgesItems = JSON.parse(response.data.owner_badges);
+          } catch (e) {
+            console.error("Error parsing owner badges:", e);
+          }
+        }
+
+        let occasionEn = [];
+        if (response.data.occasion_items_en) {
+          try {
+            occasionEn = JSON.parse(response.data.occasion_items_en);
+          } catch (e) {
+            console.error("Error parsing occasion items en:", e);
+          }
+        }
+
+        let occasionHi = [];
+        if (response.data.occasion_items_hi) {
+          try {
+            occasionHi = JSON.parse(response.data.occasion_items_hi);
+          } catch (e) {
+            console.error("Error parsing occasion items hi:", e);
+          }
+        }
+
+        let ownersList = [];
+        if (response.data.owners_list) {
+          try {
+            ownersList = JSON.parse(response.data.owners_list);
+          } catch (e) {
+            console.error("Error parsing owners list:", e);
+          }
+        }
+
+        setHomepageSettings({
+          owner_image: response.data.owner_image || "/owner.png",
+          owner_name: response.data.owner_name || "Shri Suresh Soni",
+          owner_title: response.data.owner_title || "Founder & Master Craftsman",
+          owner_est: response.data.owner_est || "Est. 1999 · Jaipur, India",
+          owner_bio_1: response.data.owner_bio_1 || "",
+          owner_bio_2: response.data.owner_bio_2 || "",
+          owner_quote: response.data.owner_quote || "",
+          video_showcase_url: response.data.video_showcase_url || "/golden-stage.mp4",
+          luxury_gallery_items: galleryItems,
+          owner_stats: statsItems,
+          owner_badges: badgesItems,
+          occasion_items_en: occasionEn,
+          occasion_items_hi: occasionHi,
+          owners_list: ownersList
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching homepage settings:", err);
+      setHomepageError("Failed to fetch homepage settings.");
+    } finally {
+      setHomepageLoading(false);
+    }
+  };
+
+  const fetchAdminCategories = async () => {
+    setAdminCategoriesLoading(true);
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/admin/categories`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setAdminCategories(response.data || []);
+    } catch (err) {
+      console.error("Error fetching admin categories:", err);
+    } finally {
+      setAdminCategoriesLoading(false);
+    }
+  };
+
+  const handleSaveHomepageSettings = async (e) => {
+    e.preventDefault();
+    setHomepageUpdating(true);
+    setHomepageError('');
+    setHomepageSuccess('');
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const payload = {
+        ...homepageSettings,
+        luxury_gallery_items: JSON.stringify(homepageSettings.luxury_gallery_items),
+        owner_stats: JSON.stringify(homepageSettings.owner_stats),
+        owner_badges: JSON.stringify(homepageSettings.owner_badges),
+        occasion_items_en: JSON.stringify(homepageSettings.occasion_items_en),
+        occasion_items_hi: JSON.stringify(homepageSettings.occasion_items_hi),
+        owners_list: JSON.stringify(homepageSettings.owners_list)
+      };
+      const response = await axios.post(`${API_BASE_URL}/admin/settings`, payload, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data.success) {
+        setHomepageSuccess("Homepage settings updated successfully!");
+        fetchHomepageSettings();
+      } else {
+        setHomepageError(response.data.message || "Failed to update settings.");
+      }
+    } catch (err) {
+      console.error("Error saving homepage settings:", err);
+      setHomepageError(err.response?.data?.message || "Failed to save settings.");
+    } finally {
+      setHomepageUpdating(false);
+    }
+  };
+
+  const handleCategorySubmit = async (e) => {
+    e.preventDefault();
+    setCategorySubmitting(true);
+    setCategoryError('');
+    setCategorySuccess('');
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      if (editingCategory) {
+        await axios.put(`${API_BASE_URL}/admin/categories/${editingCategory.id}`, categoryForm, { headers });
+        setCategorySuccess("Category updated successfully!");
+      } else {
+        await axios.post(`${API_BASE_URL}/admin/categories`, categoryForm, { headers });
+        setCategorySuccess("Category created successfully!");
+      }
+      setShowCategoryModal(false);
+      fetchAdminCategories();
+    } catch (err) {
+      console.error("Error submitting category form:", err);
+      setCategoryError(err.response?.data?.message || "Failed to submit category.");
+    } finally {
+      setCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!window.confirm("Are you sure you want to delete this category?")) return;
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/admin/categories/${catId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchAdminCategories();
+    } catch (err) {
+      console.error("Error deleting category:", err);
+      alert(err.response?.data?.message || "Failed to delete category.");
+    }
+  };
+
+  const handleUploadMediaFile = async (file, targetField, galleryIndex = null) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const response = await axios.post(`${API_BASE_URL}/products/upload`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (response.data && response.data.url) {
+        let uploadedUrl = response.data.url;
+        if (uploadedUrl.startsWith('/static/')) {
+          uploadedUrl = `${SERVER_BASE_URL}${uploadedUrl}`;
+        }
+        
+        if (galleryIndex !== null) {
+          if (targetField === 'occasion_en') {
+            const updatedItems = [...homepageSettings.occasion_items_en];
+            updatedItems[galleryIndex].image = uploadedUrl;
+            setHomepageSettings(prev => ({
+              ...prev,
+              occasion_items_en: updatedItems
+            }));
+          } else if (targetField === 'occasion_hi') {
+            const updatedItems = [...homepageSettings.occasion_items_hi];
+            updatedItems[galleryIndex].image = uploadedUrl;
+            setHomepageSettings(prev => ({
+              ...prev,
+              occasion_items_hi: updatedItems
+            }));
+          } else {
+            const updatedItems = [...homepageSettings.luxury_gallery_items];
+            updatedItems[galleryIndex].image = uploadedUrl;
+            setHomepageSettings(prev => ({
+              ...prev,
+              luxury_gallery_items: updatedItems
+            }));
+          }
+        } else if (targetField === 'category') {
+          setCategoryForm(prev => ({ ...prev, image_url: uploadedUrl }));
+        } else {
+          setHomepageSettings(prev => ({
+            ...prev,
+            [targetField]: uploadedUrl
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Error uploading media file:", err);
+      alert("Failed to upload media file.");
+    }
+  };
+
+  const handleUploadOwnerPhoto = async (file, ownerIdx) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const response = await axios.post(`${API_BASE_URL}/products/upload`, formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (response.data && response.data.url) {
+        let uploadedUrl = response.data.url;
+        if (uploadedUrl.startsWith('/static/')) {
+          uploadedUrl = `${SERVER_BASE_URL}${uploadedUrl}`;
+        }
+        const updated = [...(homepageSettings.owners_list || [])];
+        if (updated[ownerIdx]) {
+          updated[ownerIdx].image = uploadedUrl;
+          setHomepageSettings(prev => ({
+            ...prev,
+            owners_list: updated
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Error uploading owner photo:", err);
+      alert("Failed to upload photo.");
+    }
+  };
+
   useEffect(() => {
-    if (isAdmin && activeTab === 'config' && activeConfigSubTab === 'reports') {
-      fetchReportSettings();
-      fetchReportLogs();
+    if (isAdmin && activeTab === 'config') {
+      if (activeConfigSubTab === 'reports') {
+        fetchReportSettings();
+        fetchReportLogs();
+      } else if (activeConfigSubTab === 'homepage') {
+        fetchHomepageSettings();
+        fetchAdminCategories();
+      }
     }
   }, [isAdmin, activeTab, activeConfigSubTab]);
 
@@ -1880,6 +2197,856 @@ export const AdminControl = () => {
     }
   };
 
+  const renderHomepageSettings = () => {
+    if (homepageLoading || adminCategoriesLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl">
+          <RefreshCw className="h-8 w-8 text-emerald-500 animate-spin" />
+          <p className="text-slate-500 mt-4 text-xs font-bold uppercase tracking-wider">Loading Homepage Settings...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-12">
+        {/* TOP MESSAGES */}
+        {homepageSuccess && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-2xl text-sm font-semibold">
+            {homepageSuccess}
+          </div>
+        )}
+        {homepageError && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-semibold">
+            {homepageError}
+          </div>
+        )}
+
+        {/* SECTION 1: CATEGORY MANAGER */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Category Management</h4>
+              <p className="text-xs text-slate-400">Add, edit translations, and change custom category cover images.</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingCategory(null);
+                setCategoryForm({ name: '', name_en: '', name_hi: '', image_url: '' });
+                setCategoryError('');
+                setCategorySuccess('');
+                setShowCategoryModal(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Category</span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                  <th className="pb-3 pl-2">Cover</th>
+                  <th className="pb-3">System Name</th>
+                  <th className="pb-3">English Name</th>
+                  <th className="pb-3">Hindi Name</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/50">
+                {adminCategories.map((cat) => (
+                  <tr key={cat.id} className="text-sm hover:bg-slate-50/50 dark:hover:bg-slate-850/30">
+                    <td className="py-3 pl-2">
+                      <img
+                        src={cat.image_url || "/logo.svg"}
+                        alt={cat.name}
+                        className="w-10 h-10 object-cover rounded-full border border-slate-200 dark:border-slate-800"
+                        onError={(e) => { e.target.src = "/logo.svg"; }}
+                      />
+                    </td>
+                    <td className="py-3 font-semibold text-slate-850 dark:text-slate-200">{cat.name}</td>
+                    <td className="py-3 text-slate-600 dark:text-slate-400">{cat.name_en || cat.name}</td>
+                    <td className="py-3 text-slate-600 dark:text-slate-400">{cat.name_hi || cat.name}</td>
+                    <td className="py-3 text-right pr-2">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingCategory(cat);
+                            setCategoryForm({
+                              name: cat.name,
+                              name_en: cat.name_en || cat.name,
+                              name_hi: cat.name_hi || cat.name,
+                              image_url: cat.image_url || ''
+                            });
+                            setCategoryError('');
+                            setCategorySuccess('');
+                            setShowCategoryModal(true);
+                          }}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg transition-all"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-400 hover:text-red-500 rounded-lg transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* SECTION 2: FOUNDER / OWNER SHOWCASE */}
+        <form onSubmit={handleSaveHomepageSettings} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-850">
+            <div>
+              <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Founder & Heritage Showcase</h4>
+              <p className="text-xs text-slate-400">Manage owner's photo, name, credentials, biographies, and quote details.</p>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => {
+                const newOwner = {
+                  id: Date.now(),
+                  name: `Owner ${(homepageSettings.owners_list || []).length + 1}`,
+                  title: "Title / Role",
+                  est: "Est. 2026 · Jaipur, India",
+                  bio1: "Biography paragraph 1...",
+                  bio2: "Biography paragraph 2...",
+                  quote: "Signature quote...",
+                  image: "/owner.png",
+                  stats: [
+                    { label: 'Years of Craft', value: 10, suffix: '+' },
+                    { label: 'Unique Designs', value: 100, suffix: '+' },
+                    { label: 'Happy Clients', value: 1000, suffix: '+' },
+                    { label: 'Awards Won', value: 5, suffix: '' }
+                  ],
+                  badges: ['BIS Hallmark Certified']
+                };
+                setHomepageSettings(prev => ({
+                  ...prev,
+                  owners_list: [...(prev.owners_list || []), newOwner]
+                }));
+                setActiveOwnerIdx((homepageSettings.owners_list || []).length);
+              }}
+              className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/25 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Owner</span>
+            </button>
+          </div>
+
+          {/* Owner Tabs */}
+          {(homepageSettings.owners_list || []).length > 0 && (
+            <div className="flex flex-wrap gap-2 p-1.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
+              {(homepageSettings.owners_list || []).map((owner, idx) => (
+                <div
+                  key={owner.id || idx}
+                  onClick={() => setActiveOwnerIdx(idx)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeOwnerIdx === idx
+                      ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800'
+                      : 'text-slate-400 hover:text-slate-650 border border-transparent'
+                  }`}
+                >
+                  <User className="h-3.5 w-3.5" />
+                  <span>{owner.name || `Owner ${idx + 1}`}</span>
+                  {idx > 0 && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to delete ${owner.name || `Owner ${idx + 1}`}?`)) {
+                          const updated = (homepageSettings.owners_list || []).filter((_, i) => i !== idx);
+                          setHomepageSettings(prev => ({ ...prev, owners_list: updated }));
+                          setActiveOwnerIdx(0);
+                        }
+                      }}
+                      className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(() => {
+            const activeOwner = (homepageSettings.owners_list || [])[activeOwnerIdx] || {
+              name: "",
+              title: "",
+              est: "",
+              bio1: "",
+              bio2: "",
+              quote: "",
+              image: "/owner.png",
+              stats: [],
+              badges: []
+            };
+
+            const handleUpdateOwnerField = (field, value) => {
+              const updated = [...(homepageSettings.owners_list || [])];
+              if (updated[activeOwnerIdx]) {
+                updated[activeOwnerIdx] = {
+                  ...updated[activeOwnerIdx],
+                  [field]: value
+                };
+                setHomepageSettings(prev => ({
+                  ...prev,
+                  owners_list: updated
+                }));
+              }
+            };
+
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left: Bio Info */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Owner Name</label>
+                      <input
+                        type="text"
+                        value={activeOwner.name || ''}
+                        onChange={(e) => handleUpdateOwnerField('name', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Owner Title</label>
+                      <input
+                        type="text"
+                        value={activeOwner.title || ''}
+                        onChange={(e) => handleUpdateOwnerField('title', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Established Tag</label>
+                      <input
+                        type="text"
+                        value={activeOwner.est || ''}
+                        onChange={(e) => handleUpdateOwnerField('est', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Biography Paragraph 1</label>
+                      <textarea
+                        rows={3}
+                        value={activeOwner.bio1 || ''}
+                        onChange={(e) => handleUpdateOwnerField('bio1', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Biography Paragraph 2</label>
+                      <textarea
+                        rows={3}
+                        value={activeOwner.bio2 || ''}
+                        onChange={(e) => handleUpdateOwnerField('bio2', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Owner Signature Quote</label>
+                      <textarea
+                        rows={3}
+                        value={activeOwner.quote || ''}
+                        onChange={(e) => handleUpdateOwnerField('quote', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 resize-none font-serif italic"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right: Owner Image */}
+                  <div className="flex flex-col justify-start items-center space-y-4">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 self-start">Founder Photo</label>
+                    <div className="relative group w-64 h-80 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 flex items-center justify-center shadow-inner">
+                      {activeOwner.image ? (
+                        <>
+                          <img
+                            src={activeOwner.image}
+                            alt="Owner Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = "/owner.png"; }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                            <label className="cursor-pointer bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                              <Upload className="h-4 w-4" />
+                              <span>Change Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleUploadOwnerPhoto(e.target.files[0], activeOwnerIdx);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center justify-center p-6 text-slate-400">
+                          <Upload className="h-8 w-8 mb-2" />
+                          <span className="text-xs font-bold">Upload Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleUploadOwnerPhoto(e.target.files[0], activeOwnerIdx);
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 text-center">Recommended aspect ratio: 3:4. Format: JPG or PNG.</p>
+                          {/* Stats & Badges Editors (Only for first owner) */}
+                {activeOwnerIdx === 0 && (
+                  <>
+                    {/* Stats Editor */}
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-850">
+                      <h4 className="text-xs font-bold text-slate-850 dark:text-slate-200 mb-4 uppercase tracking-wider">Founder Showcase Metrics / Stats (4 Cards)</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, statIdx) => {
+                          const stat = (activeOwner.stats || [])[statIdx] || { label: '', value: 0, suffix: '' };
+                          const handleUpdateStat = (key, val) => {
+                            const newStats = Array.from({ length: 4 }).map((_, i) => (activeOwner.stats || [])[i] || { label: '', value: 0, suffix: '' });
+                            newStats[statIdx][key] = val;
+                            handleUpdateOwnerField('stats', newStats);
+                          };
+
+                          return (
+                            <div key={statIdx} className="p-4 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl space-y-3">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Card {statIdx + 1}</div>
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1">Value (e.g. 25)</label>
+                                <input
+                                  type="number"
+                                  value={stat.value}
+                                  onChange={(e) => handleUpdateStat('value', Number(e.target.value))}
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1">Label (e.g. Years of Craft)</label>
+                                <input
+                                  type="text"
+                                  value={stat.label}
+                                  onChange={(e) => handleUpdateStat('label', e.target.value)}
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1">Suffix (e.g. +)</label>
+                                <input
+                                  type="text"
+                                  value={stat.suffix}
+                                  onChange={(e) => handleUpdateStat('suffix', e.target.value)}
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Badges / Credentials Editor */}
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-850">
+                      <h4 className="text-xs font-bold text-slate-850 dark:text-slate-200 mb-4 uppercase tracking-wider">Founder Showcase Credentials & Certifications (4 Badges)</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, badgeIdx) => {
+                          const badge = (activeOwner.badges || [])[badgeIdx] || '';
+                          return (
+                            <div key={badgeIdx} className="p-4 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl space-y-2">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Badge {badgeIdx + 1}</div>
+                              <input
+                                type="text"
+                                value={badge}
+                                onChange={(e) => {
+                                  const newBadges = Array.from({ length: 4 }).map((_, i) => (activeOwner.badges || [])[i] || '');
+                                  newBadges[badgeIdx] = e.target.value;
+                                  handleUpdateOwnerField('badges', newBadges);
+                                }}
+                                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}            </div>
+                </div>
+              </>
+            );
+          })()}
+
+          <div className="flex justify-end pt-6 mt-8 border-t border-slate-100 dark:border-slate-850">
+            <button
+              type="submit"
+              disabled={homepageUpdating}
+              className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              {homepageUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              <span>Save Showcase Settings</span>
+            </button>
+          </div>
+        </form>
+
+        {/* SECTION 3: VIDEO SHOWCASE */}
+        <form onSubmit={handleSaveHomepageSettings} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+          <div>
+            <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Video Showcase Settings</h4>
+            <p className="text-xs text-slate-400">Change the dynamic background video URL or upload a custom video file.</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 mb-1.5">Video File URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={homepageSettings.video_showcase_url}
+                  onChange={(e) => setHomepageSettings({ ...homepageSettings, video_showcase_url: e.target.value })}
+                  placeholder="/golden-stage.mp4"
+                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                />
+                <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-200 dark:border-slate-800">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Video</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleUploadMediaFile(e.target.files[0], 'video_showcase_url');
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {homepageSettings.video_showcase_url && (
+              <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black max-w-xl border border-slate-200 dark:border-slate-800">
+                <video
+                  src={homepageSettings.video_showcase_url}
+                  controls
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-850">
+            <button
+              type="submit"
+              disabled={homepageUpdating}
+              className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              {homepageUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              <span>Save Video Showcase</span>
+            </button>
+          </div>
+        </form>
+
+        {/* SECTION 4: LUXURY GALLERY CARDS */}
+        <form onSubmit={handleSaveHomepageSettings} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Featured Luxury Gallery Cards</h4>
+              <p className="text-xs text-slate-400">Configure the featured 3D parallax cards displayed on the customer home page.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const newCard = {
+                  id: Date.now(),
+                  title: "New Luxury Piece",
+                  tag: "Special Edition",
+                  image: "/luxury_solitaire_ring.png",
+                  description: "Insert item description details here.",
+                  link: "/?category=Rings"
+                };
+                setHomepageSettings(prev => ({
+                  ...prev,
+                  luxury_gallery_items: [...(prev.luxury_gallery_items || []), newCard]
+                }));
+              }}
+              className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/25 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Card</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(homepageSettings.luxury_gallery_items || []).map((card, idx) => (
+              <div key={card.id || idx} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-950/20 space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-850">
+                  <span className="text-xs font-bold tracking-widest text-[#D4A75F] uppercase">Card #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this card?")) {
+                        const updated = (homepageSettings.luxury_gallery_items || []).filter((_, i) => i !== idx);
+                        setHomepageSettings(prev => ({ ...prev, luxury_gallery_items: updated }));
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="relative w-full h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-850">
+                  {card.image ? (
+                    <>
+                      <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
+                      <label className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-all cursor-pointer">
+                        <span className="bg-white/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                          <Upload className="h-3 w-3" /> Change
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleUploadMediaFile(e.target.files[0], null, idx);
+                            }
+                          }}
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center justify-center text-slate-400 p-4">
+                      <Upload className="h-6 w-6 mb-1" />
+                      <span className="text-[10px] font-bold">Upload Image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleUploadMediaFile(e.target.files[0], null, idx);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={card.title}
+                      onChange={(e) => {
+                        const updated = [...homepageSettings.luxury_gallery_items];
+                        updated[idx].title = e.target.value;
+                        setHomepageSettings({ ...homepageSettings, luxury_gallery_items: updated });
+                      }}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-550 mb-1">Description</label>
+                    <textarea
+                      rows={3}
+                      value={card.description}
+                      onChange={(e) => {
+                        const updated = [...homepageSettings.luxury_gallery_items];
+                        updated[idx].description = e.target.value;
+                        setHomepageSettings({ ...homepageSettings, luxury_gallery_items: updated });
+                      }}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-550 mb-1">Redirection Link</label>
+                    <input
+                      type="text"
+                      value={card.link || ''}
+                      onChange={(e) => {
+                        const updated = [...homepageSettings.luxury_gallery_items];
+                        updated[idx].link = e.target.value;
+                        setHomepageSettings({ ...homepageSettings, luxury_gallery_items: updated });
+                      }}
+                      placeholder="/?category=Necklaces"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-850">
+            <button
+              type="submit"
+              disabled={homepageUpdating}
+              className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              {homepageUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              <span>Save Luxury Cards</span>
+            </button>
+          </div>
+        </form>
+
+        {/* SECTION 5: SHOP BY COLLECTION */}
+        <form onSubmit={handleSaveHomepageSettings} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Shop by Collection Showcase</h4>
+              <p className="text-xs text-slate-400">Configure the collection cards displayed in the "Shop by Collection" horizontal scroll marquee section.</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Add Collection Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const newId = Date.now();
+                  const newCardEn = {
+                    id: newId,
+                    title: "New Collection Card",
+                    subtitle: "Elegance & Style",
+                    image: "/cat_necklaces.png",
+                    description: "Enter English description.",
+                    tips: ["Tip 1", "Tip 2", "Tip 3"]
+                  };
+                  const newCardHi = {
+                    id: newId,
+                    title: "नया कलेक्शन",
+                    subtitle: "लालित्य और शैली",
+                    image: "/cat_necklaces.png",
+                    description: "हिंदी विवरण दर्ज करें।",
+                    tips: ["सुझाव 1", "सुझाव 2", "सुझाव 3"]
+                  };
+                  setHomepageSettings(prev => ({
+                    ...prev,
+                    occasion_items_en: [...(prev.occasion_items_en || []), newCardEn],
+                    occasion_items_hi: [...(prev.occasion_items_hi || []), newCardHi]
+                  }));
+                }}
+                className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/25 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Collection Card</span>
+              </button>
+
+              {/* Language Switcher */}
+              <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl w-fit border border-slate-200 dark:border-slate-850">
+                <button
+                  type="button"
+                  onClick={() => setActiveOccasionLang('en')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeOccasionLang === 'en'
+                      ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-650'
+                  }`}
+                >
+                  English Collections
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveOccasionLang('hi')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeOccasionLang === 'hi'
+                      ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-650'
+                  }`}
+                >
+                  Hindi Collections
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {((activeOccasionLang === 'en' ? homepageSettings.occasion_items_en : homepageSettings.occasion_items_hi) || []).map((card, idx) => (
+              <div key={card.id || idx} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-5 bg-slate-50/50 dark:bg-slate-955/20 space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-850">
+                  <span className="text-xs font-black tracking-widest text-[#D4A75F] uppercase">Collection Card #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this collection?")) {
+                        const idToDelete = card.id;
+                        const updatedEn = (homepageSettings.occasion_items_en || []).filter(item => item.id !== idToDelete);
+                        const updatedHi = (homepageSettings.occasion_items_hi || []).filter(item => item.id !== idToDelete);
+                        setHomepageSettings(prev => ({
+                          ...prev,
+                          occasion_items_en: updatedEn,
+                          occasion_items_hi: updatedHi
+                        }));
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-955/20 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Card Image */}
+                  <div className="sm:col-span-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1.5">Collection Photo</label>
+                    <div className="relative w-full aspect-[9/12] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-850">
+                      {card.image ? (
+                        <>
+                          <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
+                          <label className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-all cursor-pointer">
+                            <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                              <Upload className="h-3 w-3" /> Change
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadMediaFile(e.target.files[0], activeOccasionLang === 'en' ? 'occasion_en' : 'occasion_hi', idx);
+                                }
+                              }}
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center justify-center p-4 text-slate-400">
+                          <Upload className="h-6 w-6 mb-1" />
+                          <span className="text-[10px] font-bold">Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                  handleUploadMediaFile(e.target.files[0], activeOccasionLang === 'en' ? 'occasion_en' : 'occasion_hi', idx);
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Details */}
+                  <div className="sm:col-span-2 space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1">Collection Title</label>
+                      <input
+                        type="text"
+                        value={card.title || ''}
+                        onChange={(e) => {
+                          const field = activeOccasionLang === 'en' ? 'occasion_items_en' : 'occasion_items_hi';
+                          const updated = [...homepageSettings[field]];
+                          updated[idx].title = e.target.value;
+                          setHomepageSettings({ ...homepageSettings, [field]: updated });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1">Collection Subtitle</label>
+                      <input
+                        type="text"
+                        value={card.subtitle || ''}
+                        onChange={(e) => {
+                          const field = activeOccasionLang === 'en' ? 'occasion_items_en' : 'occasion_items_hi';
+                          const updated = [...homepageSettings[field]];
+                          updated[idx].subtitle = e.target.value;
+                          setHomepageSettings({ ...homepageSettings, [field]: updated });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-450 mb-1">Description</label>
+                      <textarea
+                        rows={2}
+                        value={card.description || ''}
+                        onChange={(e) => {
+                          const field = activeOccasionLang === 'en' ? 'occasion_items_en' : 'occasion_items_hi';
+                          const updated = [...homepageSettings[field]];
+                          updated[idx].description = e.target.value;
+                          setHomepageSettings({ ...homepageSettings, [field]: updated });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Styling Tips */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-850 space-y-2">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Bullet Details (e.g. details shown in popups)</span>
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((tipIdx) => (
+                      <div key={tipIdx} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D4A75F] flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={card.tips?.[tipIdx] || ''}
+                          onChange={(e) => {
+                            const field = activeOccasionLang === 'en' ? 'occasion_items_en' : 'occasion_items_hi';
+                            const updated = [...homepageSettings[field]];
+                            if (!updated[idx].tips) updated[idx].tips = ['', '', ''];
+                            updated[idx].tips[tipIdx] = e.target.value;
+                            setHomepageSettings({ ...homepageSettings, [field]: updated });
+                          }}
+                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-850">
+            <button
+              type="submit"
+              disabled={homepageUpdating}
+              className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              {homepageUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              <span>Save Collections Settings</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  };
+
   if (!user || !isAdmin) {
     return (
       <div className="max-w-md mx-auto my-20 p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl text-center shadow-lg">
@@ -2829,10 +3996,10 @@ export const AdminControl = () => {
                 </div>
 
                 {/* Nested Sub-tabs */}
-                <div className="flex space-x-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl mb-8 w-fit border border-slate-200/40 dark:border-slate-800">
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl mb-8 w-full max-w-full overflow-x-auto whitespace-nowrap border border-slate-200/40 dark:border-slate-800 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   <button
                     onClick={() => setActiveConfigSubTab('banners')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl flex-shrink-0 transition-all ${
                       activeConfigSubTab === 'banners'
                         ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
                         : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
@@ -2843,10 +4010,10 @@ export const AdminControl = () => {
                   </button>
                   <button
                     onClick={() => setActiveConfigSubTab('faqs')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl flex-shrink-0 transition-all ${
                       activeConfigSubTab === 'faqs'
                         ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        : 'text-slate-400 hover:text-slate-650 dark:hover:text-slate-300'
                     }`}
                   >
                     <MessageSquare className="h-3.5 w-3.5" />
@@ -2854,10 +4021,10 @@ export const AdminControl = () => {
                   </button>
                   <button
                     onClick={() => setActiveConfigSubTab('support_links')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl flex-shrink-0 transition-all ${
                       activeConfigSubTab === 'support_links'
                         ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        : 'text-slate-400 hover:text-slate-650 dark:hover:text-slate-300'
                     }`}
                   >
                     <LinkIcon className="h-3.5 w-3.5" />
@@ -2865,14 +4032,25 @@ export const AdminControl = () => {
                   </button>
                   <button
                     onClick={() => setActiveConfigSubTab('reports')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl flex-shrink-0 transition-all ${
                       activeConfigSubTab === 'reports'
                         ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        : 'text-slate-400 hover:text-slate-650 dark:hover:text-slate-300'
                     }`}
                   >
                     <Settings className="h-3.5 w-3.5" />
                     <span>Report Automation</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveConfigSubTab('homepage')}
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl flex-shrink-0 transition-all ${
+                      activeConfigSubTab === 'homepage'
+                        ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-650 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                    <span>Homepage Settings</span>
                   </button>
                 </div>
 
@@ -3118,6 +4296,10 @@ export const AdminControl = () => {
 
                 {activeConfigSubTab === 'reports' && (
                   renderReportAutomation()
+                )}
+
+                {activeConfigSubTab === 'homepage' && (
+                  renderHomepageSettings()
                 )}
 
               </div>
@@ -4621,6 +5803,112 @@ export const AdminControl = () => {
                   className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-sm"
                 >
                   Save Link
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-lg flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 uppercase tracking-wide">
+                {editingCategory ? "Edit Category Details" : "Add New Category"}
+              </h3>
+              <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
+              {categoryError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-3 rounded-xl text-xs font-bold">
+                  {categoryError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">System Identifier (Unique)</label>
+                <input
+                  type="text"
+                  required
+                  disabled={!!editingCategory}
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  placeholder="e.g. Bangles"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 text-sm disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">English Translation Name</label>
+                <input
+                  type="text"
+                  required
+                  value={categoryForm.name_en}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name_en: e.target.value })}
+                  placeholder="e.g. Bangles"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 mb-1.5">Hindi Translation Name</label>
+                <input
+                  type="text"
+                  required
+                  value={categoryForm.name_hi}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name_hi: e.target.value })}
+                  placeholder="e.g. चूड़ियाँ"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-550 mb-1.5">Category Cover Image URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={categoryForm.image_url}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, image_url: e.target.value })}
+                    placeholder="/logo.svg"
+                    className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 text-sm"
+                  />
+                  <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-200 dark:border-slate-800">
+                    <Upload className="h-4 w-4" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleUploadMediaFile(e.target.files[0], 'category');
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-850">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={categorySubmitting}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white font-bold rounded-xl shadow-sm flex items-center gap-1"
+                >
+                  {categorySubmitting && <RefreshCw className="h-4 w-4 animate-spin" />}
+                  <span>Save Category</span>
                 </button>
               </div>
             </form>
