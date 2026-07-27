@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import current_app
 from flask_mail import Message
 from backend.extensions import mail
+from backend.config import Config
 
 load_dotenv()
 
@@ -12,9 +13,18 @@ class EmailDeliveryStatus(dict):
 
 def send_email(to_email, subject, body, is_html=False):
     """
-    Sends an email using Flask-Mail.
+    Sends an email using Flask-Mail if ENABLE_EMAIL feature flag is active.
     Returns an EmailDeliveryStatus instance containing success status, configuration details, and errors.
     """
+    if not Config.ENABLE_EMAIL:
+        print(f"[EMAIL SYSTEM] Email delivery skipped: ENABLE_EMAIL is OFF in {Config.ENVIRONMENT} environment.")
+        return EmailDeliveryStatus({
+            "success": True,
+            "status": "disabled_by_feature_flag",
+            "configuration": {"environment": Config.ENVIRONMENT},
+            "error": None
+        })
+
     try:
         # Check if configuration exists
         server = current_app.config.get("MAIL_SERVER")
@@ -85,8 +95,17 @@ def send_email(to_email, subject, body, is_html=False):
 
 def send_order_confirmation(email, order):
     """
-    Formulate order confirmation email template.
+    Formulate order confirmation email template if ENABLE_ORDER_CONFIRMATION is active.
     """
+    if not Config.ENABLE_ORDER_CONFIRMATION:
+        print(f"[ORDER CONFIRMATION] Order confirmation email skipped: ENABLE_ORDER_CONFIRMATION is OFF in {Config.ENVIRONMENT} environment.")
+        return EmailDeliveryStatus({
+            "success": True,
+            "status": "disabled_by_feature_flag",
+            "configuration": {"environment": Config.ENVIRONMENT},
+            "error": None
+        })
+
     items_html = ""
     for item in order.get("items", []):
         items_html += f"""
@@ -138,3 +157,4 @@ def send_order_confirmation(email, order):
     """
     subject = f"Your SSJewellery Order {order.get('order_id')} is confirmed!"
     return send_email(email, subject, body_html, is_html=True)
+

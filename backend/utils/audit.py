@@ -4,7 +4,9 @@ from flask import request
 from backend.models.admin import AdminAuditLog
 from backend.extensions import db
 
-JWT_SECRET = os.getenv("JWT_SECRET", "supersecret_SSJewellery_key_123")
+from backend.config import Config
+
+JWT_SECRET = Config.JWT_SECRET
 
 def log_admin_action(action_type, module, details, status="Success", user_id=None, order_id=None):
     admin_name = "admin"
@@ -17,13 +19,20 @@ def log_admin_action(action_type, module, details, status="Success", user_id=Non
     if token:
         try:
             data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-            if data.get("user_id") == "admin_user" and data.get("is_admin"):
-                admin_name = "admin"
+            if data.get("username"):
+                admin_name = data.get("username")
+            elif data.get("is_admin"):
+                admin_id = data.get("admin_id") or data.get("user_id")
+                if admin_id and str(admin_id).isdigit():
+                    from backend.models.admin import AdminModel
+                    adm = AdminModel.query.get(int(admin_id))
+                    if adm:
+                        admin_name = adm.username
             else:
                 from backend.models.user import UserModel
                 user = UserModel.find_by_id(data.get("user_id"))
                 if user:
-                    admin_name = user.get("username") or user.get("email") or "admin"
+                    admin_name = user.get("username") or user.get("name") or user.get("email") or "admin"
         except Exception:
             pass
             

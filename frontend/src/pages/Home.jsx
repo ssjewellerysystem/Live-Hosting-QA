@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useMemo, Suspense, lazy } from 'react';
 import { useLocation, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronLeft, ChevronRight, ShoppingBag, Eye, Star, Sparkles, X, Search, Users, Calendar, Clock, DollarSign, MapPin, Check, Lock, RefreshCw, Plus, Trash2, Edit3, Upload, ArrowRight } from 'lucide-react';
@@ -37,32 +37,32 @@ const ACTION_TYPES = [
 
 const BannerSkeleton = () => (
   <div className="relative h-[480px] lg:h-[680px] xl:h-[740px] min-h-[450px] overflow-hidden rounded-[16px] lg:rounded-[20px] bg-[#1B0B26] border border-[#D4A75F]/15 flex items-center justify-center">
-    <div className="absolute inset-0 pointer-events-none luxury-gold-shimmer" />
+    <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
     <img
-      src="/loading-logo.png"
+      src="/loading-logo.jpg"
       alt="SSJewellery"
-      className="relative z-20 object-contain w-auto h-32 opacity-60 animate-pulse mix-blend-screen"
+      className="h-32 w-auto opacity-60 object-contain relative z-20 animate-pulse mix-blend-screen"
     />
   </div>
 );
 
 const MobileBannerSkeleton = () => (
   <div className="relative h-[390px] xs:h-[420px] sm:h-[440px] overflow-hidden rounded-[16px] bg-[#1B0B26] border border-[#D4A75F]/15 flex items-center justify-center">
-    <div className="absolute inset-0 pointer-events-none luxury-gold-shimmer" />
+    <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
     <img
-      src="/loading-logo.png"
+      src="/loading-logo.jpg"
       alt="SSJewellery"
-      className="relative z-20 object-contain w-auto h-24 opacity-60 animate-pulse mix-blend-screen"
+      className="h-24 w-auto opacity-60 object-contain relative z-20 animate-pulse mix-blend-screen"
     />
   </div>
 );
 
 const CategorySkeleton = () => (
   <div className="hidden md:block w-full bg-white dark:bg-[#0B1020] border-y border-[#F2E8D9] dark:border-slate-800/80 py-10 lg:py-12">
-    <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-      <div className="flex flex-col items-center mb-8 text-center">
-        <div className="w-48 h-8 rounded-lg skeleton-premium animate-pulse" />
-        <div className="w-64 h-3 mt-3 rounded skeleton-premium animate-pulse" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-8 flex flex-col items-center">
+        <div className="skeleton-premium h-8 w-48 rounded-lg animate-pulse" />
+        <div className="skeleton-premium h-3 w-64 rounded mt-3 animate-pulse" />
       </div>
       <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
         {[
@@ -74,11 +74,11 @@ const CategorySkeleton = () => (
         ].map((cat, idx) => (
           <div key={idx} className="flex flex-col items-center justify-center w-24 sm:w-28">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[#F2E8D9]/60 dark:border-slate-800/80 p-1 flex items-center justify-center overflow-hidden relative">
-              <div className="absolute inset-0 pointer-events-none luxury-gold-shimmer" />
+              <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
               <img
-                src="/loading-logo.png"
+                src="/loading-logo.jpg"
                 alt="Loading..."
-                className="relative z-20 object-contain w-10 h-auto opacity-50 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
+                className="w-10 h-auto opacity-50 object-contain relative z-20 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
               />
             </div>
             <div className="skeleton-premium h-3.5 w-16 rounded mt-3 animate-pulse" />
@@ -92,8 +92,8 @@ const CategorySkeleton = () => (
 const MobileCategorySkeleton = () => (
   <div className="block md:hidden w-full bg-white dark:bg-[#0B1020] border-y border-[#F2E8D9] dark:border-slate-800/80 py-4">
     <div className="w-[94vw] mx-auto px-1">
-      <div className="flex flex-col items-center mb-4 text-center">
-        <div className="h-6 rounded skeleton-premium w-36 animate-pulse" />
+      <div className="text-center mb-4 flex flex-col items-center">
+        <div className="skeleton-premium h-6 w-36 rounded animate-pulse" />
       </div>
       <div className="flex overflow-x-auto gap-3.5 pb-2">
         {[
@@ -105,11 +105,11 @@ const MobileCategorySkeleton = () => (
         ].map((cat, idx) => (
           <div key={idx} className="flex-none flex flex-col items-center justify-center w-[76px]">
             <div className="w-[68px] h-[68px] rounded-full border-2 border-[#F2E8D9]/60 dark:border-slate-800/80 p-1 flex items-center justify-center overflow-hidden relative">
-              <div className="absolute inset-0 pointer-events-none luxury-gold-shimmer" />
+              <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
               <img
-                src="/loading-logo.png"
+                src="/loading-logo.jpg"
                 alt="Loading..."
-                className="relative z-20 object-contain h-auto opacity-50 w-9 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
+                className="w-9 h-auto opacity-50 object-contain relative z-20 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
               />
             </div>
             <div className="skeleton-premium h-3 w-12 rounded mt-2.5 animate-pulse" />
@@ -169,40 +169,40 @@ const SearchSpotlight = ({ products, language }) => {
         <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full border border-[#D4A75F] -translate-y-1/2" />
       </div>
 
-      <div className="grid items-center grid-cols-1 gap-8 mx-auto text-left max-w-7xl lg:grid-cols-12">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left">
         {/* Left Side Column - Product Info */}
-        <div className="flex flex-col justify-center order-2 text-center lg:col-span-4 lg:order-1 lg:text-left">
+        <div className="lg:col-span-4 order-2 lg:order-1 text-center lg:text-left flex flex-col justify-center">
           <span className="inline-flex self-center lg:self-start items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold bg-[#D4A75F]/15 text-[#D4A75F] border border-[#D4A75F]/35 uppercase tracking-widest mb-4">
-            <Sparkles className="w-3 h-3 animate-pulse" />
-            {activeSearch 
+            <Sparkles className="h-3 w-3 animate-pulse" />
+            {activeSearch
               ? (language === 'hi' ? 'शीर्ष खोज मिलान' : 'Top Search Match')
               : activeCategory !== 'All'
-              ? `${translateCategory(activeCategory, language)} ${language === 'hi' ? 'विशेष संग्रह' : 'Spotlight'}`
-              : (language === 'hi' ? 'विशेष संग्रह' : 'Featured Collection')
+                ? `${translateCategory(activeCategory, language)} ${language === 'hi' ? 'विशेष संग्रह' : 'Spotlight'}`
+                : (language === 'hi' ? 'विशेष संग्रह' : 'Featured Collection')
             }
           </span>
-          
-          <motion.h2 
+
+          <motion.h2
             key={`title-${activeIndex}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="mb-4 font-serif text-3xl font-bold leading-tight text-white md:text-4xl lg:text-5xl"
+            className="font-serif font-bold text-white text-3xl md:text-4xl lg:text-5xl leading-tight mb-4"
           >
             {mainProduct.name}
           </motion.h2>
-          
-          <motion.p 
+
+          <motion.p
             key={`desc-${activeIndex}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="max-w-md mx-auto mb-6 text-sm leading-relaxed text-slate-300 md:text-base lg:mx-0"
+            className="text-slate-300 text-sm md:text-base leading-relaxed mb-6 max-w-md mx-auto lg:mx-0"
           >
             {mainProduct.description || mainProduct.desc || (language === 'hi' ? 'हमारे उत्तम संग्रह से एक उत्कृष्ट हस्तनिर्मित आभूषण।' : 'An exquisite handcrafted piece from our luxury collection.')}
           </motion.p>
 
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
             <Link
               to={`/product/${mainProduct._id || mainProduct.id}`}
               className="group inline-flex items-center gap-2 px-8 py-3.5 bg-[#D4A75F] hover:bg-[#BF934B] text-slate-950 font-bold text-xs uppercase tracking-wider rounded-full transition-all duration-300 hover:scale-105 shadow-lg animate-pulse"
@@ -210,8 +210,8 @@ const SearchSpotlight = ({ products, language }) => {
               {language === 'hi' ? 'विवरण देखें' : 'Explore The Craft'}
               <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform text-slate-950" />
             </Link>
-            
-            <motion.span 
+
+            <motion.span
               key={`price-${activeIndex}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -224,21 +224,21 @@ const SearchSpotlight = ({ products, language }) => {
 
         {/* Center/Right Column - 3D Jewelry Stands display */}
         <div className="lg:col-span-8 order-1 lg:order-2 relative h-[300px] md:h-[400px] flex items-center justify-center">
-          
+
           {/* 1. Left Background Stand (Blurred) */}
           {leftProduct && (
             <div className="absolute left-[5%] md:left-[15%] bottom-[10%] scale-[0.7] opacity-40 blur-[1.5px] transition-all hover:opacity-75 hover:blur-0 duration-500 z-10 hidden sm:block">
               <div className="relative flex flex-col items-center">
                 {/* Mannequin / Display shape */}
                 <div className="w-[120px] h-[160px] bg-gradient-to-b from-[#20142A] to-[#0F0715] rounded-t-[50px] shadow-lg flex items-center justify-center p-3 border border-[#D4A75F]/15">
-                  <motion.img 
+                  <motion.img
                     key={`left-img-${activeIndex}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    src={leftImg} 
-                    alt={leftProduct.name} 
-                    className="w-[85px] h-[85px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]" 
+                    src={leftImg}
+                    alt={leftProduct.name}
+                    className="w-[85px] h-[85px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]"
                   />
                 </div>
                 {/* Gold collar collar base */}
@@ -252,33 +252,33 @@ const SearchSpotlight = ({ products, language }) => {
           {/* 2. Main Center Stand (Highlighted) */}
           <div className="relative z-20 scale-[0.7] xs:scale-[0.8] sm:scale-[0.9] md:scale-110 transform transition-transform duration-500 hover:scale-[1.03] md:hover:scale-[1.12]">
             <div className="relative flex flex-col items-center">
-              
+
               {/* Mannequin Bust */}
               <div className="w-[180px] h-[230px] bg-gradient-to-b from-[#2B1B35] to-[#140C1A] rounded-t-[80px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] flex items-center justify-center p-4 border border-[#D4A75F]/35 relative">
-                <motion.img 
+                <motion.img
                   key={`main-img-${activeIndex}`}
-                  src={mainImg} 
-                  alt={mainProduct.name} 
+                  src={mainImg}
+                  alt={mainProduct.name}
                   className="w-[130px] h-[130px] object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.4)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-                  transition={{ 
+                  transition={{
                     opacity: { duration: 0.4 },
                     scale: { duration: 0.4 },
-                    y: { duration: 4, repeat: Infinity, ease: "easeInOut" } 
+                    y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
                   }}
                 />
               </div>
-              
+
               {/* Gold neck joint */}
               <div className="w-[130px] h-[10px] bg-gradient-to-r from-[#B38F4B] via-[#D4A75F] to-[#B38F4B] rounded-full shadow-md" />
-              
+
               {/* Marble Pillar Pedestal */}
               <div className="w-[150px] h-[40px] bg-gradient-to-b from-[#333333] to-[#222222] rounded-md shadow-lg border-t border-white/20 relative overflow-hidden">
                 {/* Marble texture gloss */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
               </div>
-              
+
               {/* Gold Base Ring */}
               <div className="w-[160px] h-[6px] bg-[#D4A75F] rounded-full shadow-md" />
             </div>
@@ -290,14 +290,14 @@ const SearchSpotlight = ({ products, language }) => {
               <div className="relative flex flex-col items-center">
                 {/* Mannequin / Display shape */}
                 <div className="w-[120px] h-[160px] bg-gradient-to-b from-[#20142A] to-[#0F0715] rounded-t-[50px] shadow-lg flex items-center justify-center p-3 border border-[#D4A75F]/15">
-                  <motion.img 
+                  <motion.img
                     key={`right-img-${activeIndex}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    src={rightImg} 
-                    alt={rightProduct.name} 
-                    className="w-[85px] h-[85px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]" 
+                    src={rightImg}
+                    alt={rightProduct.name}
+                    className="w-[85px] h-[85px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]"
                   />
                 </div>
                 {/* Gold collar base */}
@@ -315,14 +315,14 @@ const SearchSpotlight = ({ products, language }) => {
   );
 };
 
-const BannerSlider = React.memo(({ 
-  slides, 
-  activeSlide, 
-  setActiveSlide, 
-  isAdmin, 
-  handleNextSlide, 
-  handlePrevSlide, 
-  opacityParallax, 
+const BannerSlider = React.memo(({
+  slides,
+  activeSlide,
+  setActiveSlide,
+  isAdmin,
+  handleNextSlide,
+  handlePrevSlide,
+  opacityParallax,
   yParallax,
   bannersLoading,
   onCategoryClick
@@ -350,10 +350,10 @@ const BannerSlider = React.memo(({
     return (
       <>
         {/* Desktop Loading Skeleton */}
-        <div className="relative hidden w-full md:block">
+        <div className="hidden md:block relative w-full">
           <div className="relative overflow-hidden bg-[#1B0B26] flex items-center justify-center h-screen min-h-[600px]">
-            <div className="absolute inset-0 pointer-events-none luxury-gold-shimmer" />
-            <img src="/loading-logo.png" alt="SSJewellery" className="relative z-20 object-contain w-auto h-28 opacity-60 animate-pulse mix-blend-screen" />
+            <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
+            <img src="/loading-logo.jpg" alt="SSJewellery" className="h-28 w-auto opacity-60 object-contain relative z-20 animate-pulse mix-blend-screen" />
           </div>
         </div>
         {/* Mobile Loading Skeleton */}
@@ -368,7 +368,7 @@ const BannerSlider = React.memo(({
     <>
       {/* Desktop view */}
       <div
-        className="relative hidden w-full mb-10 md:block lg:mb-12 hero-slider-container"
+        className="hidden md:block relative w-full mb-10 lg:mb-12 hero-slider-container"
         style={{ perspective: '1400px' }}
       >
         {/* ======== SLIDER CONTAINER ======== */}
@@ -455,9 +455,9 @@ const BannerSlider = React.memo(({
           {/* ---- DECORATIVE CORNER ORNAMENT ---- */}
           <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 25, pointerEvents: 'none' }}>
             <svg width="52" height="52" viewBox="0 0 52 52" fill="none" opacity="0.45">
-              <path d="M2 2 L24 2" stroke="#D4A75F" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M2 2 L2 24" stroke="#D4A75F" strokeWidth="1.5" strokeLinecap="round"/>
-              <circle cx="2" cy="2" r="2.5" fill="#D4A75F"/>
+              <path d="M2 2 L24 2" stroke="#D4A75F" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M2 2 L2 24" stroke="#D4A75F" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="2" cy="2" r="2.5" fill="#D4A75F" />
             </svg>
           </div>
 
@@ -465,7 +465,7 @@ const BannerSlider = React.memo(({
           <div
             className="absolute inset-0 z-30 flex items-center"
           >
-            <div className="w-full max-w-2xl px-8 text-left xl:max-w-3xl sm:px-12 md:px-14 lg:px-20">
+            <div className="w-full max-w-2xl xl:max-w-3xl px-8 sm:px-12 md:px-14 lg:px-20 text-left">
               {/* Badge */}
               <motion.div
                 key={`badge-${activeSlide}`}
@@ -510,7 +510,7 @@ const BannerSlider = React.memo(({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.45 }}
-                className="hidden max-w-lg text-sm leading-relaxed text-slate-300/85 mb-7 sm:mb-8 sm:block"
+                className="text-slate-300/85 leading-relaxed mb-7 sm:mb-8 max-w-lg hidden sm:block text-sm"
               >
                 {currentSlide.desc}
               </motion.p>
@@ -530,9 +530,9 @@ const BannerSlider = React.memo(({
                   style={{ boxShadow: '0 8px 36px rgba(212,167,95,0.50), 0 2px 8px rgba(0,0,0,0.3)' }}
                 >
                   {currentSlide.btnText}
-                  <ChevronRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
-                <div className="hidden w-px h-10 sm:block bg-white/20" />
+                <div className="hidden sm:block w-px h-10 bg-white/20" />
                 <Link
                   to="/?category=All"
                   onClick={(e) => {
@@ -542,7 +542,7 @@ const BannerSlider = React.memo(({
                   className="hidden sm:inline-flex items-center gap-1.5 text-white/55 hover:text-[#D4A75F] text-xs font-semibold uppercase tracking-widest transition-colors duration-200"
                 >
                   View All
-                  <ChevronRight className="w-3 h-3" />
+                  <ChevronRight className="h-3 w-3" />
                 </Link>
               </motion.div>
             </div>
@@ -569,7 +569,7 @@ const BannerSlider = React.memo(({
                 key={idx}
                 onClick={() => setActiveSlide(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
-                className="rounded-full cursor-pointer"
+                className="cursor-pointer rounded-full"
                 style={{
                   width: idx === activeSlide ? '28px' : '8px',
                   height: '8px',
@@ -631,7 +631,7 @@ const BannerSlider = React.memo(({
               to="/admin-control?tab=config"
               className="absolute top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 active:bg-emerald-500/30 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-bold backdrop-blur-md transition-all duration-300 hover:scale-105 shadow-sm cursor-pointer"
             >
-              <Edit3 className="w-3 h-3" />
+              <Edit3 className="h-3 w-3" />
               <span>Edit Banner</span>
             </Link>
           )}
@@ -648,23 +648,22 @@ const BannerSlider = React.memo(({
                 handlePrevSlide();
               }
             }}
-            className="relative w-full h-full cursor-grab active:cursor-grabbing"
+            className="w-full h-full cursor-grab active:cursor-grabbing relative"
           >
             {slides.map((slide, idx) => (
               <div
                 key={idx}
-                className={`absolute inset-0 bg-gradient-to-tr ${slide.gradient} transition-opacity duration-1000 ${
-                  idx === activeSlide 
-                    ? 'opacity-100 z-10' 
-                    : 'opacity-0 z-0 pointer-events-none'
-                }`}
+                className={`absolute inset-0 bg-gradient-to-tr ${slide.gradient} transition-opacity duration-1000 ${idx === activeSlide
+                  ? 'opacity-100 z-10'
+                  : 'opacity-0 z-0 pointer-events-none'
+                  }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-[#1B0B26]/30 to-[#3F1D5A]/10 mix-blend-multiply opacity-90 pointer-events-none" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(212,167,95,0.15),transparent_50%)] pointer-events-none" />
                 <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4A75F]/20 to-transparent pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col items-center justify-between h-full px-4 pt-5 pb-8 text-center text-white">
-                  
+                <div className="h-full flex flex-col items-center justify-between text-center pt-5 pb-8 px-4 text-white z-10 relative">
+
                   <div className="flex flex-col items-center">
                     <motion.h1
                       initial={{ opacity: 0, y: 15 }}
@@ -674,7 +673,7 @@ const BannerSlider = React.memo(({
                     >
                       {slide.title}
                     </motion.h1>
-                    
+
                     <motion.p
                       initial={{ opacity: 0, y: 10 }}
                       animate={idx === activeSlide ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
@@ -726,14 +725,13 @@ const BannerSlider = React.memo(({
           </motion.div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-4">
+        <div className="mt-4 flex items-center justify-center gap-2">
           {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setActiveSlide(idx)}
-              className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer ${
-                idx === activeSlide ? 'bg-[#D4A75F] w-6' : 'bg-slate-350 dark:bg-slate-800 hover:bg-slate-200 w-1.5'
-              }`}
+              className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer ${idx === activeSlide ? 'bg-[#D4A75F] w-6' : 'bg-slate-350 dark:bg-slate-800 hover:bg-slate-200 w-1.5'
+                }`}
             />
           ))}
         </div>
@@ -742,112 +740,17 @@ const BannerSlider = React.memo(({
   );
 });
 
-export const ScrollableTrack = ({ children, autoScrollSpeed = 0.5 }) => {
-  const containerRef = useRef(null);
-  const isHovered = useRef(false);
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollLeftVal = useRef(0);
-  const dragDistance = useRef(0);
-  const scrollPosRef = useRef(0);
-  const [isOverflowing, setIsOverflowing] = useState(false);
+const DEFAULT_CATEGORIES = [
+  { name: "Rings", label: "Rings", img: null },
+  { name: "Necklaces", label: "Necklaces", img: null },
+  { name: "Earrings", label: "Earrings", img: null },
+  { name: "Bracelets", label: "Bracelets", img: null },
+  { name: "Bridal Collection", label: "Bridal Collection", img: null }
+];
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const checkOverflow = () => {
-      setIsOverflowing(el.scrollWidth > el.clientWidth);
-    };
-
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    
-    // Check again after a small delay to handle mount adjustments
-    const timer = setTimeout(checkOverflow, 400);
-
-    return () => {
-      window.removeEventListener('resize', checkOverflow);
-      clearTimeout(timer);
-    };
-  }, [children]);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    let animId;
-    const scrollLoop = () => {
-      if (!isHovered.current && !isDragging.current && el.scrollWidth > el.clientWidth) {
-        scrollPosRef.current += autoScrollSpeed;
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        if (maxScroll > 0 && scrollPosRef.current >= maxScroll + 20) {
-          scrollPosRef.current = 0;
-        }
-        el.scrollLeft = Math.round(scrollPosRef.current);
-      } else {
-        scrollPosRef.current = el.scrollLeft;
-      }
-      animId = requestAnimationFrame(scrollLoop);
-    };
-
-    animId = requestAnimationFrame(scrollLoop);
-    return () => cancelAnimationFrame(animId);
-  }, [autoScrollSpeed]);
-
-  const handleMouseDown = (e) => {
-    const el = containerRef.current;
-    if (!el) return;
-    isDragging.current = true;
-    dragDistance.current = 0;
-    startX.current = e.pageX - el.offsetLeft;
-    scrollLeftVal.current = el.scrollLeft;
-    scrollPosRef.current = el.scrollLeft;
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging.current) return;
-    const el = containerRef.current;
-    if (!el) return;
-    const x = e.pageX - el.offsetLeft;
-    const walk = (x - startX.current) * 1.5;
-    dragDistance.current = Math.abs(x - startX.current);
-    el.scrollLeft = scrollLeftVal.current - walk;
-    scrollPosRef.current = el.scrollLeft;
-  };
-
-  const handleMouseUp = () => {
-    isDragging.current = false;
-  };
-
-  const handleLinkClick = (e) => {
-    if (dragDistance.current > 5) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-
-  return (
-    <div className="relative w-full overflow-hidden group/track">
-      {/* Track Container */}
-      <div
-        ref={containerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseEnter={() => { isHovered.current = true; }}
-        onMouseLeave={() => {
-          isDragging.current = false;
-          isHovered.current = false;
-        }}
-        onClickCapture={handleLinkClick}
-        className={`flex w-full gap-6 px-4 py-6 overflow-x-auto select-none flex-nowrap cursor-grab active:cursor-grabbing no-scrollbar scroll-smooth ${isOverflowing ? 'justify-start' : 'justify-center'}`}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {children}
-      </div>
-    </div>
-  );
+const getCategoryDefaultImg = (name, img) => {
+  if (img && img !== '/logo.svg' && !img.includes('cat_')) return img;
+  return null;
 };
 
 const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCategoryClick }) => {
@@ -860,13 +763,11 @@ const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCat
     const fetchCategories = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/products/categories`);
-        if (isMounted) {
-          const mapped = (response.data || []).map(cat => ({
+        if (isMounted && response.data && response.data.length > 0) {
+          const mapped = response.data.map(cat => ({
             name: cat.name,
-            name_en: cat.name_en || cat.name,
-            name_hi: cat.name_hi || cat.name,
             label: cat.name,
-            img: cat.image_url || "/logo.svg"
+            img: getCategoryDefaultImg(cat.name, cat.image_url)
           }));
           setCategories(mapped);
         }
@@ -880,95 +781,172 @@ const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCat
     return () => { isMounted = false; };
   }, []);
 
-  if (loading || parentLoading) {
+  const displayCategories = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES;
+
+  if (loading && parentLoading) {
     return (
-      <div className="w-full bg-[#0F172A] py-16 animate-pulse border-y border-amber-500/10">
-        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center mb-8 text-center">
-            <div className="w-48 mb-3 rounded-lg h-7 bg-slate-850" />
-            <div className="h-3.5 bg-slate-850 rounded w-64" />
-          </div>
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:grid-cols-8">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className="w-20 h-20 mb-3 rounded-full sm:w-24 sm:h-24 md:w-28 md:h-28 bg-slate-800" />
-                <div className="w-16 h-3 rounded bg-slate-800" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <>
+        <CategorySkeleton />
+        <MobileCategorySkeleton />
+      </>
     );
   }
 
-  const getSubtitleTranslation = (lang) => {
-    return lang === 'hi'
-      ? "हमारे उत्कृष्ट हस्तनिर्मित कलाकृतियों की खोज करें"
-      : "Discover our exquisite handcrafted masterpieces";
-  };
-
   return (
-    <div className="w-full bg-[#0F172A] border-y border-amber-500/10 py-16 transition-colors duration-300">
-      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        
-        {/* ==================================================
-            SHOP BY CATEGORY
-            ================================================== */}
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#D4AF37] tracking-wider relative inline-block pb-2">
-            {translateUiLabel("Shop By Category", language)}
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-[#D4AF37]"></span>
-          </h2>
-          <p className="mt-2 font-sans text-xs tracking-widest uppercase text-slate-400">
-            {getSubtitleTranslation(language)}
-          </p>
-        </div>
+    <>
+      {/* Desktop view */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="hidden md:block w-full bg-white dark:bg-[#0B1020] border-y border-[#F2E8D9] dark:border-slate-800/80 py-10 lg:py-12 transition-colors duration-300"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#3F1D5A] dark:text-[#D4A75F] tracking-wider relative inline-block pb-2 transition-colors duration-300">
+              {translateUiLabel("Shop By Category", language)}
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-[#D4A75F]"></span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-[#CBD5E1] mt-2 tracking-widest uppercase font-semibold transition-colors duration-300">
+              Discover our exquisite handcrafted masterpieces
+            </p>
+          </div>
 
-        <ScrollableTrack autoScrollSpeed={0.4}>
-          {categories.map((cat, idx) => {
-            const isActive = activeCategory === cat.name;
-            return (
-              <div
-                key={`${cat.name}-${idx}`}
-                className="w-[90px] sm:w-[110px] md:w-[130px] flex-shrink-0 flex flex-col items-center justify-center"
-              >
-                <Link
-                  to={`/?category=${encodeURIComponent(cat.name)}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onCategoryClick(cat.name);
-                  }}
-                  className="flex flex-col items-center justify-center w-full cursor-pointer select-none focus:outline-none group"
+          <div className="flex justify-center items-center gap-8 lg:gap-14 flex-wrap">
+            {displayCategories.map((cat) => {
+              const isActive = activeCategory === cat.name;
+              return (
+                <motion.div
+                  key={cat.name}
+                  className="flex flex-col items-center justify-center"
                 >
-                  <div
-                    className={`rounded-full flex items-center justify-center overflow-hidden border-2 p-0.5 transition-all duration-550 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 ${
-                      isActive
-                        ? 'bg-transparent border-[#D4AF37] shadow-[0_0_18px_rgba(212,175,55,0.85),_0_0_35px_rgba(212,175,55,0.4)] ring-2 ring-[#D4AF37]/20'
-                        : 'bg-transparent border-slate-700 group-hover:border-[#D4AF37]/80 group-hover:shadow-[0_0_12px_rgba(212,175,55,0.45)]'
-                    }`}
+                  <Link
+                    to={`/?category=${encodeURIComponent(cat.name)}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategoryClick(cat.name);
+                    }}
+                    className="category-item-link flex flex-col items-center justify-center focus:outline-none cursor-pointer select-none w-20 sm:w-24 group no-zoom"
                   >
-                    <img
-                      src={cat.img}
-                      alt={language === 'hi' ? cat.name_hi : cat.name_en}
-                      className="object-cover w-full h-full transition-transform duration-500 rounded-full pointer-events-none group-hover:scale-110"
-                    />
-                  </div>
+                    <div
+                      className={`rounded-full flex items-center justify-center overflow-hidden border-2 p-0.5 transition-all duration-500 ${isActive
+                        ? 'bg-transparent border-[#D4A75F] shadow-[0_0_18px_rgba(212,167,95,0.85),_0_0_35px_rgba(212,167,95,0.4)] ring-2 ring-[#D4A75F]/20'
+                        : 'bg-transparent border-slate-200 dark:border-slate-800 group-hover:border-[#D4A75F]/70 group-hover:shadow-[0_0_12px_rgba(212,167,95,0.45)]'
+                        }`}
+                      style={{
+                        width: '76px',
+                        height: '76px'
+                      }}
+                    >
+                      {cat.img ? (
+                        <LuxuryImage
+                          src={cat.img}
+                          alt={translateCategory(cat.name, language)}
+                          width="76"
+                          height="76"
+                          wrapperClassName="rounded-full"
+                          className={`w-full h-full object-cover rounded-full transition-all duration-500 no-zoom ${isActive
+                            ? 'opacity-100 saturate-120 brightness-105 contrast-105'
+                            : 'opacity-50 saturate-30 brightness-90 contrast-90 group-hover:opacity-100 group-hover:saturate-100 group-hover:brightness-100 group-hover:contrast-100'
+                            }`}
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#1B0B26] via-[#3F1D5A] to-[#2E1442] flex flex-col items-center justify-center text-center p-1 border border-[#D4A75F]/30">
+                          <Sparkles className="w-5 h-5 text-[#D4A75F] animate-pulse" />
+                        </div>
+                      )}
+                    </div>
 
-                  <span className={`mt-3 text-xs md:text-sm font-bold tracking-wide transition-colors duration-300 text-center w-full px-0.5 ${
-                    isActive
-                      ? 'text-[#D4AF37]'
-                      : 'text-slate-300 dark:text-[#F8FAFC] group-hover:text-[#D4AF37]'
-                  }`}>
-                    {language === 'hi' ? cat.name_hi : cat.name_en}
-                  </span>
-                </Link>
-              </div>
-            );
-          })}
-        </ScrollableTrack>
+                    <span className={`mt-2 text-xs md:text-sm font-bold tracking-wide transition-colors duration-300 text-center w-full px-0.5 ${isActive
+                      ? 'text-[#D4A75F]'
+                      : 'text-slate-800 dark:text-[#F8FAFC] group-hover:text-[#D4A75F]'
+                      }`}>
+                      {translateCategory(cat.name, language)}
+                    </span>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
 
-      </div>
-    </div>
+      {/* Mobile view */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="block md:hidden w-full bg-white dark:bg-[#0B1020] border-y border-[#F2E8D9] dark:border-slate-800/80 py-4 transition-colors duration-300"
+      >
+        <div className="w-[94vw] mx-auto px-1">
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-serif font-bold text-[#3F1D5A] dark:text-[#D4A75F] tracking-wider relative inline-block pb-1.5 transition-colors duration-300">
+              {translateUiLabel("Shop By Category", language)}
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-[#D4A75F]"></span>
+            </h2>
+          </div>
+
+          <div className="flex overflow-x-auto gap-4 pb-2 scroll-smooth snap-x snap-mandatory justify-start no-scrollbar">
+            {displayCategories.map((cat) => {
+              const isActive = activeCategory === cat.name;
+              return (
+                <motion.div
+                  key={cat.name}
+                  className="flex-none flex flex-col items-center justify-center"
+                >
+                  <Link
+                    to={`/?category=${encodeURIComponent(cat.name)}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategoryClick(cat.name);
+                    }}
+                    className="category-item-link snap-center flex-none flex flex-col items-center justify-center focus:outline-none cursor-pointer select-none w-[76px] sm:w-[84px] group no-zoom"
+                  >
+                    <div
+                      className={`rounded-full flex items-center justify-center overflow-hidden border-2 p-0.5 transition-all duration-500 ${isActive
+                        ? 'bg-transparent border-[#D4A75F] shadow-[0_0_15px_rgba(212,167,95,0.85),_0_0_30px_rgba(212,167,95,0.4)] ring-2 ring-[#D4A75F]/20'
+                        : 'bg-transparent border-slate-200 dark:border-slate-800 group-hover:border-[#D4A75F]/70 group-hover:shadow-[0_0_10px_rgba(212,167,95,0.45)]'
+                        }`}
+                      style={{
+                        width: '68px',
+                        height: '68px'
+                      }}
+                    >
+                      {cat.img ? (
+                        <LuxuryImage
+                          src={cat.img}
+                          alt={translateCategory(cat.name, language)}
+                          width="68"
+                          height="68"
+                          wrapperClassName="rounded-full"
+                          className={`w-full h-full object-cover rounded-full transition-all duration-500 no-zoom ${isActive
+                            ? 'opacity-100 saturate-120 brightness-105 contrast-105'
+                            : 'opacity-50 saturate-30 brightness-90 contrast-90 group-hover:opacity-100 group-hover:saturate-100 group-hover:brightness-100 group-hover:contrast-100'
+                            }`}
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#1B0B26] via-[#3F1D5A] to-[#2E1442] flex flex-col items-center justify-center text-center p-1 border border-[#D4A75F]/30">
+                          <Sparkles className="w-4 h-4 text-[#D4A75F] animate-pulse" />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className={`mt-2 text-[10px] sm:text-xs font-bold tracking-wide transition-colors duration-300 text-center w-full px-0.5 ${isActive
+                      ? 'text-[#D4A75F]'
+                      : 'text-slate-800 dark:text-[#F8FAFC] group-hover:text-[#D4A75F]'
+                      }`}>
+                      {translateCategory(cat.name, language)}
+                    </span>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 });
 
@@ -978,6 +956,26 @@ const parseJsonSafe = (str, fallback) => {
   } catch (e) {
     return fallback;
   }
+};
+
+const matchesCollection = (product, collectionName) => {
+  if (!collectionName || collectionName === 'All') return true;
+  if (!product) return false;
+
+  const prodColl = (product.collection || product.collection_name || '').toString().trim().toLowerCase();
+  const prodCollId = (product.collection_id || '').toString().trim().toLowerCase();
+  const target = collectionName.toString().trim().toLowerCase();
+
+  if (!prodColl && !prodCollId) return false;
+
+  const prodCollSlug = prodColl.replace(/\s+/g, '-');
+  const targetSlug = target.replace(/\s+/g, '-');
+
+  return (
+    prodColl === target ||
+    prodCollId === target ||
+    prodCollSlug === targetSlug
+  );
 };
 
 export const Home = () => {
@@ -1221,8 +1219,8 @@ export const Home = () => {
     return (
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-emerald-500"></div>
-          <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading analytics...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+          <p className="text-slate-500 dark:text-slate-400 mt-4 text-sm font-semibold">Loading analytics...</p>
         </div>
       }>
         <HomeAdminAnalytics
@@ -1247,8 +1245,8 @@ export const Home = () => {
     return (
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-emerald-500"></div>
-          <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading user data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+          <p className="text-slate-500 dark:text-slate-400 mt-4 text-sm font-semibold">Loading user data...</p>
         </div>
       }>
         <HomeUserManagement
@@ -1275,7 +1273,45 @@ export const Home = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('category') || 'All';
+  const activeCollection = searchParams.get('collection') || searchParams.get('occasion') || 'All';
   const activeSearch = searchParams.get('search') || '';
+
+  const heroBannerRef = React.useRef(null);
+  const isInitialMount = React.useRef(true);
+  const prevCategoryRef = React.useRef(activeCategory);
+  const prevCollectionRef = React.useRef(activeCollection);
+  const prevSearchRef = React.useRef(activeSearch);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevCategoryRef.current = activeCategory;
+      prevCollectionRef.current = activeCollection;
+      prevSearchRef.current = activeSearch;
+      return;
+    }
+
+    const categoryChanged = prevCategoryRef.current !== activeCategory;
+    const collectionChanged = prevCollectionRef.current !== activeCollection;
+    const searchChanged = prevSearchRef.current !== activeSearch;
+
+    if (categoryChanged || collectionChanged || searchChanged) {
+      prevCategoryRef.current = activeCategory;
+      prevCollectionRef.current = activeCollection;
+      prevSearchRef.current = activeSearch;
+
+      setTimeout(() => {
+        if (heroBannerRef.current) {
+          heroBannerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    }
+  }, [activeCategory, activeCollection, activeSearch]);
 
   const handleCategoryClick = useCallback((categoryName, source = 'grid') => {
     const newParams = new URLSearchParams(searchParams);
@@ -1285,50 +1321,29 @@ export const Home = () => {
       newParams.set('category', categoryName);
     }
     setSearchParams(newParams, { preventScrollReset: true });
+  }, [searchParams, setSearchParams]);
 
-    // Smooth scroll to the top of the page
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+  const handleCollectionClick = useCallback((collectionName) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (collectionName === 'All') {
+      newParams.delete('collection');
+      newParams.delete('occasion');
+    } else {
+      newParams.set('collection', collectionName);
+    }
+    setSearchParams(newParams, { preventScrollReset: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleClearAllFilters = useCallback(() => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('category');
+    newParams.delete('collection');
+    newParams.delete('occasion');
+    setSearchParams(newParams, { preventScrollReset: true });
   }, [searchParams, setSearchParams]);
 
   // Banner Management States
-  const [slides, setSlides] = useState([
-    {
-      title: "The Solitaire Diamond Collection",
-      subtitle: "Eternal Brilliance, Handcrafted Elegance",
-      desc: "Explore our signature 18k yellow gold and white gold diamond solitaire rings. Perfect for weddings, proposals, and lifetime memories.",
-      badge: "Rings Special",
-      gradient: "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
-      accent: "text-[#D4A75F]",
-      btnText: "Shop Solitaires",
-      btnLink: "/?category=Rings",
-      catFilter: "Rings",
-      image_url: "/luxury_solitaire_ring.png"
-    },
-    {
-      title: "The Royal Empress Collection",
-      subtitle: "Ornate Emerald & Pearl Artistry",
-      desc: "Adorn yourself with masterfully crafted necklaces, chokers, and bridal neckwear set in solid 22k gold and premium gemstones.",
-      badge: "Necklaces Special",
-      gradient: "from-[#3F1D5A] via-[#5C2E7E] to-[#3F1D5A]",
-      accent: "text-[#D4A75F]",
-      btnText: "Shop Necklaces",
-      catFilter: "Necklaces",
-      image_url: "/luxury_emerald_necklace.png"
-    },
-    {
-      title: "Imperial Bridal Heirlooms",
-      subtitle: "Maang Tikkas, Polki Sets & Rubies",
-      desc: "Celebrate your grand day with timeless heirloom bridal sets, meticulously set with uncut Polki diamonds and fine rubies.",
-      badge: "Bridal Special",
-      gradient: "from-[#1B0B26] via-[#3F1D5A] to-[#1B0B26]",
-      accent: "text-[#D4A75F]",
-      btnText: "Explore Bridal Set",
-      catFilter: "Bridal Collection",
-      image_url: "/luxury_bridal_set.png"
-    }
-  ]);
+  const [slides, setSlides] = useState([]);
   const [activeSlide, setActiveSlide] = useState(0);
   const [bannersLoading, setBannersLoading] = useState(true);
   const [bannerRefreshTrigger, setBannerRefreshTrigger] = useState(0);
@@ -1420,25 +1435,26 @@ export const Home = () => {
     }
   };
 
-  // Fetch active banners from backend
+  // Fetch active banners from backend database
   useEffect(() => {
     const fetchActiveBanners = async () => {
       setBannersLoading(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/banners`);
-        if (response.data && response.data.length > 0) {
+        if (response.data && Array.isArray(response.data)) {
           const mapped = response.data.map(b => {
             let img = b.image_url;
             if (!img) {
-              if (b.title.includes("Solitaire") || b.category === "Rings") img = "/luxury_solitaire_ring.png";
-              else if (b.title.includes("Empress") || b.category === "Necklaces") img = "/luxury_emerald_necklace.png";
-              else if (b.title.includes("Bridal") || b.category === "Bridal Collection") img = "/luxury_bridal_set.png";
+              if (b.title && (b.title.includes("Solitaire") || b.category === "Rings")) img = "/luxury_solitaire_ring.png";
+              else if (b.title && (b.title.includes("Empress") || b.category === "Necklaces")) img = "/luxury_emerald_necklace.png";
+              else if (b.title && (b.title.includes("Bridal") || b.category === "Bridal Collection")) img = "/luxury_bridal_set.png";
+              else img = "/loading-logo.jpg";
             }
             return {
               id: b.id,
               title: b.title,
-              subtitle: b.subtitle,
-              desc: b.description,
+              subtitle: b.subtitle || "",
+              desc: b.description || "",
               badge: b.category || "Offer",
               gradient: b.background_style || "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
               accent: "text-[#D4A75F]",
@@ -1450,44 +1466,6 @@ export const Home = () => {
           });
           setSlides(mapped);
         } else {
-          setSlides([
-            {
-              title: "The Solitaire Diamond Collection",
-              subtitle: "Eternal Brilliance, Handcrafted Elegance",
-              desc: "Explore our signature 18k yellow gold and white gold diamond solitaire rings. Perfect for weddings, proposals, and lifetime memories.",
-              badge: "Rings Special",
-              gradient: "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
-              accent: "text-[#D4A75F]",
-              btnText: "Shop Solitaires",
-              btnLink: "/?category=Rings",
-              catFilter: "Rings",
-              image_url: "/luxury_solitaire_ring.png"
-            },
-            {
-              title: "The Royal Empress Collection",
-              subtitle: "Ornate Emerald & Pearl Artistry",
-              desc: "Adorn yourself with masterfully crafted necklaces, chokers, and bridal neckwear set in solid 22k gold and premium gemstones.",
-              badge: "Necklaces Special",
-              gradient: "from-[#3F1D5A] via-[#5C2E7E] to-[#3F1D5A]",
-              accent: "text-[#D4A75F]",
-              btnText: "Shop Necklaces",
-              btnLink: "/?category=Necklaces",
-              catFilter: "Necklaces",
-              image_url: "/luxury_emerald_necklace.png"
-            },
-            {
-              title: "Imperial Bridal Heirlooms",
-              subtitle: "Maang Tikkas, Polki Sets & Rubies",
-              desc: "Celebrate your grand day with timeless heirloom bridal sets, meticulously set with uncut Polki diamonds and fine rubies.",
-              badge: "Bridal Special",
-              gradient: "from-[#1B0B26] via-[#3F1D5A] to-[#1B0B26]",
-              accent: "text-[#D4A75F]",
-              btnText: "Explore Bridal Set",
-              btnLink: "/?category=Bridal Collection",
-              catFilter: "Bridal Collection",
-              image_url: "/luxury_bridal_set.png"
-            }
-          ]);
         }
       } catch (err) {
         console.error("Error fetching active banners from backend:", err);
@@ -1558,12 +1536,12 @@ export const Home = () => {
 
       let res;
       if (editingBannerId) {
-        res = await axios.put(`${API_BASE_URL}/admin/banners/${editingBannerId}`, payload, {
+        res = await axios.put(`${API_BASE_URL}/banners/${editingBannerId}`, payload, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setBannerSuccess("Banner slide updated successfully!");
       } else {
-        res = await axios.post(`${API_BASE_URL}/admin/banners`, payload, {
+        res = await axios.post(`${API_BASE_URL}/banners`, payload, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setBannerSuccess("Banner slide created successfully!");
@@ -1603,7 +1581,7 @@ export const Home = () => {
     setBannerSuccess(null);
     try {
       const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
-      await axios.delete(`${API_BASE_URL}/admin/banners/${id}`, {
+      await axios.delete(`${API_BASE_URL}/banners/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       setBannerSuccess("Banner deleted successfully!");
@@ -1640,9 +1618,15 @@ export const Home = () => {
         }
 
         const response = await axios.get(url);
-        setProducts(response.data);
+        let fetchedData = response.data || [];
 
-        // Fetch all products (filtered by category if selected, but NOT by search query) if searching
+        if (activeCollection && activeCollection !== 'All') {
+          fetchedData = fetchedData.filter(p => matchesCollection(p, activeCollection));
+        }
+
+        setProducts(fetchedData);
+
+        // Fetch all products (filtered by category/collection if selected, but NOT by search query) if searching
         if (activeSearch) {
           setAllProductsLoading(true);
           let allUrl = `${API_BASE_URL}/products`;
@@ -1650,27 +1634,31 @@ export const Home = () => {
             allUrl += `?category=${encodeURIComponent(activeCategory)}`;
           }
           const allResponse = await axios.get(allUrl);
-          setAllProducts(allResponse.data);
+          let allFetched = allResponse.data || [];
+          if (activeCollection && activeCollection !== 'All') {
+            allFetched = allFetched.filter(p => matchesCollection(p, activeCollection));
+          }
+          setAllProducts(allFetched);
           setAllProductsLoading(false);
         } else {
           setAllProducts([]);
         }
       } catch (err) {
         console.error("Error fetching products", err);
-        setError("Could not connect to the backend server. Make sure MongoDB and the Flask app are running.");
+        setError("Could not connect to the backend server. Please verify backend service availability and VITE_API_BASE_URL configuration.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [activeCategory, activeSearch, language, refreshTrigger]);
+  }, [activeCategory, activeCollection, activeSearch, language, refreshTrigger]);
 
   const isAdminAddressEmpty = !addUserForm.address?.trim() && !addUserForm.city?.trim() && !addUserForm.state?.trim() && !addUserForm.pincode?.trim();
   const isAdminPincodeInvalid = isAdminAddressEmpty ? false : addUserForm.pincode?.trim().length !== 6;
 
   return (
-    <div className="min-h-screen pb-16 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+    <div ref={heroBannerRef} className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen pb-16">
 
       {!activeSearch && activeCategory === 'All' ? (
         <BannerSlider
@@ -1690,9 +1678,9 @@ export const Home = () => {
       )}
 
       {!activeSearch && activeCategory === 'All' && (
-        <CategoryGrid 
-          activeCategory={activeCategory} 
-          loading={loading} 
+        <CategoryGrid
+          activeCategory={activeCategory}
+          loading={loading}
           onCategoryClick={handleCategoryClick}
         />
       )}
@@ -1703,15 +1691,15 @@ export const Home = () => {
       {/* Main Content Area */}
       <div id="all-products-heading" className="w-full max-w-[97%] mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         {/* Title / Filter Info */}
-        <div className="flex flex-col items-baseline justify-between pb-4 mb-8 border-b sm:flex-row border-slate-200/50 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row justify-between items-baseline mb-8 border-b border-slate-200/50 dark:border-slate-800 pb-4">
           <div>
             {isAdmin ? (
               <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 mb-2">
                 <button
                   onClick={() => setActiveTab('products')}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'products'
-                      ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                 >
                   All Products
@@ -1719,8 +1707,8 @@ export const Home = () => {
                 <button
                   onClick={() => setActiveTab('users')}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'users'
-                      ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                 >
                   Users Data
@@ -1728,8 +1716,8 @@ export const Home = () => {
                 <button
                   onClick={() => setActiveTab('analytics')}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'analytics'
-                      ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                 >
                   Admin Analytics
@@ -1738,30 +1726,66 @@ export const Home = () => {
             ) : (
               <>
                 <h2 className="text-2xl font-extrabold tracking-tight">
-                  {activeSearch 
+                  {activeSearch
                     ? (language === 'hi' ? `"${activeSearch}" के लिए खोज परिणाम` : `Search Results for "${activeSearch}"`)
-                    : (activeCategory === 'All' 
-                        ? translateUiLabel("All Products", language) 
-                        : `${translateCategory(activeCategory, language)} ${language === 'hi' ? 'उत्पाद' : 'Products'}`
-                      )
+                    : (activeCategory !== 'All' && activeCollection !== 'All'
+                      ? `${translateCategory(activeCategory, language)} - ${activeCollection}`
+                      : activeCategory !== 'All'
+                        ? `${translateCategory(activeCategory, language)} ${language === 'hi' ? 'उत्पाद' : 'Products'}`
+                        : activeCollection !== 'All'
+                          ? `${activeCollection} Collection`
+                          : translateUiLabel("All Products", language)
+                    )
                   }
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="text-xs text-slate-400 mt-1">
                   {translateUiLabel("Showing premium handpicked items in stock.", language)}
                 </p>
               </>
             )}
           </div>
-          <div className="relative flex items-center self-end gap-4 mt-4 sm:mt-0 sm:self-auto">
+          <div className="flex items-center gap-4 mt-4 sm:mt-0 self-end sm:self-auto relative flex-wrap">
             {activeCategory !== 'All' && activeTab === 'products' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#D4A75F]/15 text-[#D4A75F] border border-[#D4A75F]/30">
+                Category: {translateCategory(activeCategory, language)}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleCategoryClick('All');
+                  }}
+                  className="hover:text-red-500 font-bold ml-1 cursor-pointer"
+                  title="Remove Category Filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {activeCollection !== 'All' && activeTab === 'products' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#D4A75F]/15 text-[#D4A75F] border border-[#D4A75F]/30">
+                Collection: {activeCollection}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleCollectionClick('All');
+                  }}
+                  className="hover:text-red-500 font-bold ml-1 cursor-pointer"
+                  title="Remove Collection Filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+
+            {(activeCategory !== 'All' || activeCollection !== 'All') && activeTab === 'products' && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  handleCategoryClick('All');
+                  handleClearAllFilters();
                 }}
-                className="text-xs text-[#D4A75F] hover:text-[#B38F4B] hover:underline font-bold transition-colors"
+                className="text-xs text-[#D4A75F] hover:text-[#B38F4B] hover:underline font-bold transition-colors cursor-pointer"
               >
-                Clear filters
+                Clear all filters
               </button>
             )}
 
@@ -1789,12 +1813,12 @@ export const Home = () => {
 
         {/* Error State */}
         {activeTab === 'products' && error && (
-          <div className="max-w-xl p-6 mx-auto my-12 text-center border border-red-200 bg-red-50 dark:bg-red-955/20 dark:border-red-900 rounded-2xl">
-            <h3 className="text-lg font-bold text-red-600 dark:text-red-400">Failed to Load Products</h3>
-            <p className="mt-2 text-sm text-slate-555 dark:text-slate-400">{error}</p>
+          <div className="bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900 rounded-2xl p-6 text-center max-w-xl mx-auto my-12">
+            <h3 className="text-red-600 dark:text-red-400 font-bold text-lg">Failed to Load Products</h3>
+            <p className="text-slate-555 dark:text-slate-400 text-sm mt-2">{error}</p>
             <button
               onClick={() => setRefreshTrigger(prev => prev + 1)}
-              className="px-4 py-2 mt-4 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl"
+              className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold"
             >
               Try Again
             </button>
@@ -1803,22 +1827,28 @@ export const Home = () => {
 
         {/* Empty State */}
         {activeTab === 'products' && !activeSearch && !loading && !error && products.length === 0 && (
-          <div className="max-w-md py-20 mx-auto text-center">
-            <div className="flex items-center justify-center w-16 h-16 p-4 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
-              <ShoppingBag className="w-8 h-8" />
+          <div className="text-center py-20 max-w-md mx-auto">
+            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto text-slate-400">
+              <ShoppingBag className="h-8 w-8" />
             </div>
-            <h3 className="mt-4 text-lg font-bold">No Products Found</h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              We couldn't find any products matching your current category filter or search query.
+            <h3 className="text-lg font-bold mt-4 text-slate-800 dark:text-slate-100">
+              {activeCollection !== 'All' 
+                ? (language === 'hi' ? 'इस संग्रह में कोई उत्पाद नहीं है' : 'No products have been added to this collection yet.')
+                : 'No Products Found'}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              {activeCollection !== 'All'
+                ? (language === 'hi' ? 'कृपया बाद में पुनः प्रयास करें।' : 'Please check back later.')
+                : "We couldn't find any products matching your current category filter or search query."}
             </p>
             <button
               onClick={(e) => {
                 e.preventDefault();
-                handleCategoryClick('All');
+                handleClearAllFilters();
               }}
-              className="mt-6 px-5 py-2 bg-[#D4A75F] hover:bg-[#B38F4B] text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+              className="mt-6 px-5 py-2 bg-[#D4A75F] hover:bg-[#B38F4B] text-white rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
             >
-              View All Products
+              Clear All Filters
             </button>
           </div>
         )}
@@ -1826,7 +1856,7 @@ export const Home = () => {
         {/* Product Grid (No Search) */}
         {activeTab === 'products' && !activeSearch && !loading && !error && products.length > 0 && (
           <motion.div
-            key={activeCategory}
+            key={`${activeCategory}-${activeCollection}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
@@ -1847,14 +1877,14 @@ export const Home = () => {
           <>
             {/* Search Results */}
             {products.length === 0 ? (
-              <div className="max-w-md py-10 mx-auto text-center">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+              <div className="text-center py-10 max-w-md mx-auto">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
                   {language === 'hi' ? 'खोज के अनुसार कोई उत्पाद नहीं मिला।' : 'No products matched your search query.'}
                 </p>
               </div>
             ) : (
               <motion.div
-                key={`search-${activeCategory}`}
+                key={`search-${activeCategory}-${activeCollection}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
@@ -1877,19 +1907,19 @@ export const Home = () => {
         {isAdmin && activeTab === 'users' && (
           usersLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-emerald-500"></div>
-              <p className="mt-4 text-sm font-semibold text-slate-550 dark:text-slate-400">Loading customer database...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+              <p className="text-slate-550 dark:text-slate-400 mt-4 text-sm font-semibold">Loading customer database...</p>
             </div>
           ) : usersError ? (
-            <div className="max-w-xl p-6 mx-auto my-12 text-center border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 rounded-2xl">
-              <h3 className="text-lg font-bold text-red-600 dark:text-red-400">Error Loading Users</h3>
-              <p className="mt-2 text-sm text-slate-550 dark:text-slate-400">{usersError}</p>
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-2xl p-6 text-center max-w-xl mx-auto my-12">
+              <h3 className="text-red-600 dark:text-red-400 font-bold text-lg">Error Loading Users</h3>
+              <p className="text-slate-550 dark:text-slate-400 text-sm mt-2">{usersError}</p>
               <button
                 onClick={() => {
                   setActiveTab('products');
                   setTimeout(() => setActiveTab('users'), 50);
                 }}
-                className="px-4 py-2 mt-4 text-xs font-bold text-white shadow-md cursor-pointer bg-emerald-500 hover:bg-emerald-600 rounded-xl"
+                className="mt-4 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
               >
                 Try Again
               </button>
@@ -1903,13 +1933,13 @@ export const Home = () => {
         {isAdmin && activeTab === 'analytics' && (
           usersLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-emerald-500"></div>
-              <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading analytics...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+              <p className="text-slate-500 dark:text-slate-400 mt-4 text-sm font-semibold">Loading analytics...</p>
             </div>
           ) : usersError ? (
-            <div className="max-w-xl p-6 mx-auto my-12 text-center border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 rounded-2xl">
-              <h3 className="text-lg font-bold text-red-600 dark:text-red-400">Error Loading Analytics</h3>
-              <p className="mt-2 text-sm text-slate-550 dark:text-slate-400">{usersError}</p>
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-2xl p-6 text-center max-w-xl mx-auto my-12">
+              <h3 className="text-red-600 dark:text-red-400 font-bold text-lg">Error Loading Analytics</h3>
+              <p className="text-slate-550 dark:text-slate-400 text-sm mt-2">{usersError}</p>
             </div>
           ) : (
             renderAdminAnalytics()
@@ -1919,14 +1949,15 @@ export const Home = () => {
 
 
 
-      {!activeSearch && activeTab === 'products' && activeCategory === 'All' && (
+      {!activeSearch && activeTab === 'products' && (
         <>
           <LuxuryGallery items={siteSettings.luxury_gallery_items} />
-          <OccasionGallery
-            items={parseJsonSafe(language === 'hi' ? siteSettings.occasion_items_hi : siteSettings.occasion_items_en, null)}
-            englishItems={parseJsonSafe(siteSettings.occasion_items_en, [])}
-            onCategoryClick={handleCategoryClick}
-          />
+          {activeCollection === 'All' && (
+            <OccasionGallery
+              activeCollection={activeCollection}
+              onCollectionClick={handleCollectionClick}
+            />
+          )}
           <TrustShowcase />
           <GoldCalculator />
           <VideoShowcase url={siteSettings.video_showcase_url} />
@@ -1949,7 +1980,7 @@ export const Home = () => {
               badges: parseJsonSafe(siteSettings.owner_badges, ['BIS Hallmark Certified', 'ISO 9001:2015', 'Rajasthan Ratna Awardee', 'GIA Member'])
             }
           ]).map((owner, idx) => (
-            <OwnerShowcase 
+            <OwnerShowcase
               key={owner.id || idx}
               image={owner.image}
               name={owner.name}
@@ -1969,13 +2000,13 @@ export const Home = () => {
 
       {/* Admin Panel Modal */}
       {selectedAdminProductId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🛠️</span>
-                <h3 className="text-base font-extrabold tracking-wide uppercase text-slate-850 dark:text-slate-100">
+                <h3 className="font-extrabold text-base text-slate-850 dark:text-slate-100 tracking-wide uppercase">
                   Inline Admin Management
                 </h3>
               </div>
@@ -1986,11 +2017,11 @@ export const Home = () => {
                 }}
                 className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
             {/* Modal Body */}
-            <div className="flex-1 p-2 overflow-y-auto sm:p-6 bg-slate-50 dark:bg-slate-950">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-6 bg-slate-50 dark:bg-slate-950">
               <Suspense fallback={
                 <div className="w-full min-h-[300px] flex items-center justify-center">
                   <div className="w-10 h-10 border-4 border-[#D4A75F] border-t-transparent rounded-full animate-spin"></div>
@@ -2009,10 +2040,10 @@ export const Home = () => {
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-all transform scale-100">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
-                  <Plus className="w-5 h-5" />
+                <div className="bg-emerald-500/10 p-2 rounded-xl text-emerald-500">
+                  <Plus className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-850 dark:text-slate-100">Add New User Account</h3>
@@ -2025,14 +2056,14 @@ export const Home = () => {
                   setAddUserError(null);
                   setAddUserSuccess(null);
                 }}
-                className="p-2 transition-colors cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Modal Body / Scrollable Form */}
-            <form onSubmit={handleCreateUserSubmit} className="flex-1 p-6 space-y-4 overflow-y-auto">
+            <form onSubmit={handleCreateUserSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
               {addUserError && (
                 <div className="p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-2xl text-rose-500 text-xs font-semibold flex items-center gap-2 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
@@ -2047,7 +2078,7 @@ export const Home = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Full Name *</label>
@@ -2128,7 +2159,7 @@ export const Home = () => {
               </div>
 
               {/* Address Fields Section */}
-              <div className="pt-2 space-y-3 border-t border-slate-100 dark:border-slate-850">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-850 space-y-3">
                 <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Address Details</h4>
 
                 {/* Street Address */}
@@ -2143,7 +2174,7 @@ export const Home = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* City */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">City</label>
@@ -2225,17 +2256,17 @@ export const Home = () => {
 
       {/* Selected User Details Modal */}
       {selectedUserForDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <div className="flex items-center space-x-3">
-                <div className="flex items-center justify-center w-10 h-10 text-base font-black bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl text-emerald-500">
+                <div className="w-10 h-10 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500 font-black text-base">
                   {selectedUserForDetails.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-850 dark:text-slate-100">
+                  <h3 className="font-extrabold text-base text-slate-850 dark:text-slate-100">
                     Customer Details & History
                   </h3>
                   <p className="text-[10px] text-slate-405">
@@ -2247,18 +2278,18 @@ export const Home = () => {
                 onClick={() => setSelectedUserForDetails(null)}
                 className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50 dark:bg-slate-950">
 
               {/* User Stats Grid */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="flex items-center gap-3 p-4 bg-white border dark:bg-slate-900 rounded-2xl border-slate-200/50 dark:border-slate-800">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center gap-3">
                   <div className="bg-blue-500/10 p-2.5 rounded-xl text-blue-500">
-                    <ShoppingBag className="w-5 h-5" />
+                    <ShoppingBag className="h-5 w-5" />
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Orders</span>
@@ -2268,9 +2299,9 @@ export const Home = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-white border dark:bg-slate-900 rounded-2xl border-slate-200/50 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center gap-3">
                   <div className="bg-emerald-500/10 p-2.5 rounded-xl text-emerald-500">
-                    <DollarSign className="w-5 h-5" />
+                    <DollarSign className="h-5 w-5" />
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Spending</span>
@@ -2280,9 +2311,9 @@ export const Home = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-white border dark:bg-slate-900 rounded-2xl border-slate-200/50 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center gap-3">
                   <div className="bg-indigo-500/10 p-2.5 rounded-xl text-indigo-500">
-                    <Calendar className="w-5 h-5" />
+                    <Calendar className="h-5 w-5" />
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">Last Order Date</span>
@@ -2294,27 +2325,27 @@ export const Home = () => {
               </div>
 
               {/* Address Card */}
-              <div className="p-5 space-y-3 bg-white border dark:bg-slate-900 rounded-2xl border-slate-200/50 dark:border-slate-800">
-                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-805 dark:text-slate-200">
-                  <MapPin className="w-4 h-4 text-emerald-500" />
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-emerald-500" />
                   <span>Delivery Address Details</span>
                 </h4>
-                <div className="grid grid-cols-2 gap-4 text-xs md:grid-cols-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                   <div>
                     <span className="text-[10px] text-slate-450 block font-bold">Full Address</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedUserForDetails.address?.street || 'N/A'}</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedUserForDetails.address?.street || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-450 block font-bold">City</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedUserForDetails.address?.city || 'N/A'}</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedUserForDetails.address?.city || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-450 block font-bold">State</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedUserForDetails.address?.state || 'N/A'}</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedUserForDetails.address?.state || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-450 block font-bold">Pincode / Country</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="text-slate-700 dark:text-slate-300 font-semibold">
                       {selectedUserForDetails.address?.pincode || 'N/A'} • {selectedUserForDetails.address?.country || 'India'}
                     </span>
                   </div>
@@ -2322,26 +2353,26 @@ export const Home = () => {
               </div>
 
               {/* Order History Table */}
-              <div className="p-5 space-y-4 bg-white border dark:bg-slate-900 rounded-2xl border-slate-200/50 dark:border-slate-800">
-                <h4 className="flex items-center gap-2 pb-3 text-xs font-bold border-b text-slate-800 dark:text-slate-200 border-slate-100 dark:border-slate-800">
-                  <Clock className="w-4 h-4 text-emerald-500" />
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <Clock className="h-4 w-4 text-emerald-500" />
                   <span>Complete Order History ({selectedUserForDetails.orders?.length || 0})</span>
                 </h4>
 
                 {(!selectedUserForDetails.orders || selectedUserForDetails.orders.length === 0) ? (
-                  <p className="py-4 text-xs italic text-slate-450">No order history found for this customer.</p>
+                  <p className="text-xs text-slate-450 italic py-4">No order history found for this customer.</p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse">
+                    <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="font-bold tracking-wider uppercase border-b text-slate-400 border-slate-100 dark:border-slate-800">
-                          <th className="px-2 py-3">Order ID</th>
-                          <th className="px-2 py-3">Products</th>
-                          <th className="px-2 py-3 text-center">Quantity</th>
-                          <th className="px-2 py-3 text-right">Amount</th>
-                          <th className="px-2 py-3 text-center">Payment Method</th>
-                          <th className="px-2 py-3 text-center">Order Date</th>
-                          <th className="px-2 py-3 text-center">Order Status</th>
+                        <tr className="text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                          <th className="py-3 px-2">Order ID</th>
+                          <th className="py-3 px-2">Products</th>
+                          <th className="py-3 px-2 text-center">Quantity</th>
+                          <th className="py-3 px-2 text-right">Amount</th>
+                          <th className="py-3 px-2 text-center">Payment Method</th>
+                          <th className="py-3 px-2 text-center">Order Date</th>
+                          <th className="py-3 px-2 text-center">Order Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
@@ -2352,11 +2383,11 @@ export const Home = () => {
                               <td className="py-3 px-2 font-mono text-[11px] text-slate-450">
                                 {order.order_id}
                               </td>
-                              <td className="max-w-xs px-2 py-3">
+                              <td className="py-3 px-2 max-w-xs">
                                 {order.items?.map((item, iIdx) => (
                                   <div key={iIdx} className="flex items-center gap-2 my-1">
                                     {item.image && (
-                                      <img src={item.image} alt={item.name} className="object-cover border rounded-lg w-7 h-7 border-slate-200/50 dark:border-slate-800" />
+                                      <img src={item.image} alt={item.name} className="w-7 h-7 object-cover rounded-lg border border-slate-200/50 dark:border-slate-800" />
                                     )}
                                     <span className="font-bold text-slate-700 dark:text-slate-200 truncate block max-w-[180px]">
                                       {item.name}
@@ -2364,34 +2395,33 @@ export const Home = () => {
                                   </div>
                                 ))}
                               </td>
-                              <td className="px-2 py-3 font-mono font-bold text-center text-slate-600 dark:text-slate-300">
+                              <td className="py-3 px-2 text-center font-mono font-bold text-slate-600 dark:text-slate-300">
                                 {order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0}
                               </td>
-                              <td className="px-2 py-3 font-mono font-black text-right text-emerald-500 price-amount">
+                              <td className="py-3 px-2 text-right font-black text-emerald-500 font-mono price-amount">
                                 ₹{formatPrice(order.total_amount)}
                               </td>
-                              <td className="px-2 py-3 font-bold text-center text-slate-500 dark:text-slate-400">
+                              <td className="py-3 px-2 text-center text-slate-500 dark:text-slate-400 font-bold">
                                 {order.payment_method}
                               </td>
-                              <td className="px-2 py-3 font-mono text-center text-slate-450">
+                              <td className="py-3 px-2 text-center text-slate-450 font-mono">
                                 {date}
                               </td>
-                              <td className="px-2 py-3 text-center">
-                                <span className={`inline-flex items-center px-[12px] py-[4px] rounded-full text-[10px] font-semibold border shadow-sm ${
-                                  (order.order_status || '').toLowerCase() === 'pending'
-                                    ? 'status-badge-pending'
-                                    : (order.order_status || '').toLowerCase() === 'processing' || (order.order_status || '').toLowerCase() === 'confirmed' || (order.order_status || '').toLowerCase() === 'packed'
+                              <td className="py-3 px-2 text-center">
+                                <span className={`inline-flex items-center px-[12px] py-[4px] rounded-full text-[10px] font-semibold border shadow-sm ${(order.order_status || '').toLowerCase() === 'pending'
+                                  ? 'status-badge-pending'
+                                  : (order.order_status || '').toLowerCase() === 'processing' || (order.order_status || '').toLowerCase() === 'confirmed' || (order.order_status || '').toLowerCase() === 'packed'
                                     ? 'bg-[#3B82F6] text-white border-[#2563EB]'
                                     : (order.order_status || '').toLowerCase() === 'shipped' || (order.order_status || '').toLowerCase() === 'dispatched'
-                                    ? 'bg-[#06B6D4] text-white border-[#0891B2]'
-                                    : (order.order_status || '').toLowerCase() === 'out for delivery'
-                                    ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
-                                    : (order.order_status || '').toLowerCase() === 'delivered'
-                                    ? 'status-badge-success'
-                                    : (order.order_status || '').toLowerCase() === 'cancelled'
-                                    ? 'bg-[#EF4444] text-white border-[#DC2626]'
-                                    : 'bg-[#6B7280] text-white border-[#4B5563]'
-                                }`}>
+                                      ? 'bg-[#06B6D4] text-white border-[#0891B2]'
+                                      : (order.order_status || '').toLowerCase() === 'out for delivery'
+                                        ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
+                                        : (order.order_status || '').toLowerCase() === 'delivered'
+                                          ? 'status-badge-success'
+                                          : (order.order_status || '').toLowerCase() === 'cancelled'
+                                            ? 'bg-[#EF4444] text-white border-[#DC2626]'
+                                            : 'bg-[#6B7280] text-white border-[#4B5563]'
+                                  }`}>
                                   {order.order_status}
                                 </span>
                               </td>
@@ -2411,13 +2441,13 @@ export const Home = () => {
 
       {/* Banner Management Modal */}
       {isBannerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden transition-all duration-300 transform scale-100 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🖼️</span>
-                <h3 className="text-base font-extrabold tracking-wide uppercase text-slate-850 dark:text-slate-100">
+                <h3 className="font-extrabold text-base text-slate-850 dark:text-slate-100 tracking-wide uppercase">
                   Homepage Banner Slider Management
                 </h3>
               </div>
@@ -2429,12 +2459,12 @@ export const Home = () => {
                 }}
                 className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 p-6 overflow-y-auto bg-slate-50 dark:bg-slate-955">
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-955">
               {bannerError && (
                 <div className="mb-4 p-3.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-2xl text-xs font-semibold">
                   {bannerError}
@@ -2449,7 +2479,7 @@ export const Home = () => {
               {!isEditingBanner ? (
                 // Banner List View
                 <div className="space-y-6">
-                  <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Configure background gradients, titles, images, and display order of slides rendered on the store homepage hero banner.
                     </p>
@@ -2472,41 +2502,41 @@ export const Home = () => {
                       }}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="h-4 w-4" />
                       <span>Create New Banner</span>
                     </button>
                   </div>
 
                   <div className="grid gap-4">
                     {allBanners.length === 0 ? (
-                      <div className="py-12 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl text-slate-400">
-                        <span className="block mb-2 text-3xl">📭</span>
-                        <p className="text-xs">No custom banners created yet. The homepage will display standard seeded/fallback slides.</p>
+                      <div className="text-center py-12 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl text-slate-400">
+                        <span className="text-3xl block mb-2">📭</span>
+                        <p className="text-xs">No banners created yet. Click 'Add Banner' above to create one.</p>
                       </div>
                     ) : (
                       allBanners.map((banner) => (
                         <div
                           key={banner.id}
-                          className="flex items-center justify-between gap-4 p-4 transition-shadow bg-white border shadow-sm dark:bg-slate-900 rounded-2xl border-slate-100 dark:border-slate-800 hover:shadow-md"
+                          className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow"
                         >
-                          <div className="flex items-center flex-1 min-w-0 gap-4">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
                             {/* Gradient preview circle */}
                             <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr ${banner.background_style} flex items-center justify-center border border-white/10 flex-shrink-0`}>
                               {banner.image_url ? (
-                                <img src={banner.image_url} alt="" className="object-contain w-10 h-10 rounded" />
+                                <img src={banner.image_url} alt="" className="w-10 h-10 object-contain rounded" />
                               ) : (
-                                <span className="font-mono text-xs font-bold text-white">B</span>
+                                <span className="text-white text-xs font-bold font-mono">B</span>
                               )}
                             </div>
 
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-extrabold truncate text-slate-800 dark:text-slate-200">
+                                <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 truncate">
                                   {banner.title}
                                 </h4>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${banner.is_active
-                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                    : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                  : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
                                   }`}>
                                   {banner.is_active ? 'Active' : 'Inactive'}
                                 </span>
@@ -2525,17 +2555,17 @@ export const Home = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => startEditBanner(banner)}
-                              className="p-2 transition-all cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-xl"
+                              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-xl transition-all cursor-pointer"
                               title="Edit Banner"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteBanner(banner.id)}
-                              className="p-2 transition-all cursor-pointer bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl"
+                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-all cursor-pointer"
                               title="Delete Banner"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </div>
@@ -2546,8 +2576,8 @@ export const Home = () => {
               ) : (
                 // Banner Create/Edit Form View
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
                       {editingBannerId ? '✏ Edit Slide Details' : '✨ Create New Banner Slide'}
                     </h4>
                     <button
@@ -2555,24 +2585,24 @@ export const Home = () => {
                         setIsEditingBanner(false);
                         setEditingBannerId(null);
                       }}
-                      className="text-xs font-bold cursor-pointer text-slate-500 hover:text-slate-750 dark:hover:text-slate-200"
+                      className="text-xs font-bold text-slate-500 hover:text-slate-750 dark:hover:text-slate-200 cursor-pointer"
                     >
                       ← Back to list
                     </button>
                   </div>
 
                   {/* Live Preview Container */}
-                  <div className="relative overflow-hidden border shadow-lg border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-900">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-lg bg-slate-900 relative">
                     <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                       Live Preview
                     </div>
                     <div className={`bg-gradient-to-r ${bannerForm.background_style} flex items-center justify-between p-6 sm:p-8 min-h-[160px] sm:min-h-[220px] transition-all duration-300`}>
-                      <div className="flex-1 pr-4 text-white">
+                      <div className="flex-1 text-white pr-4">
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-emerald-400 border border-white/10 w-fit mb-2">
-                          <Sparkles className="w-3 h-3" />
+                          <Sparkles className="h-3 w-3" />
                           {bannerForm.category || 'Special Offer'}
                         </span>
-                        <h2 className="text-xl font-black leading-tight tracking-tight sm:text-3xl line-clamp-1">
+                        <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight line-clamp-1">
                           {bannerForm.title || 'Enter Title...'}
                         </h2>
                         <h3 className="text-xs sm:text-sm font-bold text-emerald-400 line-clamp-1 mt-0.5">
@@ -2586,18 +2616,18 @@ export const Home = () => {
                         </span>
                       </div>
                       {bannerForm.image_url && (
-                        <div className="flex items-center justify-center flex-shrink-0 w-24 h-24 sm:w-36 sm:h-36">
+                        <div className="flex-shrink-0 w-24 sm:w-36 h-24 sm:h-36 flex items-center justify-center">
                           <img
                             src={bannerForm.image_url}
                             alt=""
-                            className="object-contain w-auto max-h-full shadow-md rounded-xl"
+                            className="max-h-full w-auto object-contain rounded-xl shadow-md"
                           />
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <form onSubmit={handleSaveBanner} className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <form onSubmit={handleSaveBanner} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Inputs Left */}
                     <div className="space-y-4">
                       <div>
@@ -2708,7 +2738,7 @@ export const Home = () => {
                               type="checkbox"
                               checked={bannerForm.is_active}
                               onChange={(e) => setBannerForm({ ...bannerForm, is_active: e.target.checked })}
-                              className="w-4 h-4 rounded cursor-pointer border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                              className="h-4 w-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
                             />
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Enable Slide</span>
                           </label>
@@ -2776,7 +2806,7 @@ export const Home = () => {
                     </div>
 
                     {/* Form Actions */}
-                    <div className="flex justify-end col-span-1 gap-3 pt-4 mt-6 border-t md:col-span-2 border-slate-100 dark:border-slate-800">
+                    <div className="col-span-1 md:col-span-2 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 mt-6">
                       <button
                         type="button"
                         onClick={() => {

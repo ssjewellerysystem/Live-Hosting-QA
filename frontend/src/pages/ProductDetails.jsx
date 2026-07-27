@@ -43,6 +43,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
+import { useMaintenance } from '../context/MaintenanceContext';
 import { ProductImageGallery } from '../components/ProductImageGallery';
 import { LuxuryImage } from '../components/LuxuryImage';
 import { formatPrice } from '../utils/priceFormatter';
@@ -223,7 +224,7 @@ const RelatedProductCard = React.memo(({ item }) => {
           src={item.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'}
           alt={item.name}
           className="max-h-24 max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
-          fetchpriority="low"
+          fetchPriority="low"
           width="400"
           height="225"
         />
@@ -283,6 +284,7 @@ export const ProductDetails = ({ productId }) => {
   
   const { user, token, language, isAdmin } = useContext(AuthContext);
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, triggerAuthModal } = useContext(CartContext);
+  const { isMaintenanceMode, showMaintenancePopup } = useMaintenance();
 
   const translateText = (text) => {
     if (language === 'hi') {
@@ -905,6 +907,10 @@ export const ProductDetails = ({ productId }) => {
   };
 
   const handleBuyNow = () => {
+    if (isMaintenanceMode) {
+      showMaintenancePopup();
+      return;
+    }
     if (!user) {
       triggerAuthModal('Please login before placing an order.', '/login');
       return;
@@ -956,6 +962,10 @@ export const ProductDetails = ({ productId }) => {
   };
 
   const handleOpenRequestBuyModal = () => {
+    if (isMaintenanceMode) {
+      showMaintenancePopup();
+      return;
+    }
     if (!user) {
       triggerAuthModal('Please login to request to buy this product.', window.location.pathname);
       return;
@@ -2058,7 +2068,7 @@ export const ProductDetails = ({ productId }) => {
                       src={activeImage || imagesList[0]}
                       alt={product.name}
                       className="no-zoom w-full h-auto object-contain transition-transform duration-300 ease-out md:group-hover:scale-105 origin-[var(--zoom-x,50%)_var(--zoom-y,50%)]"
-                      fetchpriority="high"
+                      fetchPriority="high"
                       width="600"
                       height="600"
                     />
@@ -2097,7 +2107,7 @@ export const ProductDetails = ({ productId }) => {
                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-350 dark:hover:border-slate-700'
                         }`}
                       >
-                        <LuxuryImage src={img} alt={`${product.name} - Thumbnail ${idx + 1}`} className="w-full h-full object-cover" width="80" height="80" fetchpriority="low" />
+                        <LuxuryImage src={img} alt={`${product.name} - Thumbnail ${idx + 1}`} className="w-full h-full object-cover" width="80" height="80" fetchPriority="low" />
                       </button>
                     ))}
                   </div>
@@ -2582,7 +2592,7 @@ export const ProductDetails = ({ productId }) => {
                 src={imagesList[previewImageIndex]}
                 alt={`${product.name} - Full Preview ${previewImageIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
-                fetchpriority="low"
+                fetchPriority="low"
                 width="1200"
                 height="800"
               />
@@ -2608,7 +2618,7 @@ export const ProductDetails = ({ productId }) => {
                       : 'border-slate-700 hover:border-slate-500'
                   }`}
                 >
-                  <LuxuryImage src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" fetchpriority="low" width="80" height="80" />
+                  <LuxuryImage src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" fetchPriority="low" width="80" height="80" />
                 </button>
               ))}
             </div>
@@ -2644,7 +2654,7 @@ export const ProductDetails = ({ productId }) => {
                         src={product.images[0]} 
                         alt={product.name} 
                         className="w-full h-full object-cover"
-                        fetchpriority="low"
+                        fetchPriority="low"
                         width="140"
                         height="140"
                       />

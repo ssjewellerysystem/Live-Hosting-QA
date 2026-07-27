@@ -498,14 +498,14 @@ class UserModel(db.Model):
             return False
 
     @staticmethod
-    def find_all():
+    def find_all(page=None, limit=None):
         try:
             from sqlalchemy.orm import selectinload
-            users = UserModel.query.options(
+            query = UserModel.query.options(
                 selectinload(UserModel.addresses)
-            ).all()
-            user_list = []
-            for u in users:
+            ).order_by(UserModel.id.desc())
+
+            def serialize_user(u):
                 addr = u.address
                 addr_dict = {
                     "id": addr.id if addr else None,
@@ -521,7 +521,7 @@ class UserModel(db.Model):
                     "is_default": addr.is_default if addr else False,
                     "alternate_mobile_number": addr.alternate_mobile_number if addr else ""
                 }
-                user_list.append({
+                return {
                     "id": str(u.id),
                     "_id": str(u.id),
                     "name": u.name,
@@ -539,8 +539,14 @@ class UserModel(db.Model):
                     "preferred_language": u.preferred_language,
                     "first_login": bool(u.first_login),
                     "role": "admin" if u.is_admin else "customer"
-                })
-            return user_list
+                }
+
+            if page is not None or limit is not None:
+                from backend.utils.pagination import paginate_query
+                return paginate_query(query, page=page, limit=limit, serializer=serialize_user)
+
+            users = query.all()
+            return [serialize_user(u) for u in users]
         except Exception as e:
             print("Error in find_all:", e)
             return []

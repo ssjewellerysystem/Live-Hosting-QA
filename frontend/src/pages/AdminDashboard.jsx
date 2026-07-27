@@ -7,6 +7,8 @@ import {
   AlertTriangle, Check, RefreshCw, Calendar, DollarSign, Clock, MapPin, Lock, Unlock, Shield, Search, Image, Bell, Mail
 } from 'lucide-react';
 import { AuthContext, API_BASE_URL, SERVER_BASE_URL } from '../context/AuthContext';
+import { HighDemandButton } from '../components/admin/HighDemandButton';
+import { MaintenanceButton } from '../components/admin/MaintenanceButton';
 import { formatPrice } from '../utils/priceFormatter';
 import { translateCategory } from '../utils/categoryTranslations';
 
@@ -150,10 +152,14 @@ export const AdminDashboard = () => {
     return initialSlots;
   };
 
+  const [collectionsList, setCollectionsList] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
+
   // Add Product form state
   const [newProduct, setNewProduct] = useState({
     name: '',
     category: 'Rings',
+    collection: '',
     price: '',
     discount: 0,
     stock: '',
@@ -178,6 +184,121 @@ export const AdminDashboard = () => {
   const [isAddImagesOpen, setIsAddImagesOpen] = useState(false);
   const [isEditImagesOpen, setIsEditImagesOpen] = useState(false);
   const [returnNotes, setReturnNotes] = useState({});
+
+  // Collection Management State
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState(null);
+  const [collectionForm, setCollectionForm] = useState({
+    name: '',
+    subtitle: '',
+    description: '',
+    image: '',
+    display_order: 0,
+    is_active: true
+  });
+  const [uploadingCollectionImage, setUploadingCollectionImage] = useState(false);
+
+  const handleOpenAddCollection = () => {
+    setEditingCollection(null);
+    setCollectionForm({
+      name: '',
+      subtitle: '',
+      description: '',
+      image: '',
+      display_order: collectionsList.length + 1,
+      is_active: true
+    });
+    setCollectionModalOpen(true);
+  };
+
+  const handleOpenEditCollection = (coll) => {
+    setEditingCollection(coll);
+    setCollectionForm({
+      name: coll.name || '',
+      subtitle: coll.subtitle || '',
+      description: coll.description || '',
+      image: coll.image || coll.image_url || '',
+      display_order: coll.display_order || 0,
+      is_active: coll.is_active !== false
+    });
+    setCollectionModalOpen(true);
+  };
+
+  const handleCollectionFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!collectionForm.name.trim()) {
+      alert("Collection Name is required.");
+      return;
+    }
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    try {
+      if (editingCollection) {
+        await axios.put(`${API_BASE_URL}/admin/collections/${editingCollection.id}`, collectionForm, { headers });
+        showToast("Collection updated successfully!", "success");
+      } else {
+        await axios.post(`${API_BASE_URL}/admin/collections`, collectionForm, { headers });
+        showToast("Collection created successfully!", "success");
+      }
+      setCollectionModalOpen(false);
+      fetchCollections();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to save collection.");
+    }
+  };
+
+  const handleDeleteCollection = async (collId, collName) => {
+    if (!window.confirm(`Are you sure you want to delete collection '${collName}'?`)) return;
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${API_BASE_URL}/admin/collections/${collId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      showToast("Collection deleted successfully!", "success");
+      fetchCollections();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to delete collection.");
+    }
+  };
+
+  const handleToggleCollection = async (collId) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(`${API_BASE_URL}/admin/collections/${collId}/toggle`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchCollections();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to toggle collection state.");
+    }
+  };
+
+  const handleCollectionImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingCollectionImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/products/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      let finalUrl = res.data.url;
+      if (finalUrl.startsWith('/static/')) {
+        finalUrl = `${SERVER_BASE_URL}${finalUrl}`;
+      }
+      setCollectionForm(prev => ({ ...prev, image: finalUrl }));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload image.");
+    } finally {
+      setUploadingCollectionImage(false);
+    }
+  };
 
   // Quick Action States
   const [selectedStockProduct, setSelectedStockProduct] = useState(null);
@@ -245,6 +366,31 @@ export const AdminDashboard = () => {
       setProducts(res.data);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/products/categories`);
+      if (res.data) {
+        setCategoriesList(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
+
+  const fetchCollections = async () => {
+    try {
+      const token = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/admin/collections`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.data) {
+        setCollectionsList(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch collections:", err);
     }
   };
 
@@ -880,6 +1026,8 @@ export const AdminDashboard = () => {
     setError('');
     await fetchStats();
     await fetchProducts();
+    await fetchCategories();
+    await fetchCollections();
     await fetchOrders();
     await fetchMessages();
     await fetchUsers();
@@ -895,6 +1043,13 @@ export const AdminDashboard = () => {
       loadDashboardData();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAddModalOpen || editingProduct) {
+      fetchCollections();
+      fetchCategories();
+    }
+  }, [isAddModalOpen, editingProduct]);
 
   // Image Upload helper for specific slot
   const handleSlotImageUpload = async (e, index, mode = 'create') => {
@@ -1107,6 +1262,7 @@ export const AdminDashboard = () => {
       await axios.post(`${API_BASE_URL}/products`, {
         name: newProduct.name,
         category: newProduct.category,
+        collection: newProduct.collection || '',
         price: parseFloat(newProduct.price),
         discount: parseInt(newProduct.discount) || 0,
         stock: parseInt(newProduct.stock),
@@ -1129,6 +1285,7 @@ export const AdminDashboard = () => {
       setNewProduct({
         name: '',
         category: 'Rings',
+        collection: '',
         price: '',
         discount: 0,
         stock: '',
@@ -1189,15 +1346,14 @@ export const AdminDashboard = () => {
 
   // Delete Product
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-
     try {
       await axios.delete(`${API_BASE_URL}/products/${id}`);
-      fetchProducts();
-      fetchStats();
+      setProducts(prev => prev.filter(p => (p._id || p.id) !== id));
+      if (typeof fetchProducts === 'function') fetchProducts();
+      if (typeof fetchStats === 'function') fetchStats();
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete product.");
+      console.error("Failed to delete product:", err);
+      throw err;
     }
   };
 
@@ -1242,12 +1398,16 @@ export const AdminDashboard = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Admin Dashboard</h1>
             <p className="text-xs text-slate-400 mt-1">Manage catalog products, handle orders, and check live service metrics.</p>
           </div>
-          <button
-            onClick={loadDashboardData}
-            className="mt-4 sm:mt-0 px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-transparent dark:bg-[#1E1E1E] dark:border-[#D4A75F] text-slate-700 dark:text-[#D4A75F] dark:hover:bg-[#2A2A2A] rounded-[12px] dark:shadow-[0_4px_12px_rgba(212,167,95,0.25)] text-xs font-bold transition-all"
-          >
-            Refresh Data
-          </button>
+          <div className="mt-4 sm:mt-0 flex items-center gap-3">
+            <HighDemandButton />
+            <MaintenanceButton />
+            <button
+              onClick={loadDashboardData}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-transparent dark:bg-[#1E1E1E] dark:border-[#D4A75F] text-slate-700 dark:text-[#D4A75F] dark:hover:bg-[#2A2A2A] rounded-[12px] dark:shadow-[0_4px_12px_rgba(212,167,95,0.25)] text-xs font-bold transition-all"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
 
         {/* Loading Spinner */}
@@ -1309,40 +1469,40 @@ export const AdminDashboard = () => {
             <div className="flex flex-wrap gap-1 md:space-x-2 border-b border-slate-200 dark:border-slate-800 pb-px mb-8">
               <button
                 onClick={() => handleTabChange('overview')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'overview'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Analytics
               </button>
               <button
                 onClick={() => handleTabChange('products')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'products'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Products
               </button>
               <button
                 onClick={() => handleTabChange('orders')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'orders'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Orders
               </button>
               <button
                 onClick={() => handleTabChange('buy-requests')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all flex items-center gap-1.5 ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
                   activeTab === 'buy-requests'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 <span>Buy Requests</span>
@@ -1354,40 +1514,40 @@ export const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => handleTabChange('users')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'users'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Users
               </button>
               <button
                 onClick={() => handleTabChange('support')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'support'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Messages
               </button>
               <button
                 onClick={() => handleTabChange('audit')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
                   activeTab === 'audit'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 Audit Trail
               </button>
               <button
                 onClick={() => handleTabChange('notifications')}
-                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all flex items-center gap-1.5 ${
+                className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 flex items-center gap-1.5 ${
                   activeTab === 'notifications'
                     ? 'bg-[rgba(212,167,95,0.15)] text-[#D4A75F] border-[#D4A75F] font-semibold'
-                    : 'border-transparent text-[#B0B7C3] hover:text-white font-normal'
+                    : 'border-transparent text-slate-600 dark:text-[#B0B7C3] hover:text-[#3F1D5A] dark:hover:text-white hover:bg-amber-500/10 dark:hover:bg-transparent rounded-t-lg font-normal'
                 }`}
               >
                 <span>Notifications</span>
@@ -1397,6 +1557,7 @@ export const AdminDashboard = () => {
               </button>
             </div>
 
+            {/* TAB CONTENT AREAS */}
             <Suspense fallback={<TabLoadingFallback />}>
               {activeTab === 'overview' && (
                 <AnalyticsTab
@@ -1431,8 +1592,11 @@ export const AdminDashboard = () => {
                   handleOpenStockModal={handleOpenStockModal}
                   handleOpenOrdersModal={handleOpenOrdersModal}
                   handleOpenAnalyticsModal={handleOpenAnalyticsModal}
+                  handleDeleteProduct={handleDeleteProduct}
                 />
               )}
+
+              {activeTab === 'collections' && renderCollectionsTab()}
 
               {(activeTab === 'orders' || activeTab === 'buy-requests') && (
                 <OrderManagementTab
@@ -1625,11 +1789,36 @@ export const AdminDashboard = () => {
                       onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-850 dark:text-slate-100"
                     >
-                      <option value="Rings">{translateCategory("Rings", editFormLang)}</option>
-                      <option value="Necklaces">{translateCategory("Necklaces", editFormLang)}</option>
-                      <option value="Earrings">{translateCategory("Earrings", editFormLang)}</option>
-                      <option value="Bracelets">{translateCategory("Bracelets", editFormLang)}</option>
-                      <option value="Bridal Collection">{translateCategory("Bridal Collection", editFormLang)}</option>
+                      {categoriesList && categoriesList.length > 0 ? (
+                        categoriesList.map(cat => (
+                          <option key={cat.id || cat.name} value={cat.name}>
+                            {translateCategory(cat.name, editFormLang)}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Rings">{translateCategory("Rings", editFormLang)}</option>
+                          <option value="Necklaces">{translateCategory("Necklaces", editFormLang)}</option>
+                          <option value="Earrings">{translateCategory("Earrings", editFormLang)}</option>
+                          <option value="Bracelets">{translateCategory("Bracelets", editFormLang)}</option>
+                          <option value="Bridal Collection">{translateCategory("Bridal Collection", editFormLang)}</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Collection */}
+                  <div className="col-span-2 md:col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Collection</label>
+                    <select
+                      value={editingProduct.collection || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, collection: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-850 dark:text-slate-100"
+                    >
+                      <option value="">No Collection</option>
+                      {collectionsList.map(c => (
+                        <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -1890,11 +2079,36 @@ export const AdminDashboard = () => {
                       onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-850 dark:text-slate-100"
                     >
-                      <option value="Rings">{translateCategory("Rings", formLang)}</option>
-                      <option value="Necklaces">{translateCategory("Necklaces", formLang)}</option>
-                      <option value="Earrings">{translateCategory("Earrings", formLang)}</option>
-                      <option value="Bracelets">{translateCategory("Bracelets", formLang)}</option>
-                      <option value="Bridal Collection">{translateCategory("Bridal Collection", formLang)}</option>
+                      {categoriesList && categoriesList.length > 0 ? (
+                        categoriesList.map(cat => (
+                          <option key={cat.id || cat.name} value={cat.name}>
+                            {translateCategory(cat.name, formLang)}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Rings">{translateCategory("Rings", formLang)}</option>
+                          <option value="Necklaces">{translateCategory("Necklaces", formLang)}</option>
+                          <option value="Earrings">{translateCategory("Earrings", formLang)}</option>
+                          <option value="Bracelets">{translateCategory("Bracelets", formLang)}</option>
+                          <option value="Bridal Collection">{translateCategory("Bridal Collection", formLang)}</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Collection */}
+                  <div className="col-span-2 md:col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Collection</label>
+                    <select
+                      value={newProduct.collection || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, collection: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-850 dark:text-slate-100"
+                    >
+                      <option value="">No Collection</option>
+                      {collectionsList.map(c => (
+                        <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -2085,177 +2299,172 @@ export const AdminDashboard = () => {
       {/* ORDER DETAILS MODAL OVERLAY */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setSelectedOrder(null)}
-              className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-slate-900 z-10">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5 text-emerald-500" />
+                <span>Order Details - #{selectedOrder.order_id}</span>
+              </h3>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-            <h3 className="text-lg font-black text-slate-850 dark:text-slate-100 mb-6 flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-emerald-500" />
-              <span>Order Details - #{selectedOrder.order_id}</span>
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-655 dark:text-slate-350">
-              {/* Customer and Shipping Details */}
-              <div className="space-y-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-800 pb-2">Customer & Shipping Information</h4>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Name</span>
-                  <span className="text-slate-855 dark:text-slate-100 font-semibold">{selectedOrder.shipping_address?.name || "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mobile Number</span>
-                  <span className="text-slate-855 dark:text-slate-100 font-mono font-semibold">{selectedOrder.shipping_address?.phone || selectedOrder.shipping_address?.mobile || "N/A"}</span>
-                </div>
-                {selectedOrder.shipping_address?.alternate_mobile_number && (
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-655 dark:text-slate-350">
+                {/* Customer and Shipping Details */}
+                <div className="space-y-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-800 pb-2">Customer & Shipping Information</h4>
                   <div>
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Alternate Mobile Number</span>
-                    <span className="text-slate-855 dark:text-slate-100 font-mono font-semibold">{selectedOrder.shipping_address.alternate_mobile_number}</span>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Name</span>
+                    <span className="text-slate-855 dark:text-slate-100 font-semibold">{selectedOrder.shipping_address?.name || "N/A"}</span>
                   </div>
-                )}
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Email</span>
-                  <span className="text-slate-855 dark:text-slate-100">{selectedOrder.user_email || "Not Available"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipping Address</span>
-                  <span className="text-slate-855 dark:text-slate-100 leading-relaxed block">
-                    {selectedOrder.shipping_address?.address || selectedOrder.shipping_address?.street || "N/A"}<br />
-                    {selectedOrder.shipping_address?.city}, {selectedOrder.shipping_address?.state} - {selectedOrder.shipping_address?.pincode}
-                  </span>
-                </div>
-              </div>
-
-              {/* Order Status & Info */}
-              <div className="space-y-4 bg-slate-50 dark:bg-slate-955 p-4 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-800 pb-2">Order Meta Details</h4>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Date</span>
-                  <span className="text-slate-855 dark:text-slate-100 font-semibold">
-                    {formatTimestamp(selectedOrder.created_at)}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimated Arrival</span>
-                  <span className="text-emerald-500 dark:text-white font-semibold">
-                    {selectedOrder.delivery_date || "Pending Dispatch"}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Status</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-500 dark:text-white bg-emerald-500/10 border-emerald-500/20 inline-block mt-1">
-                    Paid (Simulated Online/COD)
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fulfillment Status</span>
-                  <span className={`px-[12px] py-[4px] rounded-full text-[10px] font-semibold border shadow-sm inline-block mt-1 ${
-                    (selectedOrder.status || '').toLowerCase() === 'pending'
-                      ? 'status-badge-pending'
-                      : (selectedOrder.status || '').toLowerCase() === 'processing' || (selectedOrder.status || '').toLowerCase() === 'confirmed' || (selectedOrder.status || '').toLowerCase() === 'packed'
-                      ? 'bg-[#3B82F6] text-white border-[#2563EB]'
-                      : (selectedOrder.status || '').toLowerCase() === 'shipped' || (selectedOrder.status || '').toLowerCase() === 'dispatched'
-                      ? 'bg-[#06B6D4] text-white border-[#0891B2]'
-                      : (selectedOrder.status || '').toLowerCase() === 'out for delivery'
-                      ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
-                      : (selectedOrder.status || '').toLowerCase() === 'delivered'
-                      ? 'status-badge-success'
-                      : (selectedOrder.status || '').toLowerCase() === 'cancelled'
-                      ? 'bg-[#EF4444] text-white border-[#DC2626]'
-                      : 'bg-[#6B7280] text-white border-[#4B5563]'
-                  }`}>
-                    {selectedOrder.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ordered Items */}
-            <div className="mt-6">
-              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-850 pb-2 mb-3">
-                Ordered Items ({selectedOrder.items?.length || 0})
-              </h4>
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                {selectedOrder.items?.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-100/60 dark:border-slate-850/40 text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-slate-100 dark:bg-slate-900 rounded overflow-hidden flex-shrink-0">
-                        <img
-                          src={item.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-slate-855 dark:text-slate-100 block max-w-[250px] truncate">{item.name}</span>
-                        <span className="text-[10px] text-slate-400">Qty: {item.quantity} × <span className="price-amount">₹{formatPrice(item.price)}</span></span>
-                      </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mobile Number</span>
+                    <span className="text-slate-855 dark:text-slate-100 font-mono font-semibold">{selectedOrder.shipping_address?.phone || selectedOrder.shipping_address?.mobile || "N/A"}</span>
+                  </div>
+                  {selectedOrder.shipping_address?.alternate_mobile_number && (
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Alternate Mobile Number</span>
+                      <span className="text-slate-855 dark:text-slate-100 font-mono font-semibold">{selectedOrder.shipping_address.alternate_mobile_number}</span>
                     </div>
-                    <span className="font-bold text-slate-855 dark:text-slate-100 price-amount">₹{formatPrice(item.price * item.quantity)}</span>
+                  )}
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Email</span>
+                    <span className="text-slate-855 dark:text-slate-100">{selectedOrder.user_email || "Not Available"}</span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipping Address</span>
+                    <span className="text-slate-855 dark:text-slate-100 leading-relaxed block">
+                      {selectedOrder.shipping_address?.address || selectedOrder.shipping_address?.street || "N/A"}<br />
+                      {selectedOrder.shipping_address?.city}, {selectedOrder.shipping_address?.state} - {selectedOrder.shipping_address?.pincode}
+                    </span>
+                  </div>
+                </div>
 
-            {/* Fulfillment & Live Order Tracking updates */}
-            <div className="mt-6 bg-slate-50/50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-4 text-xs">
-              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-850">
-                <RefreshCw className="h-4 w-4 text-emerald-500 animate-spin-slow" />
-                <span>Update Shipment & Tracking Timeline</span>
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]">
-                <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Fulfillment Status</label>
-                  <select
-                    value={modalTracking.status}
-                    onChange={(e) => setModalTracking({ ...modalTracking, status: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100 font-semibold"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Packed">Packed</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Out for Delivery">Out for Delivery</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Estimated Delivery Date</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. May 28, 2026"
-                    value={modalTracking.delivery_date}
-                    onChange={(e) => setModalTracking({ ...modalTracking, delivery_date: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Courier Carrier</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Delhivery, DHL"
-                    value={modalTracking.carrier}
-                    onChange={(e) => setModalTracking({ ...modalTracking, carrier: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
-                  />
+                {/* Order Status & Info */}
+                <div className="space-y-4 bg-slate-50 dark:bg-slate-955 p-4 rounded-2xl border border-slate-100 dark:border-slate-850">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200/60 dark:border-slate-800 pb-2">Order Meta Details</h4>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Date</span>
+                    <span className="text-slate-855 dark:text-slate-100 font-semibold">
+                      {formatTimestamp(selectedOrder.created_at)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimated Arrival</span>
+                    <span className="text-emerald-500 dark:text-white font-semibold">
+                      {selectedOrder.delivery_date || "Pending Dispatch"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Status</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-500 dark:text-white bg-emerald-500/10 border-emerald-500/20 inline-block mt-1">
+                      Paid (Simulated Online/COD)
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fulfillment Status</span>
+                    <span className={`px-[12px] py-[4px] rounded-full text-[10px] font-semibold border shadow-sm inline-block mt-1 ${(selectedOrder.status || '').toLowerCase() === 'pending'
+                        ? 'status-badge-pending'
+                        : (selectedOrder.status || '').toLowerCase() === 'processing' || (selectedOrder.status || '').toLowerCase() === 'confirmed' || (selectedOrder.status || '').toLowerCase() === 'packed'
+                          ? 'bg-[#3B82F6] text-white border-[#2563EB]'
+                          : (selectedOrder.status || '').toLowerCase() === 'shipped' || (selectedOrder.status || '').toLowerCase() === 'dispatched'
+                            ? 'bg-[#06B6D4] text-white border-[#0891B2]'
+                            : (selectedOrder.status || '').toLowerCase() === 'out for delivery'
+                              ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
+                              : (selectedOrder.status || '').toLowerCase() === 'delivered'
+                                ? 'status-badge-success'
+                                : (selectedOrder.status || '').toLowerCase() === 'cancelled'
+                                  ? 'bg-[#EF4444] text-white border-[#DC2626]'
+                                  : 'bg-[#6B7280] text-white border-[#4B5563]'
+                      }`}>
+                      {selectedOrder.status}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]">
-                <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Shipment Tracking ID</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. IN782947239"
-                    value={modalTracking.tracking_id}
-                    onChange={(e) => setModalTracking({ ...modalTracking, tracking_id: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100 font-mono"
-                  />
+              {/* Ordered Items */}
+              <div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-850 pb-2 mb-3">
+                  Ordered Items ({selectedOrder.items?.length || 0})
+                </h4>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                  {selectedOrder.items?.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-100/60 dark:border-slate-850/40 text-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-slate-100 dark:bg-slate-900 rounded overflow-hidden flex-shrink-0">
+                          <img
+                            src={item.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-855 dark:text-slate-100 block max-w-[250px] truncate">{item.name}</span>
+                          <span className="text-[10px] text-slate-400">Qty: {item.quantity} × <span className="price-amount">₹{formatPrice(item.price)}</span></span>
+                        </div>
+                      </div>
+                      <span className="font-bold text-slate-855 dark:text-slate-100 price-amount">₹{formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
                 </div>
+              </div>
+
+              {/* Fulfillment & Live Order Tracking updates */}
+              <div className="bg-slate-50/50 dark:bg-slate-955/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-4 text-xs">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-850">
+                  <RefreshCw className="h-4 w-4 text-emerald-500 animate-spin-slow" />
+                  <span>Update Shipment & Tracking Timeline</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Fulfillment Status</label>
+                    <select
+                      value={modalTracking.status}
+                      onChange={(e) => setModalTracking({ ...modalTracking, status: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Packed">Packed</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Out for Delivery">Out for Delivery</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Carrier Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. BlueDart / Delhivery"
+                      value={modalTracking.carrier}
+                      onChange={(e) => setModalTracking({ ...modalTracking, carrier: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Tracking Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. AWBD10098234"
+                      value={modalTracking.tracking_number}
+                      onChange={(e) => setModalTracking({ ...modalTracking, tracking_number: e.target.value })}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-slate-400 font-semibold mb-1">Custom Timeline Message (Optional)</label>
                   <input
@@ -2266,32 +2475,33 @@ export const AdminDashboard = () => {
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
                   />
                 </div>
-              </div>
 
-              <div className="flex justify-end pt-1">
-                <button
-                  onClick={() => handleOrderTrackingUpdate(selectedOrder._id || selectedOrder.id, modalTracking)}
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  <span>Update Tracking & Notify User</span>
-                </button>
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => handleOrderTrackingUpdate(selectedOrder._id || selectedOrder.id, modalTracking)}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Update Tracking & Notify User</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Total Amount Summary */}
-            <div className="mt-6 pt-4 border-t border-slate-150 dark:border-slate-855 flex justify-between items-center">
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm flex justify-between items-center flex-shrink-0 z-10">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Grand Total</span>
-                <span className="text-2xl font-black text-slate-900 dark:text-slate-50 price-amount">₹{formatPrice(selectedOrder.total_amount)}</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white price-amount">₹{formatPrice(selectedOrder.total_amount)}</span>
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-all text-xs"
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold transition-all text-xs cursor-pointer shadow-sm"
               >
                 Close Details
               </button>
             </div>
+
           </div>
         </div>
       )}
@@ -2393,6 +2603,144 @@ export const AdminDashboard = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT COLLECTION MODAL OVERLAY */}
+      {collectionModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-150 dark:border-slate-850">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-[#D4A75F]" />
+                <h3 className="text-sm font-extrabold text-slate-850 dark:text-slate-100">
+                  {editingCollection ? 'Edit Collection' : 'Add New Collection'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setCollectionModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCollectionFormSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs">
+                {/* Collection Name */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Collection Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={collectionForm.name}
+                    onChange={(e) => setCollectionForm({ ...collectionForm, name: e.target.value })}
+                    placeholder="e.g. Festive Wear, Temple Jewellery"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                {/* Subtitle */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Collection Subtitle</label>
+                  <input
+                    type="text"
+                    value={collectionForm.subtitle}
+                    onChange={(e) => setCollectionForm({ ...collectionForm, subtitle: e.target.value })}
+                    placeholder="e.g. Regal Heritage Kundan & Polki"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                  <textarea
+                    rows="3"
+                    value={collectionForm.description}
+                    onChange={(e) => setCollectionForm({ ...collectionForm, description: e.target.value })}
+                    placeholder="Brief description of this collection..."
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100 resize-none"
+                  />
+                </div>
+
+                {/* Image URL & Upload */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Collection Image</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={collectionForm.image}
+                      onChange={(e) => setCollectionForm({ ...collectionForm, image: e.target.value })}
+                      placeholder="Image URL or upload file"
+                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100"
+                    />
+                    <label className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 flex-shrink-0">
+                      {uploadingCollectionImage ? (
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border border-t-transparent border-slate-500" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      <span>Upload</span>
+                      <input type="file" accept="image/*" onChange={handleCollectionImageUpload} className="hidden" disabled={uploadingCollectionImage} />
+                    </label>
+                  </div>
+                  {collectionForm.image && (
+                    <div className="mt-2 h-20 w-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <img src={collectionForm.image} alt="Preview" className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Display Order & Active Switch */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Display Order</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={collectionForm.display_order}
+                      onChange={(e) => setCollectionForm({ ...collectionForm, display_order: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-center">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                    <label className="inline-flex items-center cursor-pointer gap-2">
+                      <input
+                        type="checkbox"
+                        checked={collectionForm.is_active}
+                        onChange={(e) => setCollectionForm({ ...collectionForm, is_active: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        {collectionForm.is_active ? 'Active' : 'Disabled'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-slate-50 dark:bg-slate-955 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCollectionModalOpen(false)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+                >
+                  {editingCollection ? 'Save Changes' : 'Create Collection'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

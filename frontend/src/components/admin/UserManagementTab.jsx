@@ -33,8 +33,8 @@ export const UserManagementTab = ({
             <Users className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-250">Customer Management Panel</h4>
-            <p className="text-xs text-slate-400">Total Registered Users: {users.length}</p>
+            <h4 className="text-sm font-extrabold text-slate-800 dark:text-white">Customer Management Panel</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-300 font-medium">Total Registered Users: {users.length}</p>
           </div>
         </div>
         <div className="relative w-full sm:w-72">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Key, ShieldCheck, ArrowLeft, CheckCircle, ShoppingBag, ArrowRight } from 'lucide-react';
 import { API_BASE_URL } from '../context/AuthContext';
+import { isAllowedEmailDomain, ALLOWED_EMAIL_DOMAIN_ERROR, normalizeEmail } from '../utils/emailValidator';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -32,20 +33,28 @@ export const ForgotPassword = () => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
-    if (!emailOrMobile.trim()) {
+    const cleanInput = emailOrMobile.trim();
+    if (!cleanInput) {
       setError("Please enter your registered email or mobile number.");
+      return;
+    }
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanInput) || cleanInput.includes('@');
+    if (isEmail && !isAllowedEmailDomain(cleanInput)) {
+      setError(ALLOWED_EMAIL_DOMAIN_ERROR);
       return;
     }
 
     setLoading(true);
     try {
+      const normalizedInput = isEmail ? normalizeEmail(cleanInput) : cleanInput;
       const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
-        email: emailOrMobile.trim()
+        email: normalizedInput
       });
       setSuccessMessage(response.data.message || "OTP sent successfully!");
       setStep(2);
       // Store email/mobile temporarily for verify and resend
-      sessionStorage.setItem('reset_pending_email', response.data.email || emailOrMobile.trim());
+      sessionStorage.setItem('reset_pending_email', response.data.email || normalizedInput);
       if (response.data.otp) {
         setDevOtp(response.data.otp);
       }

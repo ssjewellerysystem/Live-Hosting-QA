@@ -2,12 +2,14 @@ import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingCart, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
+import { useMaintenance } from '../context/MaintenanceContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatPrice } from '../utils/priceFormatter';
 import { LuxuryImage } from '../components/LuxuryImage';
 
 export const Cart = () => {
   const { cart, removeFromCart, updateQuantity, cartCount, cartTotal } = useContext(CartContext);
+  const { isMaintenanceMode, showMaintenancePopup } = useMaintenance();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -17,6 +19,10 @@ export const Cart = () => {
   const grandTotal = Math.round(cartTotal + shippingFee + gstTax);
 
   const handleCheckout = () => {
+    if (isMaintenanceMode) {
+      showMaintenancePopup();
+      return;
+    }
     navigate('/checkout');
   };
 
@@ -59,7 +65,7 @@ export const Cart = () => {
                   >
                     {/* Item Image */}
                     <div className="w-24 h-24 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950 flex-shrink-0">
-                      <LuxuryImage src={item.image} alt={item.name} className="w-full h-full object-cover" fetchpriority="low" width="96" height="96" />
+                      <LuxuryImage src={item.image} alt={item.name} className="w-full h-full object-cover" fetchPriority="low" width="96" height="96" />
                     </div>
 
                     {/* Specifications */}

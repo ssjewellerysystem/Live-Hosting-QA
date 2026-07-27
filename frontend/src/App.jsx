@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { LiveChat } from './components/LiveChat';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LanguageSelectionModal } from './components/LanguageSelectionModal';
+import { HighDemandOverlay } from './components/HighDemandOverlay';
 
 import { Home } from './pages/Home';
 import { GlobalVideoFooter } from './components/GlobalVideoFooter';
@@ -85,9 +86,12 @@ function App() {
       // Filter out small interface images, icons, logos, etc.
       if (
         img.src.includes('logo.svg') ||
+        img.src.includes('navbar-logo') ||
         img.src.includes('avatar') ||
         img.src.includes('flag') ||
         img.src.includes('cat_') ||
+        img.closest('nav') ||
+        img.closest('.brand-typography-wrapper') ||
         img.classList.contains('no-zoom') ||
         img.closest('.no-zoom') ||
         img.closest('.category-item-link') ||
@@ -115,7 +119,8 @@ function App() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* Magnifying glass hover hint on product/gallery graphics (desktop only) */
         @media (min-width: 768px) {
           img:not(.no-zoom):not([src*="logo.svg"]):not([src*="avatar"]):not([src*="flag"]):not([src*="cat_"]) {
@@ -155,10 +160,10 @@ function App() {
             <div className="relative flex flex-col items-center max-w-[280px] w-full text-center">
               {/* Logo / Brand name */}
               <div className="w-[280px] h-[186px] mb-4 relative flex items-center justify-center overflow-hidden">
-                <img 
-                  src="/loading-logo.png" 
-                  alt="SSJewellery" 
-                  className="w-full h-full object-contain animate-pulse" 
+                <img
+                  src="/loading-logo.jpg"
+                  alt="SSJewellery"
+                  className="w-full h-full object-contain animate-pulse"
                 />
               </div>
               <h2 className="text-[#EFE7DB] font-serif text-2xl tracking-widest font-extrabold uppercase animate-pulse">
@@ -167,7 +172,7 @@ function App() {
               <p className="text-[10px] tracking-[0.2em] uppercase text-[#D4A75F] mt-2 font-semibold">
                 Crafting Elegance
               </p>
-              
+
               {/* Gold Shimmer Progress Bar */}
               <div className="w-full h-[2px] bg-neutral-900 rounded-full overflow-hidden mt-8 relative">
                 <div className="absolute top-0 bottom-0 left-0 bg-[#D4A75F] w-[50%] animate-shimmer-bar rounded-full" />
@@ -181,111 +186,112 @@ function App() {
         {/* Navigation bar */}
         <Navbar />
 
-      {/* Language Preference Selection Modal */}
-      <LanguageSelectionModal />
+        {/* Language Preference Selection Modal */}
+        <LanguageSelectionModal />
 
-      {/* Main page content area */}
-      <main className="flex-grow pt-20">
-        <AnimatePresence mode="wait">
-          <React.Suspense fallback={<LoadingFallback />}>
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
-              <Route path="/product/:id" element={<PageWrapper><ProductDetails /></PageWrapper>} />
-              <Route path="/cart" element={
-                <ProtectedRoute>
-                  <PageWrapper><Cart /></PageWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/checkout" element={
-                <ProtectedRoute>
-                  <PageWrapper><Checkout /></PageWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/orders" element={
-                <ProtectedRoute>
-                  <PageWrapper><MyOrders /></PageWrapper>
-                </ProtectedRoute>
-              } />
-               <Route path="/profile" element={
-                <ProtectedRoute userOnly={true}>
-                  <PageWrapper><Profile /></PageWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
-              <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
-              <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
-              <Route path="/reset-password" element={<PageWrapper><ResetPassword /></PageWrapper>} />
-              <Route path="/support" element={<PageWrapper><Support /></PageWrapper>} />
-              <Route path="/support-center" element={
-                <ProtectedRoute>
-                  <PageWrapper><SupportCenter /></PageWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly={true}>
-                  <PageWrapper><AdminDashboard /></PageWrapper>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin-control" element={
-                <ProtectedRoute adminOnly={true}>
-                  <PageWrapper><AdminControl /></PageWrapper>
-                </ProtectedRoute>
-              } />
-            </Routes>
-          </React.Suspense>
-        </AnimatePresence>
-      </main>
+        {/* Main page content area */}
+        <main className="flex-grow pt-20">
+          <AnimatePresence mode="wait">
+            <React.Suspense fallback={<LoadingFallback />}>
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+                <Route path="/product/:id" element={<PageWrapper><ProductDetails /></PageWrapper>} />
+                <Route path="/cart" element={
+                  <ProtectedRoute>
+                    <PageWrapper><Cart /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/checkout" element={
+                  <ProtectedRoute>
+                    <PageWrapper><Checkout /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
+                  <ProtectedRoute>
+                    <PageWrapper><MyOrders /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute userOnly={true}>
+                    <PageWrapper><Profile /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+                <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+                <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
+                <Route path="/reset-password" element={<PageWrapper><ResetPassword /></PageWrapper>} />
+                <Route path="/support" element={<PageWrapper><Support /></PageWrapper>} />
+                <Route path="/support-center" element={
+                  <ProtectedRoute>
+                    <PageWrapper><SupportCenter /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <PageWrapper><AdminDashboard /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin-control" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <PageWrapper><AdminControl /></PageWrapper>
+                  </ProtectedRoute>
+                } />
+              </Routes>
+            </React.Suspense>
+          </AnimatePresence>
+        </main>
 
-      {/* Grid footer links panel - ONLY visible on Profile page */}
-      {location.pathname === '/profile' && <Footer />}
+        {/* Grid footer links panel - ONLY visible on Profile page */}
+        {location.pathname === '/profile' && <Footer />}
 
-      {/* Global Video Footer - Only shown on user side, hidden on admin side */}
-      {!location.pathname.startsWith('/admin') && <GlobalVideoFooter />}
+        {/* Global Video Footer - Only shown on user side, hidden on admin side */}
+        {!location.pathname.startsWith('/admin') && <GlobalVideoFooter />}
 
-      {/* Interactive chatbot bubble widget */}
-      <LiveChat />
+        {/* Interactive chatbot bubble widget */}
+        <LiveChat />
 
-      {/* Global Image Lightbox Zoom Modal */}
-      <AnimatePresence>
-        {zoomedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-zoom-out select-none"
-            onClick={() => setZoomedImage(null)}
-          >
-            {/* Close Button Hint */}
-            <div className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md shadow-md border border-white/15">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </div>
-
-            {/* Glowing gold border background ornament */}
-            <div className="absolute inset-0 border-[12px] md:border-[20px] border-[#D4A75F]/10 pointer-events-none" />
-
-            {/* Zoomed Image Card */}
+        {/* Global Image Lightbox Zoom Modal */}
+        <AnimatePresence>
+          {zoomedImage && (
             <motion.div
-              initial={{ scale: 0.9, y: 15 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 15 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="relative max-w-[92%] max-h-[85%] rounded-2xl overflow-hidden border border-[#D4A75F]/35 bg-slate-950 shadow-[0_30px_100px_rgba(212,167,95,0.22)] flex items-center justify-center p-2"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-zoom-out select-none"
+              onClick={() => setZoomedImage(null)}
             >
-              <img
-                src={zoomedImage}
-                alt="Zoomed preview"
-                className="max-w-full max-h-[78vh] object-contain rounded-xl select-none cursor-zoom-out"
-                onClick={() => setZoomedImage(null)}
-              />
+              {/* Close Button Hint */}
+              <div className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md shadow-md border border-white/15">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </div>
+
+              {/* Glowing gold border background ornament */}
+              <div className="absolute inset-0 border-[12px] md:border-[20px] border-[#D4A75F]/10 pointer-events-none" />
+
+              {/* Zoomed Image Card */}
+              <motion.div
+                initial={{ scale: 0.9, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 15 }}
+                transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                className="relative max-w-[92%] max-h-[85%] rounded-2xl overflow-hidden border border-[#D4A75F]/35 bg-slate-950 shadow-[0_30px_100px_rgba(212,167,95,0.22)] flex items-center justify-center p-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={zoomedImage}
+                  alt="Zoomed preview"
+                  className="max-w-full max-h-[78vh] object-contain rounded-xl select-none cursor-zoom-out"
+                  onClick={() => setZoomedImage(null)}
+                />
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+        <HighDemandOverlay />
+      </div>
     </>
   );
 }

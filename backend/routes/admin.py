@@ -11,49 +11,103 @@ from backend.models.coupon import CouponModel
 from backend.extensions import db
 from sqlalchemy import func
 
+from backend.config import Config
+
+import bcrypt
+from backend.models.admin import AdminModel
+
 admin_bp = Blueprint('admin', __name__)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "supersecret_SSJewellery_key_123")
-ADMIN_ID = os.getenv("ADMIN_ID", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+JWT_SECRET = Config.JWT_SECRET
 
 @admin_bp.route('/login', methods=['POST'])
 def admin_login():
     data = request.get_json() or {}
-    admin_id = data.get("admin_id")
-    password = data.get("password")
+    admin_identifier = (data.get("admin_id") or data.get("username") or data.get("email") or "").strip()
+    password = data.get("password") or ""
     
-    if not admin_id or not password:
+    if not admin_identifier or not password:
         return jsonify({"message": "Please enter both Admin ID and Password."}), 400
         
-    if (admin_id == ADMIN_ID or admin_id == "admin@SSJewellery.com") and password == ADMIN_PASSWORD:
-        # Generate JWT Token for Admin
-        payload = {
-            "user_id": "admin_user",
+    # 1. Search admins table via AdminModel
+    admin_record = AdminModel.query.filter(
+        (AdminModel.username == admin_identifier) | 
+        (func.lower(AdminModel.username) == admin_identifier.lower())
+    ).first()
+
+    admin_id_str = None
+    admin_name_str = None
+    admin_email_str = None
+
+    if admin_record:
+        password_valid = False
+        if admin_record.password.startswith("$2b$") or admin_record.password.startswith("$2a$"):
+            try:
+                password_valid = bcrypt.checkpw(password.encode('utf-8'), admin_record.password.encode('utf-8'))
+            except Exception:
+                password_valid = False
+        else:
+            password_valid = (admin_record.password == password)
+
+        if password_valid:
+            admin_id_str = str(admin_record.id)
+            admin_name_str = admin_record.username
+            admin_email_str = admin_record.username if "@" in admin_record.username else f"{admin_record.username}@admin.local"
+
+    # 2. Fallback to UserModel table if is_admin is True
+    if not admin_id_str:
+        user_admin = UserModel.query.filter(
+            (UserModel.is_admin == True) & 
+            ((UserModel.email == admin_identifier.lower()) | (func.lower(UserModel.full_name) == admin_identifier.lower()))
+        ).first()
+
+        if user_admin:
+            password_valid = False
+            if user_admin.password.startswith("$2b$") or user_admin.password.startswith("$2a$"):
+                try:
+                    password_valid = bcrypt.checkpw(password.encode('utf-8'), user_admin.password.encode('utf-8'))
+                except Exception:
+                    password_valid = False
+            else:
+                password_valid = (user_admin.password == password)
+
+            if password_valid:
+                admin_id_str = str(user_admin.id)
+                admin_name_str = user_admin.name
+                admin_email_str = user_admin.email
+
+    if not admin_id_str:
+        from backend.utils.audit import log_admin_action
+        log_admin_action("Admin Login", "Admin Authentication", f"Failed admin login attempt (ID: {admin_identifier})", status="Failed")
+        return jsonify({"message": "Invalid Admin credentials."}), 401
+
+    # Generate JWT token with database-driven Admin identity
+    payload = {
+        "admin_id": admin_id_str,
+        "user_id": admin_id_str,
+        "username": admin_name_str,
+        "email": admin_email_str,
+        "is_admin": True,
+        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    
+    from backend.utils.audit import log_admin_action
+    log_admin_action("Admin Login", "Admin Authentication", f"Admin '{admin_name_str}' logged in successfully")
+    
+    return jsonify({
+        "message": "Admin login successful!",
+        "token": token,
+        "user": {
+            "id": admin_id_str,
+            "_id": admin_id_str,
+            "name": admin_name_str,
+            "username": admin_name_str,
+            "email": admin_email_str,
             "is_admin": True,
-            "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+            "role": "admin"
         }
-        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-        
-        # Audit Log
-        from backend.utils.audit import log_admin_action
-        log_admin_action("Admin Login", "Admin Authentication", "Admin login successful")
-        
-        return jsonify({
-            "message": "Admin login successful!",
-            "token": token,
-            "user": {
-                "name": "Administrator",
-                "email": "admin@SSJewellery.com",
-                "is_admin": True,
-                "role": "admin"
-            }
-        }), 200
-    else:
-        # Audit Log for failed attempt
-        from backend.utils.audit import log_admin_action
-        log_admin_action("Admin Login", "Admin Authentication", f"Failed admin login attempt (ID: {admin_id})", status="Failed")
-        return jsonify({"message": "Invalid Admin credentials. Check your configured .env file."}), 401
+    }), 200
 
 @admin_bp.route('/stats', methods=['GET'])
 @admin_required
@@ -116,6 +170,13 @@ def get_dashboard_stats():
 @admin_bp.route('/users', methods=['GET'])
 @admin_required
 def get_all_users():
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params
+        p_num, p_limit = parse_pagination_params()
+        users = UserModel.find_all(page=p_num, limit=p_limit)
+        return jsonify(users), 200
     users = UserModel.find_all()
     return jsonify(users), 200
 
@@ -708,8 +769,7 @@ def get_product_analytics(id):
 @admin_required
 def get_all_audit_logs():
     from backend.models.product import ProductAuditLogModel, ProductModel
-    
-    logs = db.session.query(
+    query = db.session.query(
         ProductAuditLogModel,
         ProductModel.name
     ).outerjoin(
@@ -717,15 +777,23 @@ def get_all_audit_logs():
         ProductModel.id == ProductAuditLogModel.product_id
     ).order_by(
         ProductAuditLogModel.created_at.desc()
-    ).all()
+    )
     
-    results = []
-    for log, prod_name in logs:
+    def serialize_log(row):
+        log, prod_name = row
         d = log.to_dict()
         d["product_name"] = prod_name or f"Deleted Product (ID: {log.product_id})"
-        results.append(d)
-        
-    return jsonify(results), 200
+        return d
+
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params, paginate_query
+        p_num, p_limit = parse_pagination_params()
+        return jsonify(paginate_query(query, page=p_num, limit=p_limit, serializer=serialize_log)), 200
+
+    logs = query.all()
+    return jsonify([serialize_log(l) for l in logs]), 200
 
 # Get general audit logs
 @admin_bp.route('/general-audit-logs', methods=['GET'])
@@ -741,16 +809,25 @@ def get_general_audit_logs():
     
     if search:
         query = query.filter(
-            (AdminAuditLog.admin_username.like(f"%{search}%")) |
-            (AdminAuditLog.details.like(f"%{search}%")) |
-            (AdminAuditLog.module.like(f"%{search}%"))
+            (AdminAuditLog.admin_username.ilike(f"%{search}%")) |
+            (AdminAuditLog.details.ilike(f"%{search}%")) |
+            (AdminAuditLog.module.ilike(f"%{search}%"))
         )
     if action_type:
         query = query.filter(AdminAuditLog.action_type == action_type)
     if status:
         query = query.filter(AdminAuditLog.status == status)
         
-    logs = query.order_by(AdminAuditLog.created_at.desc()).all()
+    query = query.order_by(AdminAuditLog.created_at.desc())
+
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params, paginate_query
+        p_num, p_limit = parse_pagination_params()
+        return jsonify(paginate_query(query, page=p_num, limit=p_limit)), 200
+
+    logs = query.all()
     return jsonify([log.to_dict() for log in logs]), 200
 
 # Admin logout route
@@ -766,9 +843,18 @@ def admin_logout_route():
 @admin_required
 def get_admin_notifications():
     from backend.models.notification import NotificationModel
-    notifications = NotificationModel.query.filter(
+    query = NotificationModel.query.filter(
         NotificationModel.type.in_(['SUPPORT_TICKET', 'BUY_REQUEST', 'LOW_STOCK'])
-    ).order_by(NotificationModel.created_at.desc()).all()
+    ).order_by(NotificationModel.created_at.desc())
+
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params, paginate_query
+        p_num, p_limit = parse_pagination_params()
+        return jsonify(paginate_query(query, page=p_num, limit=p_limit)), 200
+
+    notifications = query.all()
     return jsonify([n.to_dict() for n in notifications]), 200
 
 
@@ -1048,6 +1134,304 @@ def run_report_manually_route():
             "message": f"Report run failed: {str(e)}",
             "success": False
         }), 500
+
+
+# ==========================================
+# SITE SETTINGS & CATEGORIES API ENDPOINTS
+# ==========================================
+
+@admin_bp.route('/settings', methods=['GET'])
+def get_site_settings():
+    from backend.models.settings import SiteSettingModel
+    try:
+        settings = SiteSettingModel.query.all()
+        result = {s.key: s.value for s in settings}
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to fetch site settings: {str(e)}"}), 500
+
+@admin_bp.route('/settings', methods=['POST'])
+@admin_required
+def update_site_settings():
+    from backend.models.settings import SiteSettingModel
+    from backend.utils.audit import log_admin_action
+    data = request.get_json() or {}
+    try:
+        for key, val in data.items():
+            setting = SiteSettingModel.query.filter_by(key=key).first()
+            if setting:
+                setting.value = str(val) if val is not None else None
+            else:
+                setting = SiteSettingModel(key=key, value=str(val) if val is not None else None)
+                db.session.add(setting)
+        db.session.commit()
+        log_admin_action("Update Site Settings", "Settings", "Updated homepage site configurations")
+        return jsonify({"message": "Settings updated successfully!", "success": True}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Failed to update settings: {str(e)}", "success": False}), 500
+
+@admin_bp.route('/categories', methods=['GET'])
+@admin_required
+def get_categories_admin():
+    from backend.models.category import Category
+    try:
+        categories = Category.query.all()
+        return jsonify([c.to_dict() for c in categories]), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to fetch categories: {str(e)}"}), 500
+
+@admin_bp.route('/categories', methods=['POST'])
+@admin_required
+def create_category_admin():
+    from backend.models.category import Category
+    from backend.utils.audit import log_admin_action
+    data = request.get_json() or {}
+    name = data.get("name")
+    name_en = data.get("name_en") or name
+    name_hi = data.get("name_hi") or name
+    image_url = data.get("image_url") or "/logo.svg"
+    
+    if not name:
+        return jsonify({"message": "Category name is required."}), 400
+        
+    try:
+        existing = Category.query.filter_by(name=name).first()
+        if existing:
+            return jsonify({"message": "Category already exists."}), 400
+            
+        category = Category(name=name, name_en=name_en, name_hi=name_hi, image_url=image_url)
+        db.session.add(category)
+        db.session.commit()
+        
+        # Clear category cache
+        from backend.utils.cache import categories_cache
+        categories_cache.delete('all_categories')
+        
+        log_admin_action("Create Category", "Category", f"Created category '{name}'")
+        return jsonify({"message": "Category created successfully!", "category": category.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Failed to create category: {str(e)}"}), 500
+
+@admin_bp.route('/categories/<int:id>', methods=['PUT'])
+@admin_required
+def update_category_admin(id):
+    from backend.models.category import Category
+    from backend.utils.audit import log_admin_action
+    data = request.get_json() or {}
+    
+    try:
+        category = Category.query.get(id)
+        if not category:
+            return jsonify({"message": "Category not found."}), 404
+            
+        old_name = category.name
+        
+        if "name" in data:
+            category.name = data["name"]
+        if "name_en" in data:
+            category.name_en = data["name_en"]
+        if "name_hi" in data:
+            category.name_hi = data["name_hi"]
+        if "image_url" in data:
+            category.image_url = data["image_url"]
+            
+        db.session.commit()
+        
+        # Clear category cache
+        from backend.utils.cache import categories_cache
+        categories_cache.delete('all_categories')
+        
+        log_admin_action("Update Category", "Category", f"Updated category '{old_name}' (ID: {id})")
+        return jsonify({"message": "Category updated successfully!", "category": category.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Failed to update category: {str(e)}"}), 500
+
+@admin_bp.route('/categories/<int:id>', methods=['DELETE'])
+@admin_required
+def delete_category_admin(id):
+    from backend.models.category import Category
+    from backend.utils.audit import log_admin_action
+    try:
+        category = Category.query.get(id)
+        if not category:
+            return jsonify({"message": "Category not found."}), 404
+            
+        name = category.name
+        
+        # Check if there are products in this category
+        if category.products and len(category.products) > 0:
+            return jsonify({"message": f"Cannot delete category '{name}' because it contains {len(category.products)} products."}), 400
+            
+        db.session.delete(category)
+        db.session.commit()
+        
+        # Clear category cache
+        from backend.utils.cache import categories_cache
+        categories_cache.delete('all_categories')
+        
+        log_admin_action("Delete Category", "Category", f"Deleted category '{name}' (ID: {id})")
+        return jsonify({"message": "Category deleted successfully!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Failed to delete category: {str(e)}"}), 500
+
+# ==========================================
+# ADMIN COLLECTION MANAGEMENT ROUTES
+# ==========================================
+@admin_bp.route('/collections', methods=['GET'])
+def get_admin_collections():
+    from backend.models.collection import CollectionModel
+    try:
+        collections = CollectionModel.query.order_by(CollectionModel.display_order.asc(), CollectionModel.id.asc()).all()
+        return jsonify([c.to_dict() for c in collections]), 200
+    except Exception as e:
+        print("Error fetching admin collections:", e)
+        return jsonify([]), 200
+
+@admin_bp.route('/collections', methods=['POST'])
+def create_admin_collection():
+    from backend.models.collection import CollectionModel
+    from backend.utils.cache import products_cache
+    import json
+    data = request.get_json() or {}
+    name = (data.get("name") or data.get("title") or "").strip()
+    if not name:
+        return jsonify({"message": "Collection Name is required."}), 400
+
+    slug = (data.get("slug") or name.lower().replace(" ", "-")).strip()
+    subtitle = data.get("subtitle") or ""
+    description = data.get("description") or ""
+    image_url = data.get("image") or data.get("image_url") or data.get("thumbnail_image") or ""
+    
+    tips = data.get("styling_tips") or data.get("tips") or []
+    tips_str = json.dumps(tips) if isinstance(tips, (list, dict)) else str(tips)
+
+    display_order = int(data.get("display_order", 0))
+    is_active = bool(data.get("is_active", True))
+
+    existing = CollectionModel.query.filter((CollectionModel.name == name) | (CollectionModel.slug == slug)).first()
+    if existing:
+        # Update existing if matching name/slug to prevent duplicate error
+        existing.subtitle = subtitle
+        existing.description = description
+        existing.image = image_url or existing.image
+        existing.thumbnail_image = image_url or existing.thumbnail_image
+        existing.display_order = display_order
+        existing.is_active = is_active
+        db.session.commit()
+        return jsonify(existing.to_dict()), 200
+
+    coll = CollectionModel(
+        name=name,
+        slug=slug,
+        subtitle=subtitle,
+        description=description,
+        image=image_url,
+        thumbnail_image=image_url,
+        banner_image=image_url,
+        styling_tips=tips_str,
+        display_order=display_order,
+        is_active=is_active
+    )
+    db.session.add(coll)
+    db.session.commit()
+    products_cache.clear()
+
+    from backend.utils.audit import log_admin_action
+    log_admin_action("Collection Created", "Collection Management", f"Created collection '{name}'")
+
+    return jsonify(coll.to_dict()), 201
+
+@admin_bp.route('/collections/<id>', methods=['PUT'])
+def update_admin_collection(id):
+    from backend.models.collection import CollectionModel
+    from backend.utils.cache import products_cache
+    import json
+    try:
+        coll_id = int(id)
+        coll = CollectionModel.query.get(coll_id)
+        if not coll:
+            return jsonify({"message": "Collection not found."}), 404
+            
+        data = request.get_json() or {}
+        if "name" in data or "title" in data:
+            coll.name = (data.get("name") or data.get("title")).strip()
+            coll.slug = coll.name.lower().replace(" ", "-")
+        if "subtitle" in data:
+            coll.subtitle = data["subtitle"]
+        if "description" in data:
+            coll.description = data["description"]
+        if "image" in data or "image_url" in data:
+            img = data.get("image") or data.get("image_url")
+            coll.image = img
+            coll.thumbnail_image = img
+            coll.banner_image = img
+        if "styling_tips" in data or "tips" in data:
+            tips = data.get("styling_tips") or data.get("tips")
+            coll.styling_tips = json.dumps(tips) if isinstance(tips, (list, dict)) else str(tips)
+        if "display_order" in data:
+            coll.display_order = int(data["display_order"])
+        if "is_active" in data:
+            coll.is_active = bool(data["is_active"])
+
+        db.session.commit()
+        products_cache.clear()
+
+        from backend.utils.audit import log_admin_action
+        log_admin_action("Collection Updated", "Collection Management", f"Updated collection '{coll.name}'")
+
+        return jsonify(coll.to_dict()), 200
+    except Exception as e:
+        print("Error updating collection:", e)
+        return jsonify({"message": "Failed to update collection."}), 500
+
+@admin_bp.route('/collections/<id>', methods=['DELETE'])
+def delete_admin_collection(id):
+    from backend.models.collection import CollectionModel
+    from backend.models.product import ProductModel
+    from backend.utils.cache import products_cache
+    try:
+        coll_id = int(id)
+        coll = CollectionModel.query.get(coll_id)
+        if not coll:
+            return jsonify({"message": "Collection not found."}), 404
+
+        coll_name = coll.name
+        ProductModel.query.filter_by(collection_id=coll.id).update({ProductModel.collection_id: None})
+        db.session.delete(coll)
+        db.session.commit()
+        products_cache.clear()
+
+        from backend.utils.audit import log_admin_action
+        log_admin_action("Collection Deleted", "Collection Management", f"Deleted collection '{coll_name}'")
+
+        return jsonify({"message": "Collection deleted successfully!", "id": str(coll_id)}), 200
+    except Exception as e:
+        print("Error deleting collection:", e)
+        return jsonify({"message": "Failed to delete collection."}), 500
+
+@admin_bp.route('/collections/<id>/toggle', methods=['PUT'])
+def toggle_admin_collection_active(id):
+    from backend.models.collection import CollectionModel
+    from backend.utils.cache import products_cache
+    try:
+        coll_id = int(id)
+        coll = CollectionModel.query.get(coll_id)
+        if not coll:
+            return jsonify({"message": "Collection not found."}), 404
+
+        coll.is_active = not coll.is_active
+        db.session.commit()
+        products_cache.clear()
+
+        return jsonify(coll.to_dict()), 200
+    except Exception as e:
+        print("Error toggling collection:", e)
+        return jsonify({"message": "Failed to toggle collection state."}), 500
+
 
 
 
