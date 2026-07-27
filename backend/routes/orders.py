@@ -306,12 +306,26 @@ def create_order(current_user):
 @orders_bp.route('', methods=['GET'])
 @token_required
 def get_user_orders(current_user):
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params
+        p_num, p_limit = parse_pagination_params()
+        orders = OrderModel.find_by_user_id(current_user["_id"], page=p_num, limit=p_limit)
+        return jsonify(orders), 200
     orders = OrderModel.find_by_user_id(current_user["_id"])
     return jsonify(orders), 200
 
 @orders_bp.route('/all', methods=['GET'])
 @admin_required
 def get_all_orders():
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params
+        p_num, p_limit = parse_pagination_params()
+        orders = OrderModel.find_all(page=p_num, limit=p_limit)
+        return jsonify(orders), 200
     orders = OrderModel.find_all()
     return jsonify(orders), 200
 

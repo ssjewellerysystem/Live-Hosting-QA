@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ChevronUp, X, Heart, Sparkles } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
+import axios from 'axios';
+import { API_BASE_URL } from '../context/AuthContext';
 
 // 3D Parallax & Magnetic Card component for Occasion
-const ParallaxOccasionCard = ({ item, onExpand, index }) => {
+const ParallaxOccasionCard = ({ item, onExpand, onCollectionClick, index, hasDraggedRef }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -56,7 +58,14 @@ const ParallaxOccasionCard = ({ item, onExpand, index }) => {
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onClick={() => onExpand(item)}
+      onClick={() => {
+        if (hasDraggedRef && hasDraggedRef.current) return;
+        if (onCollectionClick) {
+          onCollectionClick(item.title);
+        } else if (onExpand) {
+          onExpand(item);
+        }
+      }}
       className="relative w-[260px] sm:w-[330px] aspect-[9/14] rounded-2xl overflow-hidden cursor-pointer group border border-slate-200/40 dark:border-slate-800/80 bg-slate-900 shadow-md hover:shadow-2xl transition-shadow duration-350 select-none flex-shrink-0 no-zoom"
     >
       {/* Background Image with Parallax Offset */}
@@ -68,11 +77,18 @@ const ParallaxOccasionCard = ({ item, onExpand, index }) => {
           y: imgY
         }}
       >
-        <img
-          src={item.image}
-          alt={item.title}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 saturate-[1.1] brightness-[0.85] no-zoom"
-        />
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.title}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 saturate-[1.1] brightness-[0.85] no-zoom"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#1B0B26] via-[#3F1D5A] to-[#0F071A] flex flex-col items-center justify-center text-center p-4">
+            <Sparkles className="h-10 w-10 text-[#D4A75F] animate-pulse mb-2" />
+          </div>
+        )}
       </motion.div>
 
       {/* Dark overlay with dynamic gradient */}
@@ -104,102 +120,267 @@ const ParallaxOccasionCard = ({ item, onExpand, index }) => {
   );
 };
 
-export const OccasionGallery = () => {
+export const OccasionGallery = ({ items: propItems, activeCollection, onCollectionClick }) => {
   const { language } = useTranslation();
   const [selectedItem, setSelectedItem] = useState(null);
+  const [dbCollections, setDbCollections] = useState([]);
 
-  // Occasions Lookbook Data
-  const items = {
-    en: [
-      {
-        id: 1,
-        title: "Date Night",
-        subtitle: "Elegance & Layered Statements",
-        image: "/cat_necklaces.png",
-        description: "Perfect combinations of layered gold chains, subtle collar necklaces, and delicate hoops. Crafted to make statement memories under candlelit tables.",
-        tips: ["Pair with solid dark necklines to highlight gold textures.", "Layer 2-3 chains of varying lengths.", "Keep earrings minimal if layering necklaces."]
-      },
-      {
-        id: 2,
-        title: "Wedding Wear",
-        subtitle: "Regal Heritage Kundan",
-        image: "/cat_bridal.png",
-        description: "Ornate traditional bridal choker sets, heavy designer jhumkas, and matching hand ornaments. Tailored for classic royal elegance.",
-        tips: ["Complement heavily embroidered outfits with choker-length sets.", "Style with matching maang-tika for classic look.", "Incorporate natural pearls for color balance."]
-      },
-      {
-        id: 3,
-        title: "Office Wear",
-        subtitle: "Minimalistic Luxury Studs",
-        image: "/cat_earrings.png",
-        description: "Chic, lightweight, and modern daily-wear items. Understated solitaire bands, studs, and sleek bracelets designed for executive confidence.",
-        tips: ["Stick to one key statement piece (e.g. sleek studs or minimalist watch).", "Platinum/white-gold options work best with formal suits.", "Avoid noisy jingling bracelets."]
-      },
-      {
-        id: 4,
-        title: "Daily Wear",
-        subtitle: "Versatile Chic Bangles",
-        image: "/cat_bracelets.png",
-        description: "Comfortable, durable, yet elegant gold bands and bracelets. Built for regular wear while retaining luxurious gold textures.",
-        tips: ["Mix different gold karats for unique color play.", "Opt for smooth, snag-free lock styles.", "Great for layering alongside wristwatches."]
+  const trackRef = useRef(null);
+  const trackContainerRef = useRef(null);
+  const positionRef = useRef(0);
+  const isInteractingRef = useRef(false);
+  const isHoveredRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartPositionRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+  const velocityRef = useRef(0);
+  const lastMouseXRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const resumeTimeoutRef = useRef(null);
+  const singleSetWidthRef = useRef(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDbCollections = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/collections`);
+        if (isMounted && response.data) {
+          const mapped = response.data
+            .filter(c => c.is_active !== false)
+            .map(c => ({
+              id: c.id,
+              title: c.name || c.title,
+              subtitle: c.subtitle || c.description || (language === 'hi' ? 'विशेष संग्रह' : 'Curated Masterpiece'),
+              image: (c.image && !c.image.includes('cat_')) ? c.image : ((c.image_url && !c.image_url.includes('cat_')) ? c.image_url : ((c.thumbnail_image && !c.thumbnail_image.includes('cat_')) ? c.thumbnail_image : null)),
+              description: c.description || (language === 'hi' ? 'हमारे नवीनतम संग्रह की खोज करें।' : 'Discover our latest handcrafted collection.'),
+              tips: Array.isArray(c.styling_tips) && c.styling_tips.length > 0 ? c.styling_tips : [
+                language === 'hi' ? 'सुंदर लुक के लिए परिधानों के साथ पहनें।' : 'Pair with classic ensembles for timeless luxury.',
+                language === 'hi' ? 'सदाबहार चमक के लिए सोने के डिज़ाइन चुनें।' : 'Explore fine gold craftsmanship for special milestones.'
+              ]
+            }));
+          setDbCollections(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching dynamic collections:", err);
       }
-    ],
-    hi: [
-      {
-        id: 1,
-        title: "डिनर डेट",
-        subtitle: "लालित्य और लेयर्ड आभूषण",
-        image: "/cat_necklaces.png",
-        description: "लेयर्ड सोने की जंजीरों, सूक्ष्म कॉलर हार और नाजुक हुप्स का सही संयोजन। मोमबत्ती की रोशनी में सुखद यादें बनाने के लिए डिज़ाइन किया गया।",
-        tips: ["सोने की बनावट को उभारने के लिए गहरे रंग के कपड़ों के साथ पहनें।", "अलग-अलग लंबाई की 2-3 चेन लेयर करें।", "हार लेयर करते समय झुमके हल्के रखें।"]
-      },
-      {
-        id: 2,
-        title: "शादी विवाह",
-        subtitle: "शाही विरासत कुंदन",
-        image: "/cat_bridal.png",
-        description: "कढ़ाई वाले परिधानों के साथ चोकर-लंबाई वाले सेट पहनें। क्लासिक लुक के लिए मांग-टीका के साथ स्टाइल करें।",
-        tips: ["कढ़ाई वाले परिधानों के साथ चोकर-लंबाई वाले सेट पहनें।", "क्लासिक लुक के लिए मांग-टीका के साथ स्टाइल करें।", "रंग संतुलन के लिए प्राकृतिक मोतियों को शामिल करें।"]
-      },
-      {
-        id: 3,
-        title: "ऑफिस वियर",
-        subtitle: "न्यूनतम लक्जरी स्टड्स",
-        image: "/cat_earrings.png",
-        description: "ठाठ, हल्के और आधुनिक दैनिक-पहनने वाले आभूषण। कार्यकारी आत्मविश्वास के लिए सुरुचिपूर्ण सॉलिटेयर रिंग, स्टड्स और चिकनी ब्रेसलेट।",
-        tips: ["एक प्रमुख आभूषण पहनें (जैसे सूक्ष्म स्टड्स या न्यूनतम ब्रेसलेट)।", "औपचारिक सूट के साथ सफेद सोना/प्लैटिनम सबसे अच्छे लगते हैं।", "आवाज करने वाले कंगन पहनने से बचें।"]
-      },
-      {
-        id: 4,
-        title: "दैनिक पहनावा",
-        subtitle: "बहुमुखी ब्रेसलेट",
-        image: "/cat_bracelets.png",
-        description: "आरामदायक, टिकाऊ, फिर भी सुरुचिपूर्ण सोने के छल्ले और कंगन। शानदार बनावट के साथ नियमित रूप से पहनने के लिए उपयुक्त।",
-        tips: ["अनोखे लुक के लिए सोने के विभिन्न रंगों को मिलाएं।", "स्मूथ और सुरक्षित लॉक स्टाइल चुनें।", "कलाई घड़ी के साथ लेयरिंग के लिए बेहतरीन।"]
+    };
+    fetchDbCollections();
+    return () => { isMounted = false; };
+  }, [language]);
+
+  const items = (propItems && propItems.length > 0) ? propItems : dbCollections;
+
+  const handleInteractionStart = () => {
+    isInteractingRef.current = true;
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+      resumeTimeoutRef.current = null;
+    }
+  };
+
+  const handleInteractionEnd = () => {
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = setTimeout(() => {
+      isInteractingRef.current = false;
+    }, 2500);
+  };
+
+  // RAF loop for continuous 60fps auto-play & smooth wrap-around
+  useEffect(() => {
+    let animationFrameId;
+    let lastTimestamp = performance.now();
+
+    const updatePosition = (timestamp) => {
+      const deltaTime = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      const track = trackRef.current;
+      if (track && items.length > 0) {
+        const totalWidth = track.scrollWidth;
+        const singleSetWidth = totalWidth / 3;
+        singleSetWidthRef.current = singleSetWidth;
+
+        if (singleSetWidth > 0) {
+          // Initialize position to middle set once measured
+          if (positionRef.current === 0) {
+            positionRef.current = -singleSetWidth;
+          }
+
+          // Auto-play when not interacting, hovering, or dragging
+          if (!isInteractingRef.current && !isHoveredRef.current && !isDraggingRef.current) {
+            const speed = singleSetWidth / 35; // 35 seconds per single set loop
+            positionRef.current -= speed * Math.min(deltaTime, 0.1);
+          } else if (!isDraggingRef.current && Math.abs(velocityRef.current) > 0.05) {
+            positionRef.current += velocityRef.current;
+            velocityRef.current *= 0.90; // Momentum inertia friction
+          }
+
+          // Infinite wrap within [-2*W, 0]
+          if (positionRef.current <= -2 * singleSetWidth) {
+            positionRef.current += singleSetWidth;
+          } else if (positionRef.current > 0) {
+            positionRef.current -= singleSetWidth;
+          }
+
+          track.style.transform = `translate3d(${positionRef.current}px, 0, 0)`;
+        }
       }
-    ]
-  }[language === 'hi' ? 'hi' : 'en'];
+
+      animationFrameId = requestAnimationFrame(updatePosition);
+    };
+
+    animationFrameId = requestAnimationFrame(updatePosition);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [items.length]);
+
+  // Global mousemove and mouseup listeners for desktop drag
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+
+      const currentX = e.clientX;
+      const dx = currentX - dragStartXRef.current;
+      if (Math.abs(dx) > 5) {
+        hasDraggedRef.current = true;
+      }
+
+      const now = performance.now();
+      const dt = (now - lastTimeRef.current) / 1000;
+      if (dt > 0) {
+        const mouseDx = currentX - lastMouseXRef.current;
+        velocityRef.current = mouseDx;
+      }
+      lastMouseXRef.current = currentX;
+      lastTimeRef.current = now;
+
+      positionRef.current = dragStartPositionRef.current + dx;
+
+      const W = singleSetWidthRef.current;
+      if (W > 0) {
+        while (positionRef.current <= -2 * W) positionRef.current += W;
+        while (positionRef.current > 0) positionRef.current -= W;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        handleInteractionEnd();
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  // Wheel listener for horizontal scroll / trackpad support
+  useEffect(() => {
+    const container = trackContainerRef.current;
+    if (!container) return;
+
+    let wheelTimer = null;
+
+    const handleWheel = (e) => {
+      const deltaX = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+      if (deltaX !== 0) {
+        e.preventDefault();
+        handleInteractionStart();
+
+        positionRef.current -= deltaX * 1.2;
+
+        const W = singleSetWidthRef.current;
+        if (W > 0) {
+          while (positionRef.current <= -2 * W) positionRef.current += W;
+          while (positionRef.current > 0) positionRef.current -= W;
+        }
+
+        if (wheelTimer) clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(() => {
+          handleInteractionEnd();
+        }, 200);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      if (wheelTimer) clearTimeout(wheelTimer);
+    };
+  }, []);
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    handleInteractionStart();
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartPositionRef.current = positionRef.current;
+    hasDraggedRef.current = false;
+    velocityRef.current = 0;
+    lastMouseXRef.current = e.clientX;
+    lastTimeRef.current = performance.now();
+  };
+
+  const handleTouchStart = (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    handleInteractionStart();
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.touches[0].clientX;
+    dragStartPositionRef.current = positionRef.current;
+    hasDraggedRef.current = false;
+    velocityRef.current = 0;
+    lastMouseXRef.current = e.touches[0].clientX;
+    lastTimeRef.current = performance.now();
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDraggingRef.current || !e.touches || e.touches.length === 0) return;
+
+    const currentX = e.touches[0].clientX;
+    const dx = currentX - dragStartXRef.current;
+    if (Math.abs(dx) > 5) {
+      hasDraggedRef.current = true;
+    }
+
+    const now = performance.now();
+    const dt = (now - lastTimeRef.current) / 1000;
+    if (dt > 0) {
+      const touchDx = currentX - lastMouseXRef.current;
+      velocityRef.current = touchDx;
+    }
+    lastMouseXRef.current = currentX;
+    lastTimeRef.current = now;
+
+    positionRef.current = dragStartPositionRef.current + dx;
+
+    const W = singleSetWidthRef.current;
+    if (W > 0) {
+      while (positionRef.current <= -2 * W) positionRef.current += W;
+      while (positionRef.current > 0) positionRef.current -= W;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      handleInteractionEnd();
+    }
+  };
 
   return (
     <section className="relative w-full overflow-hidden py-16 bg-transparent transition-colors duration-300">
       
-      {/* Infinite Seamless Marquee CSS */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes marquee-horizontal {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee-track {
-          display: flex;
-          gap: 20px;
-          width: max-content;
-          animation: marquee-horizontal 35s linear infinite;
-        }
-        .animate-marquee-track:hover {
-          animation-play-state: paused;
-        }
-      `}} />
-
       {/* Title block remains aligned with parent margins */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-3xl mb-12">
         <motion.div 
@@ -209,11 +390,11 @@ export const OccasionGallery = () => {
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 text-[#D4A75F] text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-4"
         >
           <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-          {language === 'hi' ? 'अवसर के अनुसार लुकबुक' : 'Shop by Occasion'}
+          {language === 'hi' ? 'संग्रह के अनुसार खरीदें' : 'Shop by Collection'}
         </motion.div>
         
         <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#3F1D5A] dark:text-[#EFE7DB] tracking-wide">
-          {language === 'hi' ? 'हर अवसर के लिए विशेष स्टाइल' : 'Styling Curated for Every Occasion'}
+          {language === 'hi' ? 'हर संग्रह के लिए विशेष स्टाइल' : 'Styling Curated for Every Collection'}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-3 max-w-xl mx-auto">
           {language === 'hi' 
@@ -224,15 +405,30 @@ export const OccasionGallery = () => {
       </div>
 
       {/* Full-width Carousel Track (no margins, edge-to-edge width) */}
-      <div className="w-full overflow-hidden py-4 relative z-10">
-        <div className="animate-marquee-track">
-          {/* Double items array for seamless looping visual alignment */}
-          {[...items, ...items].map((item, index) => (
+      <div 
+        ref={trackContainerRef}
+        className="w-full overflow-hidden py-4 relative z-10 select-none touch-pan-y cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseEnter={() => { isHoveredRef.current = true; }}
+        onMouseLeave={() => { isHoveredRef.current = false; }}
+      >
+        <div 
+          ref={trackRef} 
+          className="flex gap-5 pointer-events-auto"
+          style={{ gap: '20px', width: 'max-content' }}
+        >
+          {/* Triple items array for seamless looping visual alignment */}
+          {[...items, ...items, ...items].map((item, index) => (
             <ParallaxOccasionCard 
               key={`${item.id}-${index}`} 
               item={item} 
               onExpand={setSelectedItem} 
+              onCollectionClick={onCollectionClick}
               index={index} 
+              hasDraggedRef={hasDraggedRef}
             />
           ))}
         </div>
@@ -264,14 +460,23 @@ export const OccasionGallery = () => {
 
               {/* Left Side: Occasion Canvas */}
               <div className="md:w-3/5 h-[40vh] md:h-auto relative overflow-hidden bg-slate-900 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-800">
-                <motion.img
-                  src={selectedItem.image}
-                  alt={selectedItem.title}
-                  className="w-full h-full object-cover saturate-[1.1] brightness-[0.95]"
-                  initial={{ scale: 1.15 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.8 }}
-                />
+                {selectedItem.image ? (
+                  <motion.img
+                    src={selectedItem.image}
+                    alt={selectedItem.title}
+                    className="w-full h-full object-cover saturate-[1.1] brightness-[0.95]"
+                    initial={{ scale: 1.15 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.8 }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#1B0B26] via-[#3F1D5A] to-[#0F071A] flex flex-col items-center justify-center p-6 text-center">
+                    <Sparkles className="h-12 w-12 text-[#D4A75F] animate-pulse mb-3" />
+                    <span className="text-[#D4A75F] text-sm font-serif font-bold uppercase tracking-widest">
+                      {selectedItem.title}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Right Side: Styling Tips & Description */}

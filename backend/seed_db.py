@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import bcrypt
 from datetime import datetime
 
@@ -57,209 +58,49 @@ def seed_database():
         ensure_faqs_seeded()
         ensure_support_links_seeded()
 
-        # 1. Seed Users and Admins
-        print("Seeding Users and Admin accounts...")
-        admin_email = "admin@SSJewellery.com"
-        admin_pw_hash = bcrypt.hashpw("Admin@123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        admin_user = UserModel(
-            name="SSJewellery Admin",
-            email=admin_email,
-            password=admin_pw_hash,
-            mobile="9876543210",
-            is_admin=True,
-            is_blocked=False,
-            email_verified=True
-        )
-        db.session.add(admin_user)
-        db.session.commit()
-        
-        # Seed DeliveryAddress for Admin
-        admin_addr = DeliveryAddress(
-            user_id=admin_user.id,
-            street="100 SSJewellery Boutique, UB City",
-            city="Bengaluru",
-            state="Karnataka",
-            pincode="560001"
-        )
-        db.session.add(admin_addr)
-        db.session.commit()
-        
-        # Seed AdminModel table credentials
-        admin_cred = AdminModel(
-            username="admin",
-            password="admin123"
-        )
-        db.session.add(admin_cred)
-        db.session.commit()
-        print(f"Created default Admin user: {admin_email} / Admin@123")
+        # 1. Seed Admins (ONLY if admins table is empty during explicit manual database seeding)
+        print("Checking Admins table...")
+        if AdminModel.query.count() == 0:
+            admin_pw_hash = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            admin_cred = AdminModel(
+                username="admin",
+                password=admin_pw_hash
+            )
+            db.session.add(admin_cred)
+            db.session.commit()
+            print("Seeded initial admin credentials into admins table.")
+        else:
+            print("Admins table already populated. Skipping admin seeding.")
 
         cust_email = "customer@SSJewellery.com"
-        cust_pw_hash = bcrypt.hashpw("Customer@123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        cust_user = UserModel(
-            name="Rahul Sharma",
-            email=cust_email,
-            password=cust_pw_hash,
-            mobile="9123456789",
-            is_admin=False,
-            is_blocked=False,
-            email_verified=True
-        )
-        db.session.add(cust_user)
-        db.session.commit()
-        
-        cust_addr = DeliveryAddress(
-            user_id=cust_user.id,
-            street="45 Golf Links Apartments",
-            city="New Delhi",
-            state="Delhi",
-            pincode="110003"
-        )
-        db.session.add(cust_addr)
-        db.session.commit()
-        print(f"Created default Customer user: {cust_email} / Customer@123")
+        if not UserModel.query.filter_by(email=cust_email).first():
+            cust_pw_hash = bcrypt.hashpw("Customer@123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cust_user = UserModel(
+                name="Rahul Sharma",
+                email=cust_email,
+                password=cust_pw_hash,
+                mobile="9123456789",
+                is_admin=False,
+                is_blocked=False,
+                email_verified=True
+            )
+            db.session.add(cust_user)
+            db.session.commit()
+            
+            cust_addr = DeliveryAddress(
+                user_id=cust_user.id,
+                street="45 Golf Links Apartments",
+                city="New Delhi",
+                state="Delhi",
+                pincode="110003"
+            )
+            db.session.add(cust_addr)
+            db.session.commit()
+            print(f"Created default Customer user: {cust_email} / Customer@123")
 
         # 2. Seed Products
         print("Seeding catalog products...")
-        mock_products = [
-            # Rings Category
-            {
-                "name": "Classic Solitaire Diamond Ring",
-                "category": "Rings",
-                "price": 145000.00,
-                "discount": 5,
-                "stock": 12,
-                "description": "A signature piece of everlasting elegance. This solitaire ring showcases a brilliant-cut 1.5 carat round diamond prong-set in a polished 18k yellow gold band. A timeless choice for engagements and special milestones.",
-                "images": [
-                    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.8,
-                "show_on_homepage": True
-            },
-            {
-                "name": "Eternity Diamond Band",
-                "category": "Rings",
-                "price": 98000.00,
-                "discount": 0,
-                "stock": 15,
-                "description": "An uninterrupted circle of light. This eternity band features micro-pave diamonds meticulously set in an 18k white gold band. Stunning when stacked or worn as a standalone piece.",
-                "images": [
-                    "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.7,
-                "show_on_homepage": True
-            },
-            
-            # Necklaces Category
-            {
-                "name": "Empress Diamond Choker",
-                "category": "Necklaces",
-                "price": 275000.00,
-                "discount": 10,
-                "stock": 4,
-                "description": "Make a majestic statement with the Empress Choker. An ornate floral pattern of brilliant pear and round-cut diamonds suspended from an 18k white gold framework. Designed for the grandest occasions.",
-                "images": [
-                    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.9,
-                "show_on_homepage": True
-            },
-            {
-                "name": "Regal Emerald & Pearl Necklace",
-                "category": "Necklaces",
-                "price": 340000.00,
-                "discount": 8,
-                "stock": 3,
-                "description": "A luxurious arrangement of vibrant oval Colombian emeralds, interlaced with premium South Sea pearls and rose-cut diamonds in a 22k yellow gold setting.",
-                "images": [
-                    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 5.0,
-                "show_on_homepage": True
-            },
-            
-            # Earrings Category
-            {
-                "name": "Royal Emerald Cascade Earrings",
-                "category": "Earrings",
-                "price": 189000.00,
-                "discount": 10,
-                "stock": 6,
-                "description": "These stunning drop earrings capture the essence of luxury. Deep green teardrop emeralds hang elegantly from a cluster of brilliant round diamonds in polished 18k white gold settings.",
-                "images": [
-                    "https://images.unsplash.com/photo-1635767798638-3e25273a8236?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.7,
-                "show_on_homepage": True
-            },
-            {
-                "name": "Classic Diamond Studs",
-                "category": "Earrings",
-                "price": 65000.00,
-                "discount": 5,
-                "stock": 25,
-                "description": "Everyday luxury in its purest form. A matched pair of round brilliant diamonds weighing a total of 1.0 carat, prong-set securely in 18k yellow gold martini settings.",
-                "images": [
-                    "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1635767798638-3e25273a8236?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.6,
-                "show_on_homepage": True
-            },
-            
-            # Bracelets Category
-            {
-                "name": "Orion Diamond Tennis Bracelet",
-                "category": "Bracelets",
-                "price": 210000.00,
-                "discount": 5,
-                "stock": 8,
-                "description": "A continuous, fluid ribbon of brilliant light. Sixty round-cut diamonds are expertly aligned in an 18k white gold tennis setting. Equipped with a secure double-trigger safety clasp.",
-                "images": [
-                    "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.9,
-                "show_on_homepage": True
-            },
-            
-            # Bangles Category
-            {
-                "name": "Aura Crafted Gold Bangles",
-                "category": "Bangles",
-                "price": 95000.00,
-                "discount": 0,
-                "stock": 14,
-                "description": "A pair of masterfully hand-engraved solid 22k yellow gold bangles. Designed with traditional Indian filigree motifs adapted for a modern, sleek profile.",
-                "images": [
-                    "https://images.unsplash.com/photo-1611085583191-a3b1a30a5a40?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 4.8,
-                "show_on_homepage": True
-            },
-            
-            # Bridal Collection
-            {
-                "name": "Imperial Ruby & Polki Bridal Set",
-                "category": "Bridal Collection",
-                "price": 580000.00,
-                "discount": 12,
-                "stock": 2,
-                "description": "The ultimate luxury heirloom. A comprehensive bridal set containing an ornate collar necklace, drop earrings, and a maang tikka, encrusted with pigeon-blood rubies and uncut Polki diamonds in 22k gold.",
-                "images": [
-                    "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&auto=format&fit=crop&q=80",
-                    "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&auto=format&fit=crop&q=80"
-                ],
-                "ratings": 5.0,
-                "show_on_homepage": True
-            }
-        ]
-        
+        mock_products = []
         for p in mock_products:
             ProductModel.create_product(p)
         print(f"Successfully seeded {len(mock_products)} premium catalog products!")
@@ -359,62 +200,31 @@ def seed_database():
         db.session.commit()
         print("Successfully seeded category attributes.")
 
-        # 5. Seed Banners
-        print("Seeding banners...")
-        default_banners = [
-            {
-                "title": "The Solitaire Diamond Collection",
-                "subtitle": "Eternal Brilliance, Handcrafted Elegance",
-                "description": "Explore our signature 18k yellow gold and white gold diamond solitaire rings. Perfect for weddings, proposals, and lifetime memories.",
-                "button_text": "Shop Solitaires",
-                "button_link": "/?category=Rings",
-                "image_url": "",
-                "background_style": "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
-                "category": "Rings",
-                "display_order": 1,
-                "is_active": True
-            },
-            {
-                "title": "The Royal Empress Collection",
-                "subtitle": "Ornate Emerald & Pearl Artistry",
-                "description": "Adorn yourself with masterfully crafted necklaces, chokers, and bridal neckwear set in solid 22k gold and premium gemstones.",
-                "button_text": "Shop Necklaces",
-                "button_link": "/?category=Necklaces",
-                "image_url": "",
-                "background_style": "from-[#3F1D5A] via-[#5C2E7E] to-[#3F1D5A]",
-                "category": "Necklaces",
-                "display_order": 2,
-                "is_active": True
-            },
-            {
-                "title": "Imperial Bridal Heirlooms",
-                "subtitle": "Maang Tikkas, Polki Sets & Rubies",
-                "description": "Celebrate your grand day with timeless heirloom bridal sets, meticulously set with uncut Polki diamonds and fine rubies.",
-                "button_text": "Explore Bridal Set",
-                "button_link": "/?category=Bridal%20Collection",
-                "image_url": "",
-                "background_style": "from-[#1B0B26] via-[#3F1D5A] to-[#1B0B26]",
-                "category": "Bridal Collection",
-                "display_order": 3,
-                "is_active": True
-            }
-        ]
-        for b_data in default_banners:
-            b = BannerModel(
-                title=b_data["title"],
-                subtitle=b_data["subtitle"],
-                description=b_data["description"],
-                button_text=b_data["button_text"],
-                button_link=b_data["button_link"],
-                image_url=b_data["image_url"],
-                background_style=b_data["background_style"],
-                category=b_data["category"],
-                display_order=b_data["display_order"],
-                is_active=b_data["is_active"]
-            )
-            db.session.add(b)
-        db.session.commit()
-        print("Successfully seeded banners.")
+        # 5. Seed Banners from external JSON resource (ONLY if table is empty)
+        if BannerModel.query.count() == 0:
+            print("Seeding initial banners into database from external JSON resource...")
+            seed_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'banners_seed.json')
+            if os.path.exists(seed_json_path):
+                with open(seed_json_path, 'r', encoding='utf-8') as f:
+                    seed_banners = json.load(f)
+                for b_data in seed_banners:
+                    b = BannerModel(
+                        title=b_data.get("title", ""),
+                        subtitle=b_data.get("subtitle", ""),
+                        description=b_data.get("description", ""),
+                        button_text=b_data.get("button_text", ""),
+                        button_link=b_data.get("button_link", ""),
+                        image_url=b_data.get("image_url", ""),
+                        background_style=b_data.get("background_style", "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]"),
+                        category=b_data.get("category", ""),
+                        display_order=b_data.get("display_order", 1),
+                        is_active=b_data.get("is_active", True)
+                    )
+                    db.session.add(b)
+                db.session.commit()
+                print("Successfully seeded banners from external JSON file.")
+        else:
+            print("Banners already exist in database. Skipping seed.")
         print("Database seeding completed successfully.")
 
 if __name__ == '__main__':

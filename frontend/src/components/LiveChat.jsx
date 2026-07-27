@@ -92,7 +92,7 @@ export const LiveChat = () => {
         } else if (userQuery.includes('coupon') || userQuery.includes('discount') || userQuery.includes('promo') || userQuery.includes('कूपन') || userQuery.includes('छूट') || userQuery.includes('डिस्काउंट')) {
           botResponse = "अतिरिक्त छूट (केवल दृश्य) पाने के लिए चेकआउट पर 'JEWEL50' कोड का उपयोग करें! मौसमी सौदों के लिए हमारे बैनर देखें।";
         } else if (userQuery.includes('admin') || userQuery.includes('dashboard') || userQuery.includes('stats') || userQuery.includes('एडमिन') || userQuery.includes('डैशबोर्ड')) {
-          botResponse = "आप प्रोफ़ाइल मेनू से एडमिन डैशबोर्ड तक पहुँच सकते हैं! उत्पाद जोड़ने या स्थिति अपडेट करने के लिए आईडी 'admin' और पासवर्ड 'admin123' के साथ लॉगिन करें।";
+          botResponse = "आप प्रोफ़ाइल मेनू से एडमिन डैशबोर्ड तक पहुँच सकते हैं! उत्पाद जोड़ने या स्थिति अपडेट करने के लिए अपने पंजीकृत एडमिन क्रेडेंशियल के साथ लॉगिन करें।";
         } else if (userQuery.includes('thank') || userQuery.includes('thanks') || userQuery.includes('धन्यवाद') || userQuery.includes('शुक्रिया') || userQuery.includes('थैंक्स')) {
           botResponse = "आपका बहुत-बहुत स्वागत है! मुझे बताएं कि क्या मैं आपकी मदद के लिए कुछ और कर सकता हूं। हैप्पी शॉपिंग! 🛍️";
         }
@@ -108,7 +108,7 @@ export const LiveChat = () => {
         } else if (userQuery.includes('coupon') || userQuery.includes('discount') || userQuery.includes('promo')) {
           botResponse = "Use code 'JEWEL50' on checkout mockups to grab additional discounts (visual only)! Check out our featured slider banners for seasonal deals.";
         } else if (userQuery.includes('admin') || userQuery.includes('dashboard') || userQuery.includes('stats')) {
-          botResponse = "You can access the Admin Dashboard from the profile menu! Login with ID 'admin' and Password 'admin123' to add products or update status.";
+          botResponse = "You can access the Admin Dashboard from the profile menu! Login with your registered Admin credentials to add products or update status.";
         } else if (userQuery.includes('thank') || userQuery.includes('thanks')) {
           botResponse = "You're very welcome! Let me know if there is anything else I can do to help you. Happy shopping! 🛍️";
         }

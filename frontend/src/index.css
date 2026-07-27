@@ -24,18 +24,66 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Enforce the theme system colors based on user specifications */
-html, body {
-  background-color: #FFFFFF !important;
-  color: #1F1F1F !important;
+/* Enforce the theme system colors and strict iOS viewport containment */
+html, body, #root {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  position: relative;
+  background-color: #FFFFFF;
+  color: #1F1F1F;
   font-family: 'Outfit', 'Inter', sans-serif;
-  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
-html.dark, html.dark body {
+html.dark, html.dark body, html.dark #root {
   background-color: #111827 !important;
   color: #ffffff !important;
-  overflow-x: hidden;
+}
+
+/* Prevent iOS Safari Auto-Zoom on Search Bar and Form Input Focus */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* iOS Safe Area Insets for Notch, Dynamic Island, and Home Indicator */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Prevent touch delay and unwanted layout zoom */
+.no-zoom {
+  touch-action: manipulation;
+}
+
+.ios-smooth-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Light mode overrides for premium pure white and section light gray */
@@ -682,4 +730,17 @@ html.dark .info-text,
 html.dark .secondary-text {
   color: #FFFFFF !important;
   opacity: 1 !important;
+}
+
+/* ==========================================================================
+   GOLD & SILVER CALCULATOR SECTION HEADINGS (HIGH CONTRAST IN LIGHT MODE)
+   ========================================================================== */
+html:not(.dark) .calculator-section-label,
+html:not(.dark) .calc-section-heading {
+  color: #FFFFFF !important;
+}
+
+.dark .calculator-section-label,
+.dark .calc-section-heading {
+  color: #cbd5e1;
 }

@@ -1,16 +1,41 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export const VideoShowcase = () => {
+export const VideoShowcase = React.memo(({ url }) => {
   const sectionRef = useRef(null);
   const videoWrapperRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (videoRef.current) {
+            videoRef.current.play().catch(() => {});
+          }
+        } else {
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Smooth fade-in and scale reveal on scroll
       gsap.fromTo(
         videoWrapperRef.current,
         { opacity: 0, scale: 0.98 },
@@ -45,11 +70,13 @@ export const VideoShowcase = () => {
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4A75F]/60 to-transparent z-10" />
         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4A75F]/60 to-transparent z-10" />
 
-        {/* Local video — autoplay, loop, muted, no controls */}
+        {/* Optimized Video element — preload metadata, scroll-activated lazy play */}
         <video
+          ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
-          src="/golden-stage.mp4"
-          autoPlay
+          src={url || "/golden-stage.mp4"}
+          preload="metadata"
+          autoPlay={false}
           loop
           muted
           playsInline
@@ -57,4 +84,4 @@ export const VideoShowcase = () => {
       </div>
     </section>
   );
-};
+});

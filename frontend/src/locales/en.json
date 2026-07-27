@@ -397,8 +397,8 @@
     "thank_you": "Thank you for shopping at SSJewellery. Your order code is:",
     "status": "Status",
     "total_paid": "Total Paid",
-    "est_delivery": "Estimated Delivery",
-    "delivery_days": "3 to 5 business days",
+    "est_delivery": "Tracking Link",
+    "delivery_days": "Tracking link will be provided to you soon.",
     "shipping_address": "Shipping Address",
     "agreement_title": "Important Purchase Agreement",
     "agreement_subtitle": "Please read carefully before continuing:",
@@ -498,5 +498,28 @@
   },
   "orders_page": {
     "track_orders": "Track Orders"
+  },
+  "calculator": {
+    "gold_title": "Gold Rate Calculator — Central India",
+    "silver_title": "Silver Rate Calculator — Central India",
+    "gold_subtitle": "Real rates updated once daily at 9:00 AM IST.",
+    "silver_subtitle": "Silver price estimate based on selected weight",
+    "live_indicator": "DAILY UPDATED RATE",
+    "gold_tab": "Gold",
+    "silver_tab": "Silver",
+    "purity_label": "Select Gold Purity",
+    "weight_label": "Jewellery Metal Weight",
+    "todays_gold_rate": "Today's Gold Rate (per gram)",
+    "todays_silver_rate": "Today's Silver Rate (per gram)",
+    "gold_rate_region": "{purity} Gold — Central India",
+    "silver_rate_region": "Silver Rate — Central India",
+    "per_gram": "per gram",
+    "last_updated": "Last updated:",
+    "calculation_summary": "Estimated Price Breakdown",
+    "metal_cost": "Metal Cost",
+    "estimated_total": "Estimated Grand Total",
+    "helper_note": "Note: Rates are updated daily at 9 AM IST. Final price may vary by design, certification, and store rates.",
+    "error_load_rates": "Could not load live rates — showing last saved data",
+    "retry_btn": "Retry"
   }
 }

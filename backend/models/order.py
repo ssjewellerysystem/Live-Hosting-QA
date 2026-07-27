@@ -16,16 +16,8 @@ class OrderItem(db.Model):
     name = db.Column(db.String(255), nullable=False)
     image = db.Column(db.String(500), nullable=True)
 
-class Transaction(db.Model):
-    __tablename__ = 'transactions'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('orders.id', ondelete='CASCADE'), unique=True, nullable=False)
-    transaction_id = db.Column(db.String(100), unique=True, nullable=False)
-    amount = db.Column(db.Numeric(10, 2), nullable=False)
-    payment_method = db.Column(db.String(50), default='Online')
-    status = db.Column(db.String(50), default='Success')
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
+from backend.models.transaction import TransactionModel
+Transaction = TransactionModel
 
 class OrderModel(db.Model):
     __tablename__ = 'orders'
@@ -49,7 +41,8 @@ class OrderModel(db.Model):
     
     # Relationships
     items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan', lazy=True)
-    transaction = db.relationship('Transaction', backref='order', uselist=False, cascade='all, delete-orphan')
+    transaction = db.relationship('TransactionModel', primaryjoin="foreign(TransactionModel.order_id) == OrderModel.order_id", uselist=False, viewonly=True)
+
 
     def to_dict(self):
         item_list = []
@@ -90,7 +83,7 @@ class OrderModel(db.Model):
     def create_order(user_id, shipping_address, items, total_amount, terms_accepted=False, commit=True):
         # Generate clean unique Order ID
         random_num = random.randint(100000, 999999)
-        order_id = f"BB-{random_num}"
+        order_id = f"SS-{random_num}"
         
         est_delivery = (get_ist_time() + timedelta(days=5)).strftime("%d-%m-%Y")
         
@@ -158,27 +151,39 @@ class OrderModel(db.Model):
             db.session.flush()
         return order.to_dict()
     @staticmethod
-    def find_by_user_id(user_id):
+    def find_by_user_id(user_id, page=None, limit=None):
         try:
             uid = int(user_id)
             from sqlalchemy.orm import selectinload, joinedload
-            orders = OrderModel.query.options(
+            query = OrderModel.query.options(
                 selectinload(OrderModel.items),
                 joinedload(OrderModel.user)
-            ).filter_by(user_id=uid).order_by(OrderModel.created_at.desc()).all()
+            ).filter_by(user_id=uid).order_by(OrderModel.created_at.desc())
+
+            if page is not None or limit is not None:
+                from backend.utils.pagination import paginate_query
+                return paginate_query(query, page=page, limit=limit)
+
+            orders = query.all()
             return [o.to_dict() for o in orders]
         except Exception:
             return []
 
     @staticmethod
-    def find_all():
+    def find_all(page=None, limit=None):
         try:
             from backend.models.user import UserModel
             from sqlalchemy.orm import selectinload, joinedload
-            orders = OrderModel.query.outerjoin(UserModel, OrderModel.user_id == UserModel.id).options(
+            query = OrderModel.query.outerjoin(UserModel, OrderModel.user_id == UserModel.id).options(
                 selectinload(OrderModel.items),
                 joinedload(OrderModel.user)
-            ).order_by(OrderModel.created_at.desc()).all()
+            ).order_by(OrderModel.created_at.desc())
+
+            if page is not None or limit is not None:
+                from backend.utils.pagination import paginate_query
+                return paginate_query(query, page=page, limit=limit)
+
+            orders = query.all()
             return [o.to_dict() for o in orders]
         except Exception:
             return []
@@ -308,3 +313,6 @@ class OrderModel(db.Model):
         except Exception:
             db.session.rollback()
             return False
+
+Order = OrderModel
+

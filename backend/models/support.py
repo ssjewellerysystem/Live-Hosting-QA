@@ -46,10 +46,14 @@ class SupportModel(db.Model):
             return None
 
     @staticmethod
-    def find_all():
+    def find_all(page=None, limit=None):
         try:
             from sqlalchemy.orm import selectinload
-            messages = SupportModel.query.options(selectinload(SupportModel.replies)).order_by(SupportModel.created_at.desc()).all()
+            query = SupportModel.query.options(selectinload(SupportModel.replies)).order_by(SupportModel.created_at.desc())
+            if page is not None or limit is not None:
+                from backend.utils.pagination import paginate_query
+                return paginate_query(query, page=page, limit=limit)
+            messages = query.all()
             return [m.to_dict() for m in messages]
         except Exception:
             return []

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Edit2, Package, ShoppingBag, BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit2, Package, ShoppingBag, BarChart3, Trash2, X, RefreshCw } from 'lucide-react';
 
 export const ProductManagementTab = ({
   products,
@@ -10,8 +10,28 @@ export const ProductManagementTab = ({
   setIsEditImagesOpen,
   handleOpenStockModal,
   handleOpenOrdersModal,
-  handleOpenAnalyticsModal
+  handleOpenAnalyticsModal,
+  handleDeleteProduct
 }) => {
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setIsDeletingProduct(true);
+    try {
+      if (handleDeleteProduct) {
+        await handleDeleteProduct(productToDelete._id || productToDelete.id);
+      }
+      setProductToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+      alert("Failed to delete product. Please try again.");
+    } finally {
+      setIsDeletingProduct(false);
+    }
+  };
+
   return (
     <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
@@ -46,16 +66,58 @@ export const ProductManagementTab = ({
           };
 
           return (
-            <div key={p._id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 rounded-2xl p-4.5 flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+            <div key={p._id || p.id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 rounded-2xl p-4.5 flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative">
               <div>
-                {/* Product Image and Category */}
-                <div className="flex gap-4 mb-3">
-                  <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex-shrink-0">
-                    <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt="" className="h-full w-full object-cover" />
+                {/* Desktop/Tablet Header Row (Hidden on mobile < 768px, visible on md+) */}
+                <div className="hidden md:flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 flex-shrink-0">
+                      <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt={p.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0 flex-1">
+                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{p.category}</span>
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={p.name}>{p.name}</h4>
+                    </div>
                   </div>
-                  <div className="flex flex-col justify-center min-w-0">
-                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{p.category}</span>
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={p.name}>{p.name}</h4>
+
+                  {/* Delete Product Button */}
+                  <button
+                    type="button"
+                    onClick={() => setProductToDelete(p)}
+                    title="Delete Product"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-500/20 hover:scale-105 transition-all duration-200 cursor-pointer flex-shrink-0 z-30"
+                  >
+                    <Trash2 className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+
+                {/* Mobile Header Layout (Visible on mobile < 768px, hidden on md+) */}
+                <div className="block md:hidden mb-3">
+                  {/* Top row: Image & Category */}
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 flex-shrink-0">
+                      <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt={p.name} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">{p.category}</span>
+                    </div>
+                  </div>
+
+                  {/* Title row */}
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words mt-1 mb-2.5" title={p.name}>
+                    {p.name}
+                  </h4>
+
+                  {/* Delete Button Row (Right aligned, between Title and Pricing Box, 8-12px spacing) */}
+                  <div className="flex justify-end my-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setProductToDelete(p)}
+                      title="Delete Product"
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-500/20 hover:scale-105 transition-all duration-200 cursor-pointer flex-shrink-0 z-30"
+                    >
+                      <Trash2 className="h-4 w-4 text-white" />
+                    </button>
                   </div>
                 </div>
 
@@ -99,7 +161,7 @@ export const ProductManagementTab = ({
                 </div>
 
                 {/* Audit Logs */}
-                <div className="border-t border-slate-100 dark:border-slate-850/60 pt-2.5 pb-2 text-[10px] text-slate-400 space-y-1">
+                <div className="border-t border-slate-100 dark:border-slate-855/60 pt-2.5 pb-2 text-[10px] text-slate-400 space-y-1">
                   <div className="flex justify-between">
                     <span>Created:</span>
                     <span className="font-semibold text-slate-550 dark:text-slate-455">{formatAudit(p.created_at)}</span>
@@ -150,6 +212,73 @@ export const ProductManagementTab = ({
           );
         })}
       </div>
+
+      {/* DELETE PRODUCT CONFIRMATION MODAL */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => setProductToDelete(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Product?</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Are you sure you want to permanently delete this product?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 mb-4 flex items-center gap-3">
+              <img
+                src={productToDelete.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'}
+                alt={productToDelete.name}
+                className="h-12 w-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
+              />
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{productToDelete.name}</h4>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{productToDelete.category}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                disabled={isDeletingProduct}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteProduct}
+                disabled={isDeletingProduct}
+                className="px-5 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold shadow-md shadow-red-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {isDeletingProduct ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

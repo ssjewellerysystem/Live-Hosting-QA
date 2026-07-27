@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 
 # Add parent directory to sys.path to enable backend package resolution
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,17 +10,15 @@ if parent_dir not in sys.path:
 from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Load .env before importing config so _require() sees the variables
-_root = parent_dir
-load_dotenv(os.path.join(_root, ".env"), override=False)
+# Load configuration first
+load_dotenv()
 
-# ── Safe print patch ──────────────────────────────────────────────────────────
-# Prevents OSError [Errno 5] when stdout/stderr are closed (e.g., background daemon)
+# Global safe print patch to prevent OSError [Errno 5] Input/output error
+# when running in background with closed standard streams
 import builtins
+import sys
 _original_print = builtins.print
-
 def safe_print(*args, **kwargs):
     try:
         _original_print(*args, **kwargs)
@@ -31,12 +28,12 @@ def safe_print(*args, **kwargs):
             sys.stderr.flush()
         except Exception:
             pass
-
 builtins.print = safe_print
 
-# ── Application factory ───────────────────────────────────────────────────────
+import logging
 from backend.extensions import db, migrate, mail
-from backend.config import Config, configure_logging
+from backend.config import Config, validate_environment, FRONTEND_URL
+from backend.models import TransactionModel
 from backend.routes.auth import auth_bp
 from backend.routes.products import products_bp
 from backend.routes.orders import orders_bp
@@ -44,57 +41,91 @@ from backend.routes.admin import admin_bp
 from backend.routes.support import support_bp
 from backend.routes.coupons import coupons_bp
 from backend.routes.banners import banners_bp
+from backend.routes.collections import collections_bp
+from backend.routes.gold_rate import gold_rate_bp
+from backend.routes.maintenance import maintenance_bp
+from backend.routes.high_demand import high_demand_bp
+from backend.routes.payments import payments_bp
+from backend.middleware.maintenance import check_maintenance_mode
+
+# Run startup environment validation
+validate_environment()
 
 app = Flask(__name__)
+# Load configuration
 app.config.from_object(Config)
 
-# ── Structured logging ────────────────────────────────────────────────────────
-configure_logging(app)
-logger = logging.getLogger(__name__)
+# Configure Python logging based on active environment LOGGING_LEVEL
+log_level = getattr(logging, str(Config.LOGGING_LEVEL).upper(), logging.INFO)
+logging.basicConfig(level=log_level, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+app.logger.setLevel(log_level)
 
-# ── Trust the Caddy reverse proxy ─────────────────────────────────────────────
-app.wsgi_app = ProxyFix(
-    app.wsgi_app,
-    x_for=Config.PROXY_FIX_NUM_PROXIES,
-    x_proto=Config.PROXY_FIX_NUM_PROXIES,
-    x_host=Config.PROXY_FIX_NUM_PROXIES,
-)
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
-# Origins come from CORS_ALLOWED_ORIGINS env var; no localhost in production.
-_cors_origins = Config.CORS_ALLOWED_ORIGINS or []
-CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
+# Enable CORS for frontend requests
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# ── Extensions ────────────────────────────────────────────────────────────────
+import gzip
+import io
+
+@app.after_request
+def add_cors_and_compress(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+
+    # Gzip response payload compression for text/JSON responses
+    if (
+        response.status_code >= 200
+        and response.status_code < 300
+        and 'Content-Encoding' not in response.headers
+        and not response.direct_passthrough
+    ):
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        if 'gzip' in accept_encoding.lower():
+            mimetype = response.mimetype or ''
+            if any(t in mimetype for t in ['application/json', 'text/html', 'text/css', 'text/javascript', 'application/javascript']):
+                response_data = response.get_data()
+                if len(response_data) >= 500:
+                    gzip_buffer = io.BytesIO()
+                    with gzip.GzipFile(mode='wb', fileobj=gzip_buffer) as gzip_file:
+                        gzip_file.write(response_data)
+                    compressed_data = gzip_buffer.getvalue()
+                    response.set_data(compressed_data)
+                    response.headers['Content-Encoding'] = 'gzip'
+                    response.headers['Content-Length'] = len(compressed_data)
+                    response.headers['Vary'] = 'Accept-Encoding'
+
+    return response
+
+# Allow flexible trailing slashes across all blueprint routes
+app.url_map.strict_slashes = False
+
+# Register before_request maintenance middleware handler
+app.before_request(check_maintenance_mode)
+
+# Initialize extensions
 db.init_app(app)
 migrate.init_app(app, db)
 mail.init_app(app)
 
-# ── Blueprints ────────────────────────────────────────────────────────────────
-app.register_blueprint(auth_bp,     url_prefix='/api/auth')
+# Register API blueprints
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(products_bp, url_prefix='/api/products')
-app.register_blueprint(orders_bp,   url_prefix='/api/orders')
-app.register_blueprint(admin_bp,    url_prefix='/api/admin')
-app.register_blueprint(support_bp,  url_prefix='/api/support')
-app.register_blueprint(coupons_bp,  url_prefix='/api/coupons')
-app.register_blueprint(banners_bp,  url_prefix='/api/banners')
+app.register_blueprint(orders_bp, url_prefix='/api/orders')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
+app.register_blueprint(payments_bp, url_prefix='/api/admin/payments')
+app.register_blueprint(support_bp, url_prefix='/api/support')
+app.register_blueprint(coupons_bp, url_prefix='/api/coupons')
+app.register_blueprint(banners_bp, url_prefix='/api/banners')
+app.register_blueprint(collections_bp, url_prefix='/api/collections')
+app.register_blueprint(gold_rate_bp, url_prefix='/api/gold-rate')
+app.register_blueprint(maintenance_bp, url_prefix='/api/maintenance')
+app.register_blueprint(high_demand_bp, url_prefix='/api/high-demand')
 
-# ── Core routes ───────────────────────────────────────────────────────────────
+
 from flask import request
 from backend.utils.helpers import generate_otp, verify_otp, is_valid_email
 from backend.models.user import UserModel
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """
-    Lightweight unauthenticated health endpoint.
-    Returns HTTP 200 when the application process is running.
-    Does NOT expose database credentials, config values, or stack traces.
-    The Docker and Caddy health checks both call this endpoint.
-    """
-    return jsonify({"status": "ok", "service": "ss-jewellery-backend"}), 200
-
 
 @app.route('/api/send-otp', methods=['POST'])
 def root_send_otp():
@@ -102,13 +133,14 @@ def root_send_otp():
     identifier = data.get("identifier") or data.get("mobile") or data.get("email")
     if not identifier:
         return jsonify({"message": "Please provide identifier, mobile, or email.", "success": False}), 400
-
+        
     otp = generate_otp(identifier)
-
+    
     # Placeholder for MSG91 / real SMS service integration
-    logger.info("[OTP] OTP generated for identifier (not logged for security)")
-
-    # If it is an email, send via Flask-Mail
+    # When switching to production later, replace this print/email flow with actual MSG91 SDK call
+    print(f"\n[PRODUCTION PLACEMENT] Future MSG91 would send OTP {otp} to {identifier}\n")
+    
+    # If it is email, we can also email it (as in auth/send-otp)
     if is_valid_email(identifier):
         try:
             from backend.utils.email_service import send_email
@@ -126,142 +158,115 @@ def root_send_otp():
             """
             send_email(identifier, subject, body_html)
         except Exception as e:
-            logger.error("Failed to send email OTP: %s", e)
-
+            print("Failed to send email OTP:", e)
+            
     response_data = {
         "message": "OTP sent successfully! Please check your console or email.",
         "success": True
     }
-    # Only include otp_debug in development/test environments
-    if os.getenv("OTP_MODE", "production").lower() in ("development", "test"):
+    if os.getenv("OTP_MODE", "development").lower() == "development":
         response_data["otp_debug"] = otp
     return jsonify(response_data), 200
-
 
 @app.route('/api/verify-otp', methods=['POST'])
 def root_verify_otp():
     data = request.get_json() or {}
     identifier = data.get("identifier") or data.get("mobile") or data.get("email")
     otp = data.get("otp")
-
+    
     if not identifier or not otp:
         return jsonify({"message": "Please provide both identifier/mobile/email and OTP.", "success": False}), 400
-
+        
     success = verify_otp(identifier, otp)
     if not success:
         return jsonify({"message": "Invalid or expired OTP. Please try again.", "success": False}), 400
-
-    user = UserModel.query.filter(
-        (UserModel.mobile == identifier) | (UserModel.email == identifier)
-    ).first()
+        
+    # Mark user as verified if they exist
+    user = UserModel.query.filter((UserModel.mobile == identifier) | (UserModel.email == identifier)).first()
     if user:
         try:
             user.is_verified = True
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            logger.error("Failed to update user is_verified: %s", e)
+            print("Failed to update user is_verified status:", e)
+            
+    return jsonify({
+        "message": "OTP verified successfully!",
+        "success": True
+    }), 200
 
-    return jsonify({"message": "OTP verified successfully!", "success": True}), 200
-
-
+# Ensure static upload directory is served with long-term browser caching
 @app.route('/static/uploads/<path:filename>')
 def serve_uploads(filename):
     upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
     from flask import send_from_directory
-    return send_from_directory(upload_dir, filename)
-
+    res = send_from_directory(upload_dir, filename)
+    res.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return res
 
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"message": "API endpoint not found!"}), 404
 
-
 @app.errorhandler(500)
 def server_error(error):
-    logger.error("Internal server error: %s", error)
-    return jsonify({"message": "Internal server error."}), 500
+    return jsonify({"message": f"Internal server error: {str(error)}"}), 500
 
-
-# ── DB initialisation ─────────────────────────────────────────────────────────
 def seed_database():
-    """Seeds initial products and coupons if the tables are empty."""
+    """
+    Seeds initial products and coupons if they are empty in the database.
+    """
     from backend.models.product import ProductModel
     from backend.models.coupon import CouponModel
     from backend.extensions import db
-
+    
     try:
+        # Check if there are any old categories in the database
         from backend.models.category import Category
         old_categories = ["Electronics", "Fashion", "Grocery", "Books", "Home & Kitchen", "Home Decor"]
-        has_old_categories = any(
-            ProductModel.query.join(Category).filter(Category.name == c).count() > 0
-            for c in old_categories
-        )
-
+        has_old_categories = False
+        for old_cat in old_categories:
+            if ProductModel.query.join(Category).filter(Category.name == old_cat).count() > 0:
+                has_old_categories = True
+                break
+        
         if ProductModel.query.count() == 0:
-            logger.info("[SEED] Seeding default luxury jewelry products...")
-            default_products = [
-                {
-                    "name": "Diamond Solitaire Promise Ring",
-                    "price": 45000.00,
-                    "discount": 15.0,
-                    "description": "An exquisite 18k yellow gold solitaire ring featuring a brilliant-cut 0.5 carat VVS1 diamond. Elegant, timeless, and crafted to perfection.",
-                    "images": ["https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 10, "category": "Rings", "ratings": 4.8
-                },
-                {
-                    "name": "Royal Emerald Pendant Necklace",
-                    "price": 85000.00,
-                    "discount": 10.0,
-                    "description": "A majestic 22k gold chain suspending a deep green emerald pendant, surrounded by a halo of micro-pave diamonds. A symbol of royalty and grace.",
-                    "images": ["https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 5, "category": "Necklaces", "ratings": 4.9
-                },
-                {
-                    "name": "Diamond Hoop Earrings",
-                    "price": 32000.00,
-                    "discount": 12.0,
-                    "description": "Crafted in 18k white gold, these sparkling hoop earrings are set with fine round diamonds, reflecting light beautifully with every movement.",
-                    "images": ["https://images.unsplash.com/photo-1630019852942-f89202989a59?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 15, "category": "Earrings", "ratings": 4.7
-                },
-                {
-                    "name": "Golden Pearl Cuff Bracelet",
-                    "price": 27500.00,
-                    "discount": 8.0,
-                    "description": "An elegant, adjustable gold cuff bracelet embellished with two luminous South Sea golden pearls. Perfectly blends modern style with classic luxury.",
-                    "images": ["https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 12, "category": "Bracelets", "ratings": 4.6
-                },
-                {
-                    "name": "Traditional Gold Filigree Bangles",
-                    "price": 95000.00,
-                    "discount": 5.0,
-                    "description": "Exquisite pair of 22k gold bangles featuring detailed handcrafted filigree work. A traditional Indian design celebrating heritage craftsmanship.",
-                    "images": ["https://images.unsplash.com/photo-1611085583191-a3b1a8a2954e?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 8, "category": "Bangles", "ratings": 4.9
-                },
-                {
-                    "name": "Majestic Bridal Kundan Choker Set",
-                    "price": 250000.00,
-                    "discount": 20.0,
-                    "description": "A breathtaking bridal choker set featuring intricate Kundan settings, uncut diamonds (Polki), and cascading emerald beads. Includes matching heavy earrings.",
-                    "images": ["https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?w=800&auto=format&fit=crop&q=60"],
-                    "stock": 3, "category": "Bridal Collection", "ratings": 5.0
-                },
-            ]
+            print("[SEED] Seeding default luxury jewelry products into MySQL...")
+            # ProductModel.query.delete() -- DISABLED to prevent automatic truncation of data.
+            # db.session.commit() -- DISABLED to prevent automatic truncation of data.
+            
+            default_products = []
             for p in default_products:
                 ProductModel.create_product(p)
-            logger.info("[SEED] Successfully seeded luxury jewelry products.")
+            print("[SEED] Successfully seeded luxury jewelry products.")
         else:
-            logger.info("[SEED] Products already exist. Skipping seed.")
-
+            print("[SEED] Products already exist. Skipping seed.")
+            
         if CouponModel.query.count() == 0:
-            logger.info("[SEED] Seeding default coupons...")
+            print("[SEED] Seeding default coupons into MySQL...")
             default_coupons = [
-                {"code": "WELCOME10",  "discount_type": "percent", "discount_value": 10.0,  "min_order_amount": 500.0,  "is_active": True},
-                {"code": "FLAT200",    "discount_type": "flat",    "discount_value": 200.0, "min_order_amount": 1500.0, "is_active": True},
-                {"code": "BASKET50",   "discount_type": "percent", "discount_value": 50.0,  "min_order_amount": 5000.0, "is_active": True},
+                {
+                    "code": "WELCOME10",
+                    "discount_type": "percent",
+                    "discount_value": 10.0,
+                    "min_order_amount": 500.0,
+                    "is_active": True
+                },
+                {
+                    "code": "FLAT200",
+                    "discount_type": "flat",
+                    "discount_value": 200.0,
+                    "min_order_amount": 1500.0,
+                    "is_active": True
+                },
+                {
+                    "code": "BASKET50",
+                    "discount_type": "percent",
+                    "discount_value": 50.0,
+                    "min_order_amount": 5000.0,
+                    "is_active": True
+                }
             ]
             for c in default_coupons:
                 CouponModel.create_coupon(
@@ -269,53 +274,73 @@ def seed_database():
                     discount_type=c["discount_type"],
                     discount_value=c["discount_value"],
                     min_order_amount=c["min_order_amount"],
-                    is_active=c["is_active"],
+                    is_active=c["is_active"]
                 )
-            logger.info("[SEED] Successfully seeded coupons.")
+            print("[SEED] Successfully seeded coupons.")
         else:
-            logger.info("[SEED] Coupons already exist. Skipping seed.")
+            print("[SEED] Coupons already exist. Skipping seed.")
+            
 
-        from backend.models.banner import BannerModel
-        if BannerModel.query.count() == 0:
-            logger.info("[SEED] Seeding default banners...")
-            default_banners = [
+
+        # Seed Collections
+        from backend.models.collection import CollectionModel
+        if CollectionModel.query.count() == 0:
+            default_collections = [
                 {
-                    "title": "The Solitaire Diamond Collection",
-                    "subtitle": "Eternal Brilliance, Handcrafted Elegance",
-                    "description": "Explore our signature 18k yellow gold and white gold diamond solitaire rings. Perfect for weddings, proposals, and lifetime memories.",
-                    "button_text": "Shop Solitaires", "button_link": "/?category=Rings",
-                    "image_url": "", "background_style": "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
-                    "category": "Rings", "display_order": 1, "is_active": True,
+                    "name": "Wedding Wear",
+                    "slug": "wedding-wear",
+                    "description": "Regal Heritage Kundan bridal sets and royal elegance",
+                    "thumbnail_image": None,
+                    "display_order": 1
                 },
                 {
-                    "title": "The Royal Empress Collection",
-                    "subtitle": "Ornate Emerald & Pearl Artistry",
-                    "description": "Adorn yourself with masterfully crafted necklaces, chokers, and bridal neckwear set in solid 22k gold and premium gemstones.",
-                    "button_text": "Shop Necklaces", "button_link": "/?category=Necklaces",
-                    "image_url": "", "background_style": "from-[#3F1D5A] via-[#5C2E7E] to-[#3F1D5A]",
-                    "category": "Necklaces", "display_order": 2, "is_active": True,
+                    "name": "Daily Wear",
+                    "slug": "daily-wear",
+                    "description": "Versatile Chic Bangles and daily gold bands",
+                    "thumbnail_image": None,
+                    "display_order": 2
                 },
                 {
-                    "title": "Imperial Bridal Heirlooms",
-                    "subtitle": "Maang Tikkas, Polki Sets & Rubies",
-                    "description": "Celebrate your grand day with timeless heirloom bridal sets, meticulously set with uncut Polki diamonds and fine rubies.",
-                    "button_text": "Explore Bridal Set", "button_link": "/?category=Bridal%20Collection",
-                    "image_url": "", "background_style": "from-[#1B0B26] via-[#3F1D5A] to-[#1B0B26]",
-                    "category": "Bridal Collection", "display_order": 3, "is_active": True,
+                    "name": "Office Wear",
+                    "slug": "office-wear",
+                    "description": "Minimalistic Luxury Studs and sleek executive items",
+                    "thumbnail_image": None,
+                    "display_order": 3
                 },
+                {
+                    "name": "Date Night",
+                    "slug": "date-night",
+                    "description": "Elegance & Layered Statements under candlelit tables",
+                    "thumbnail_image": None,
+                    "display_order": 4
+                },
+                {
+                    "name": "New Collection",
+                    "slug": "new-collection",
+                    "description": "Fresh Masterpieces & Diamond Solitaires",
+                    "thumbnail_image": None,
+                    "display_order": 5
+                }
             ]
-            for b_data in default_banners:
-                b = BannerModel(**b_data)
-                db.session.add(b)
+            for c_data in default_collections:
+                coll = CollectionModel(
+                    name=c_data["name"],
+                    slug=c_data["slug"],
+                    description=c_data["description"],
+                    thumbnail_image=c_data["thumbnail_image"],
+                    display_order=c_data["display_order"],
+                    is_active=True
+                )
+                db.session.add(coll)
             db.session.commit()
-            logger.info("[SEED] Successfully seeded banners.")
+            print("[SEED] Successfully seeded default collections.")
         else:
-            logger.info("[SEED] Banners already exist. Skipping seed.")
-
+            print("[SEED] Collections already exist. Skipping seed.")
     except Exception as e:
-        logger.error("[SEED] Error seeding database: %s", e)
+        print("[SEED] Error seeding database:", e)
 
 
+# Run initialization inside app context if db tables are initialized
 with app.app_context():
     db.create_all()
     seed_database()
@@ -324,9 +349,14 @@ with app.app_context():
         from backend.utils.report_automation import start_report_scheduler
         start_report_scheduler(app)
     except Exception as err:
-        logger.warning("[APP] Scheduler will start after DB is ready: %s", err)
+        print("[APP] Scheduler will start after DB is ready:", err)
 
+    try:
+        from backend.utils.gold_rate_scheduler import start_gold_rate_scheduler
+        start_gold_rate_scheduler(app)
+    except Exception as err:
+        print("[APP] Gold rate scheduler error:", err)
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=app.config.get("DEBUG", False))
+    port = int(os.getenv("PORT", 5005))
+    app.run(host='0.0.0.0', port=port, debug=False)

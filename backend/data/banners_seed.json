@@ -1,0 +1,38 @@
+[
+  {
+    "title": "The Solitaire Diamond Collection",
+    "subtitle": "Eternal Brilliance, Handcrafted Elegance",
+    "description": "Explore our signature 18k yellow gold and white gold diamond solitaire rings. Perfect for weddings, proposals, and lifetime memories.",
+    "button_text": "Shop Solitaires",
+    "button_link": "/?category=Rings",
+    "image_url": "",
+    "background_style": "from-[#3F1D5A] via-[#2C143F] to-[#1B0B26]",
+    "category": "Rings",
+    "display_order": 1,
+    "is_active": true
+  },
+  {
+    "title": "The Royal Empress Collection",
+    "subtitle": "Ornate Emerald & Pearl Artistry",
+    "description": "Adorn yourself with masterfully crafted necklaces, chokers, and bridal neckwear set in solid 22k gold and premium gemstones.",
+    "button_text": "Shop Necklaces",
+    "button_link": "/?category=Necklaces",
+    "image_url": "",
+    "background_style": "from-[#3F1D5A] via-[#5C2E7E] to-[#3F1D5A]",
+    "category": "Necklaces",
+    "display_order": 2,
+    "is_active": true
+  },
+  {
+    "title": "Imperial Bridal Heirlooms",
+    "subtitle": "Maang Tikkas, Polki Sets & Rubies",
+    "description": "Celebrate your grand day with timeless heirloom bridal sets, meticulously set with uncut Polki diamonds and fine rubies.",
+    "button_text": "Explore Bridal Set",
+    "button_link": "/?category=Bridal%20Collection",
+    "image_url": "",
+    "background_style": "from-[#1B0B26] via-[#3F1D5A] to-[#1B0B26]",
+    "category": "Bridal Collection",
+    "display_order": 3,
+    "is_active": true
+  }
+]

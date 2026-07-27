@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Maximize2, X, Sparkles, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
@@ -131,64 +131,81 @@ const ParallaxCard = ({ item, onExpand, index }) => {
   );
 };
 
-export const LuxuryGallery = () => {
+export const LuxuryGallery = React.memo(({ items: propItems }) => {
   const { language } = useTranslation();
   const [selectedItem, setSelectedItem] = useState(null);
 
-  const items = {
-    en: [
-      {
-        id: 1,
-        title: "The Royal Emerald Choker",
-        tag: "Imperial Collection",
-        image: "/luxury_emerald_necklace.png",
-        description: "Intricately detailed 22K gold featuring handpicked deep Colombian emeralds and brilliant cut marquise diamonds.",
-        details: ["Metal: 22K Yellow Gold", "Gemstone: Emerald 12.4 Carats", "Diamonds: VVS Clarity, F-G Color", "Timepiece: Handcrafted by Master Artisans (140 hours)"]
-      },
-      {
-        id: 2,
-        title: "The Queen's Bridal Trousseau",
-        tag: "Heritage Craft",
-        image: "/luxury_bridal_set.png",
-        description: "A breathtaking bridal set with fine uncut diamonds (polki) and dangling natural Basra pearl embellishments.",
-        details: ["Metal: 22K Kundan Gold", "Stones: Certified Uncut Polki Diamonds", "Accents: Basra Pearls & Rubies", "Fit: Custom Made for Regal Brides"]
-      },
-      {
-        id: 3,
-        title: "The Infinite Solitaire Band",
-        tag: "Modern Romance",
-        image: "/luxury_solitaire_ring.png",
-        description: "A flawless 4-carat round brilliant cut diamond set in a minimal double-claw platinum setting.",
-        details: ["Metal: Platinum 950", "Center Stone: 4.2 Carat Diamond", "Cut: Excellent Ideal Cut", "Certification: GIA Inspected & Laser Inscribed"]
-      }
-    ],
-    hi: [
-      {
-        id: 1,
-        title: "शाही पन्ना चोकर",
-        tag: "शाही संग्रह",
-        image: "/luxury_emerald_necklace.png",
-        description: "चुनिंदा कोलंबियाई पन्ने और चमकदार हीरे से जड़ा हुआ 22 कैरेट सोने का बारीक नक्काशीदार आभूषण।",
-        details: ["धातु: 22K पीला सोना", "रत्न: पन्ना 12.4 कैरेट", "हीरा: VVS स्पष्टता, F-G रंग", "निर्माण: मास्टर कारीगरों द्वारा हस्तनिर्मित (140 घंटे)"]
-      },
-      {
-        id: 2,
-        title: "राजकुमारी दुल्हन का सेट",
-        tag: "विरासत शिल्प",
-        image: "/luxury_bridal_set.png",
-        description: "बिना कटे हीरों (पोलकी) और लटकते हुए प्राकृतिक बसरा मोती से सजाया गया एक शानदार दुल्हन सेट।",
-        details: ["धातु: 22K कुंदन सोना", "पत्थर: प्रमाणित अनकट पोलकी हीरे", "विवरण: बसरा मोती और माणिक्य", "फिट: दुल्हन के लिए अनुकूलित"]
-      },
-      {
-        id: 3,
-        title: "अनंत सॉलिटेयर रिंग",
-        tag: "आधुनिक रोमांस",
-        image: "/luxury_solitaire_ring.png",
-        description: "न्यूनतम डबल-क्लॉ प्लैटिनम सेटिंग में एक त्रुटिहीन 4-कैरेट गोल चमकदार कट हीरा।",
-        details: ["धातु: प्लैटिनम 950", "मुख्य पत्थर: 4.2 कैरेट हीरा", "कट: उत्कृष्ट आइडियल कट", "प्रमाणन: जीआईए द्वारा प्रमाणित"]
-      }
-    ]
-  }[language === 'hi' ? 'hi' : 'en'];
+  const items = useMemo(() => {
+    if (propItems && propItems.length > 0) {
+      return propItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        tag: item.tag || (language === 'hi' ? "विशेष" : "Featured"),
+        image: item.image || item.image_url,
+        description: item.description,
+        details: item.details || [
+          language === 'hi' ? "धातु: 22K सोना" : "Metal: 22K Gold",
+          language === 'hi' ? "प्रमाणन: जीआईए द्वारा प्रमाणित" : "Certification: GIA Certified",
+          language === 'hi' ? "डिजाइन: हस्तनिर्मित" : "Design: Handcrafted"
+        ],
+        link: item.link
+      }));
+    }
+    return {
+      en: [
+        {
+          id: 1,
+          title: "The Royal Emerald Choker",
+          tag: "Imperial Collection",
+          image: "/luxury_emerald_necklace.png",
+          description: "Intricately detailed 22K gold featuring handpicked deep Colombian emeralds and brilliant cut marquise diamonds.",
+          details: ["Metal: 22K Yellow Gold", "Gemstone: Emerald 12.4 Carats", "Diamonds: VVS Clarity, F-G Color", "Timepiece: Handcrafted by Master Artisans (140 hours)"]
+        },
+        {
+          id: 2,
+          title: "The Queen's Bridal Trousseau",
+          tag: "Heritage Craft",
+          image: "/luxury_bridal_set.png",
+          description: "A breathtaking bridal set with fine uncut diamonds (polki) and dangling natural Basra pearl embellishments.",
+          details: ["Metal: 22K Kundan Gold", "Stones: Certified Uncut Polki Diamonds", "Accents: Basra Pearls & Rubies", "Fit: Custom Made for Regal Brides"]
+        },
+        {
+          id: 3,
+          title: "The Infinite Solitaire Band",
+          tag: "Modern Romance",
+          image: "/luxury_solitaire_ring.png",
+          description: "A flawless 4-carat round brilliant cut diamond set in a minimal double-claw platinum setting.",
+          details: ["Metal: Platinum 950", "Center Stone: 4.2 Carat Diamond", "Cut: Excellent Ideal Cut", "Certification: GIA Inspected & Laser Inscribed"]
+        }
+      ],
+      hi: [
+        {
+          id: 1,
+          title: "शाही पन्ना चोकर",
+          tag: "शाही संग्रह",
+          image: "/luxury_emerald_necklace.png",
+          description: "चुनिंदा कोलंबियाई पन्ने और चमकदार हीरे से जड़ा हुआ 22 कैरेट सोने का बारीक नक्काशीदार आभूषण।",
+          details: ["धातु: 22K पीला सोना", "रत्न: पन्ना 12.4 कैरेट", "हीरा: VVS स्पष्टता, F-G रंग", "निर्माण: मास्टर कारीगरों द्वारा हस्तनिर्मित (140 घंटे)"]
+        },
+        {
+          id: 2,
+          title: "राजकुमारी दुल्हन का सेट",
+          tag: "विरासत शिल्प",
+          image: "/luxury_bridal_set.png",
+          description: "बिना कटे हीरों (पोलकी) और लटकते हुए प्राकृतिक बसरा मोती से सजाया गया एक शानदार दुल्हन सेट।",
+          details: ["धातु: 22K कुंदन सोना", "पत्थर: प्रमाणित अनकट पोलकी हीरे", "विवरण: बसरा मोती और माणिक्य", "फिट: दुल्हन के लिए अनुकूलित"]
+        },
+        {
+          id: 3,
+          title: "अनंत सॉलिटेयर रिंग",
+          tag: "आधुनिक रोमांस",
+          image: "/luxury_solitaire_ring.png",
+          description: "न्यूनतम डबल-क्लॉ प्लैटिनम सेटिंग में एक त्रुटिहीन 4-कैरेट गोल चमकदार कट हीरा।",
+          details: ["धातु: प्लैटिनम 950", "मुख्य पत्थर: 4.2 कैरेट हीरा", "कट: उत्कृष्ट आइडियल कट", "प्रमाणन: जीआईए द्वारा प्रमाणित"]
+        }
+      ]
+    }[language === 'hi' ? 'hi' : 'en'];
+  }, [propItems, language]);
 
   return (
     <section className="relative w-full overflow-hidden py-16 bg-transparent transition-colors duration-300">
@@ -222,7 +239,7 @@ export const LuxuryGallery = () => {
         </div>
 
         {/* Asymmetric Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
           {items.map((item, index) => (
             <motion.div
               key={item.id}
@@ -320,4 +337,4 @@ export const LuxuryGallery = () => {
       </AnimatePresence>
     </section>
   );
-};
+});

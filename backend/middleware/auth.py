@@ -4,11 +4,15 @@ from flask import request, jsonify
 import jwt
 from backend.models.user import UserModel
 
-JWT_SECRET = os.getenv("JWT_SECRET", "supersecret_SSJewellery_key_123")
+from backend.config import Config
+
+JWT_SECRET = Config.JWT_SECRET
 
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(None, *args, **kwargs)
         token = None
         # Check for Authorization header
         if 'Authorization' in request.headers:
@@ -22,13 +26,38 @@ def token_required(f):
         try:
             # Decode token
             data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-            if data.get("user_id") == "admin_user" and data.get("is_admin"):
-                current_user = {
-                    "_id": "admin_user",
-                    "name": "Administrator",
-                    "email": "admin@SSJewellery.com",
-                    "is_admin": True
-                }
+            if data.get("is_admin"):
+                admin_id = data.get("admin_id") or data.get("user_id")
+                admin_obj = None
+                if admin_id and str(admin_id).isdigit():
+                    from backend.models.admin import AdminModel
+                    admin_obj = AdminModel.query.get(int(admin_id))
+                if not admin_obj and data.get("username"):
+                    from backend.models.admin import AdminModel
+                    admin_obj = AdminModel.query.filter_by(username=data.get("username")).first()
+                if not admin_obj:
+                    from backend.models.admin import AdminModel
+                    admin_obj = AdminModel.query.first()
+                
+                if admin_obj:
+                    current_user = {
+                        "_id": str(admin_obj.id),
+                        "id": str(admin_obj.id),
+                        "name": admin_obj.username,
+                        "username": admin_obj.username,
+                        "email": admin_obj.username if "@" in admin_obj.username else f"{admin_obj.username}@admin.local",
+                        "is_admin": True,
+                        "role": "admin"
+                    }
+                else:
+                    current_user = {
+                        "_id": str(data.get("user_id") or "1"),
+                        "id": str(data.get("user_id") or "1"),
+                        "name": data.get("username") or "Administrator",
+                        "email": data.get("email") or "admin@admin.local",
+                        "is_admin": True,
+                        "role": "admin"
+                    }
             else:
                 current_user = UserModel.find_by_id(data['user_id'])
             if not current_user:
@@ -49,6 +78,8 @@ def token_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
         token = None
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']

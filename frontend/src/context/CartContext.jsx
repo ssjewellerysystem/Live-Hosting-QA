@@ -202,34 +202,36 @@ export const CartProvider = ({ children }) => {
     syncSavedForLater(newSaved);
   };
 
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartCount = React.useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
   
-  const cartTotal = cart.reduce((total, item) => {
+  const cartTotal = React.useMemo(() => cart.reduce((total, item) => {
     const discountedPrice = item.price - (item.price * (item.discount / 100));
     return total + (discountedPrice * item.quantity);
-  }, 0);
+  }, 0), [cart]);
+
+  const contextValue = React.useMemo(() => ({
+    cart,
+    wishlist,
+    savedForLater,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    saveForLaterItem,
+    moveToCartItem,
+    removeFromSavedForLater,
+    cartCount,
+    cartTotal,
+    wishlistCount: wishlist.length,
+    savedForLaterCount: savedForLater.length,
+    triggerAuthModal
+  }), [cart, wishlist, savedForLater, cartCount, cartTotal]);
 
   return (
-    <CartContext.Provider value={{
-      cart,
-      wishlist,
-      savedForLater,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      addToWishlist,
-      removeFromWishlist,
-      isInWishlist,
-      saveForLaterItem,
-      moveToCartItem,
-      removeFromSavedForLater,
-      cartCount,
-      cartTotal,
-      wishlistCount: wishlist.length,
-      savedForLaterCount: savedForLater.length,
-      triggerAuthModal
-    }}>
+    <CartContext.Provider value={contextValue}>
       {children}
       {authModal.isOpen && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
