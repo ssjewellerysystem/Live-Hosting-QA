@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Phone, MapPin, Sparkles, UserPlus, Key, ShieldCheck, ArrowLeft, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, Phone, Sparkles, UserPlus, Key, ShieldCheck, ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
+import { isAllowedEmailDomain, ALLOWED_EMAIL_DOMAIN_ERROR, normalizeEmail } from '../utils/emailValidator';
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -23,11 +24,7 @@ export const Register = () => {
     name: '',
     email: '',
     password: '',
-    mobile: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: ''
+    mobile: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,8 +62,6 @@ export const Register = () => {
     let { name, value } = e.target;
     if (name === 'mobile') {
       value = value.replace(/\D/g, '').slice(0, 10);
-    } else if (name === 'pincode') {
-      value = value.replace(/[^0-9]/g, '').slice(0, 6);
     }
     setFormData({
       ...formData,
@@ -95,28 +90,20 @@ export const Register = () => {
       return;
     }
 
-    if (isPincodeInvalid) {
-      setError("Please enter a valid 6-digit PIN Code.");
+    if (!isAllowedEmailDomain(formData.email)) {
+      setError(ALLOWED_EMAIL_DOMAIN_ERROR);
       return;
     }
 
     setLoading(true);
     setError('');
 
-    const address = {
-      street: formData.street,
-      city: formData.city,
-      state: formData.state,
-      pincode: formData.pincode
-    };
-
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/send-otp`, {
         name: formData.name,
-        email: formData.email,
+        email: normalizeEmail(formData.email),
         password: formData.password,
-        mobile: formData.mobile,
-        address: address
+        mobile: formData.mobile
       });
       setOtpSent(true);
       if (response.data.otp) {
@@ -138,7 +125,7 @@ export const Register = () => {
     setError('');
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/resend-otp`, {
-        email: formData.email
+        email: normalizeEmail(formData.email)
       });
       if (response.data.otp) {
         setDevOtp(response.data.otp);
@@ -167,7 +154,7 @@ export const Register = () => {
     try {
       // Verify OTP (which also registers/creates the user in the backend)
       await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
-        email: formData.email,
+        email: normalizeEmail(formData.email),
         otp: otpCode
       });
 
@@ -182,9 +169,6 @@ export const Register = () => {
       setVerifyingOtp(false);
     }
   };
-
-  const isAddressEmpty = !formData.street.trim() && !formData.city.trim() && !formData.state.trim() && !formData.pincode.trim();
-  const isPincodeInvalid = isAddressEmpty ? false : formData.pincode.length !== 6;
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
@@ -294,6 +278,11 @@ export const Register = () => {
                     Please enter a valid email address.
                   </p>
                 )}
+                {touched.email && formData.email && isEmailValid(formData.email) && !isAllowedEmailDomain(formData.email) && (
+                  <p className="mt-1 text-[11px] text-[#EF4444] font-semibold">
+                    {ALLOWED_EMAIL_DOMAIN_ERROR}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -317,74 +306,11 @@ export const Register = () => {
                 )}
               </div>
 
-              {/* Address fields title */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-850">
-                <h3 className="text-sm font-bold flex items-center gap-1.5 text-slate-700 dark:text-slate-350 mb-3">
-                  <MapPin className="h-4 w-4 text-emerald-500" />
-                  <span>Address Details (Optional)</span>
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">Street Address</label>
-                    <input
-                      type="text"
-                      name="street"
-                      value={formData.street}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none"
-                      placeholder="Apartment/Flat, Street name"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">State</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase">Pincode</label>
-                      <input
-                        type="text"
-                        name="pincode"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
-                        value={formData.pincode}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none"
-                      />
-                      {formData.pincode && formData.pincode.length !== 6 && (
-                        <p className="mt-1 text-[11px] text-[#EF4444] font-semibold">
-                          Please enter a valid 6-digit PIN Code.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
             <button
               type="submit"
-              disabled={loading || success || isPincodeInvalid}
+              disabled={loading || success}
               className="w-full flex items-center justify-center space-x-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               <UserPlus className="h-4 w-4" />

@@ -73,7 +73,7 @@ export const ProductCard = React.memo(({ product, onAdminAction }) => {
           loading="lazy"
           width="600"
           height="600"
-          fetchpriority="low"
+          fetchPriority="low"
         />
         {product.images && product.images.length > 1 && (
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 ease-in-out pointer-events-none">
@@ -84,7 +84,7 @@ export const ProductCard = React.memo(({ product, onAdminAction }) => {
               loading="lazy"
               width="600"
               height="600"
-              fetchpriority="low"
+              fetchPriority="low"
             />
           </div>
         )}
@@ -167,7 +167,7 @@ export const ProductCardSkeleton = () => {
       <div className="relative aspect-square w-full overflow-hidden bg-slate-50 dark:bg-slate-950 rounded-lg sm:rounded-xl flex items-center justify-center">
         <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
         <img
-          src="/loading-logo.png"
+          src="/loading-logo.jpg"
           alt="Loading..."
           className="h-12 w-auto opacity-50 object-contain relative z-20 animate-pulse dark:mix-blend-screen mix-blend-multiply dark:invert-0 invert"
         />

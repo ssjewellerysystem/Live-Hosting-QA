@@ -120,13 +120,28 @@ def get_my_tickets(current_user):
         return jsonify([]), 200
     
     from sqlalchemy.orm import selectinload
-    tickets = SupportModel.query.options(selectinload(SupportModel.replies)).filter(SupportModel.email == email).order_by(SupportModel.created_at.desc()).all()
+    query = SupportModel.query.options(selectinload(SupportModel.replies)).filter(SupportModel.email == email).order_by(SupportModel.created_at.desc())
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params, paginate_query
+        p_num, p_limit = parse_pagination_params()
+        return jsonify(paginate_query(query, page=p_num, limit=p_limit)), 200
+
+    tickets = query.all()
     return jsonify([t.to_dict() for t in tickets]), 200
 
 
 @support_bp.route('/all', methods=['GET'])
 @admin_required
 def get_all_messages():
+    page_arg = request.args.get('page')
+    limit_arg = request.args.get('limit') or request.args.get('page_size')
+    if page_arg or limit_arg or request.args.get('paginate') == 'true':
+        from backend.utils.pagination import parse_pagination_params
+        p_num, p_limit = parse_pagination_params()
+        messages = SupportModel.find_all(page=p_num, limit=p_limit)
+        return jsonify(messages), 200
     messages = SupportModel.find_all()
     return jsonify(messages), 200
 

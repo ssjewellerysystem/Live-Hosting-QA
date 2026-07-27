@@ -89,57 +89,28 @@ def run_updates():
             db.session.rollback()
             print("image_url column might already exist or failed:", e)
 
-        # Backpopulate translations and images for existing categories
+        # Backpopulate translations for existing categories and clean hardcoded image paths
         try:
             translations = {
-                # Products (8 items)
-                "Rings": {"en": "Rings", "hi": "अंगूठियाँ", "img": "/cat_rings.png"},
-                "Earrings": {"en": "Earrings", "hi": "झुमके", "img": "/cat_earrings.png"},
-                "Necklaces": {"en": "Necklaces", "hi": "हार", "img": "/cat_necklaces.png"},
-                "Pendants": {"en": "Pendants", "hi": "लटकन", "img": "/logo.svg"},
-                "Bracelets": {"en": "Bracelets", "hi": "ब्रेसलेट", "img": "/cat_bracelets.png"},
-                "Bangles": {"en": "Bangles", "hi": "चूड़ियाँ", "img": "/cat_bracelets.png"},
-                "Chains": {"en": "Chains", "hi": "चैन", "img": "/logo.svg"},
-                "Anklets": {"en": "Anklets", "hi": "पायल", "img": "/logo.svg"},
-
-                # Collections (14 items)
-                "Bridal Collection": {"en": "Bridal Collection", "hi": "ब्राइडल कलेक्शन", "img": "/cat_bridal.png"},
-                "Wedding Collection": {"en": "Wedding Collection", "hi": "वेडिंग कलेक्शन", "img": "/cat_bridal.png"},
-                "Daily Wear": {"en": "Daily Wear", "hi": "डेली वियर", "img": "/cat_bracelets.png"},
-                "Office Wear": {"en": "Office Wear", "hi": "ऑफिस वियर", "img": "/cat_earrings.png"},
-                "Party Wear": {"en": "Party Wear", "hi": "पार्टी वियर", "img": "/cat_rings.png"},
-                "Traditional Collection": {"en": "Traditional Collection", "hi": "पारंपरिक कलेक्शन", "img": "/cat_necklaces.png"},
-                "Temple Jewelry": {"en": "Temple Jewelry", "hi": "टेम्पल ज्वेलरी", "img": "/cat_necklaces.png"},
-                "Diamond Collection": {"en": "Diamond Collection", "hi": "डायमंड कलेक्शन", "img": "/luxury_solitaire_ring.png"},
-                "Gold Collection": {"en": "Gold Collection", "hi": "गोल्ड कलेक्शन", "img": "/logo.svg"},
-                "Silver Collection": {"en": "Silver Collection", "hi": "सिल्वर कलेक्शन", "img": "/logo.svg"},
-                "Men's Collection": {"en": "Men's Collection", "hi": "मेंस कलेक्शन", "img": "/logo.svg"},
-                "Couple Collection": {"en": "Couple Collection", "hi": "कपल कलेक्शन", "img": "/logo.svg"},
-                "Festive Collection": {"en": "Festive Collection", "hi": "फेस्टिव कलेक्शन", "img": "/logo.svg"},
-                "Luxury Collection": {"en": "Luxury Collection", "hi": "लक्जरी कलेक्शन", "img": "/luxury_emerald_necklace.png"}
+                "Rings": {"en": "Rings", "hi": "अंगूठियाँ"},
+                "Necklaces": {"en": "Necklaces", "hi": "हार"},
+                "Earrings": {"en": "Earrings", "hi": "झुमके"},
+                "Bracelets": {"en": "Bracelets", "hi": "कंगन"},
+                "Bangles": {"en": "Bangles", "hi": "चूड़ियाँ"},
+                "Bridal Collection": {"en": "Bridal Collection", "hi": "ब्राइडल कलेक्शन"}
             }
             for name, trans in translations.items():
-                existing = db.session.execute(
-                    db.text("SELECT id FROM categories WHERE name = :name"),
-                    {"name": name}
-                ).fetchone()
-                if existing:
-                    db.session.execute(
-                        db.text("UPDATE categories SET name_en = :en, name_hi = :hi, image_url = :img WHERE name = :name"),
-                        {"en": trans["en"], "hi": trans["hi"], "img": trans["img"], "name": name}
-                    )
-                else:
-                    db.session.execute(
-                        db.text("INSERT INTO categories (name, name_en, name_hi, image_url) VALUES (:name, :en, :hi, :img)"),
-                        {"name": name, "en": trans["en"], "hi": trans["hi"], "img": trans["img"]}
-                    )
+                db.session.execute(
+                    db.text("UPDATE categories SET name_en = :en, name_hi = :hi WHERE name = :name"),
+                    {"en": trans["en"], "hi": trans["hi"], "name": name}
+                )
             db.session.execute(db.text("UPDATE categories SET name_en = name WHERE name_en IS NULL"))
-            db.session.execute(db.text("UPDATE categories SET image_url = '/logo.svg' WHERE image_url IS NULL"))
+            db.session.execute(db.text("UPDATE categories SET image_url = NULL WHERE image_url LIKE '/cat_%' OR image_url = '/logo.svg'"))
             db.session.commit()
-            print("Successfully seeded all 22 product types and collections.")
+            print("Successfully backpopulated category translations and cleaned hardcoded image paths.")
         except Exception as e:
             db.session.rollback()
-            print("Failed to seed categories and collections:", e)
+            print("Failed to backpopulate category translations and clean images:", e)
 
 
         # Import all models to ensure they are registered with SQLAlchemy metadata
@@ -212,7 +183,7 @@ def run_updates():
                         "id": 1,
                         "title": "Date Night",
                         "subtitle": "Elegance & Layered Statements",
-                        "image": "/cat_necklaces.png",
+                        "image": "",
                         "description": "Perfect combinations of layered gold chains, subtle collar necklaces, and delicate hoops. Crafted to make statement memories under candlelit tables.",
                         "tips": ["Pair with solid dark necklines to highlight gold textures.", "Layer 2-3 chains of varying lengths.", "Keep earrings minimal if layering necklaces."]
                     },
@@ -220,7 +191,7 @@ def run_updates():
                         "id": 2,
                         "title": "Wedding Wear",
                         "subtitle": "Regal Heritage Kundan",
-                        "image": "/cat_bridal.png",
+                        "image": "",
                         "description": "Ornate traditional bridal choker sets, heavy designer jhumkas, and matching hand ornaments. Tailored for classic royal elegance.",
                         "tips": ["Complement heavily embroidered outfits with choker-length sets.", "Style with matching maang-tika for classic look.", "Incorporate natural pearls for color balance."]
                     },
@@ -228,7 +199,7 @@ def run_updates():
                         "id": 3,
                         "title": "Office Wear",
                         "subtitle": "Minimalistic Luxury Studs",
-                        "image": "/cat_earrings.png",
+                        "image": "",
                         "description": "Chic, lightweight, and modern daily-wear items. Understated solitaire bands, studs, and sleek bracelets designed for executive confidence.",
                         "tips": ["Stick to one key statement piece (e.g. sleek studs or minimalist watch).", "Platinum/white-gold options work best with formal suits.", "Avoid noisy jingling bracelets."]
                     },
@@ -236,7 +207,7 @@ def run_updates():
                         "id": 4,
                         "title": "Daily Wear",
                         "subtitle": "Versatile Chic Bangles",
-                        "image": "/cat_bracelets.png",
+                        "image": "",
                         "description": "Comfortable, durable, yet elegant gold bands and bracelets. Built for regular wear while retaining luxurious gold textures.",
                         "tips": ["Mix different gold karats for unique color play.", "Opt for smooth, snag-free lock styles.", "Great for layering alongside wristwatches."]
                     }
@@ -246,7 +217,7 @@ def run_updates():
                         "id": 1,
                         "title": "डिनर डेट",
                         "subtitle": "लालित्य और लेयर्ड आभूषण",
-                        "image": "/cat_necklaces.png",
+                        "image": "",
                         "description": "लेयर्ड सोने की जंजीरों, सूक्ष्म कॉलर हार और नाजुक हुप्स का सही संयोजन। मोमबत्ती की रोशनी में सुखद यादें बनाने के लिए डिज़ाइन किया गया।",
                         "tips": ["सोने की बनावट को उभारने के लिए गहरे रंग के कपड़ों के साथ पहनें।", "अलग-अलग लंबाई की 2-3 चेन लेयर करें।", "हार लेयर करते समय झुमके हल्के रखें।"]
                     },
@@ -254,7 +225,7 @@ def run_updates():
                         "id": 2,
                         "title": "शादी विवाह",
                         "subtitle": "शाही विरासत कुंदन",
-                        "image": "/cat_bridal.png",
+                        "image": "",
                         "description": "कढ़ाई वाले परिधानों के साथ चोकर-लंबाई वाले सेट पहनें। क्लासिक लुक के लिए मांग-टीका के साथ स्टाइल करें।",
                         "tips": ["कढ़ाई वाले परिधानों के साथ चोकर-लंबाई वाले सेट पहनें।", "क्लासिक लुक के लिए मांग-टीका के साथ स्टाइल करें।", "रंग संतुलन के लिए प्राकृतिक मोतियों को शामिल करें।"]
                     },
@@ -262,7 +233,7 @@ def run_updates():
                         "id": 3,
                         "title": "ऑफिस वियर",
                         "subtitle": "न्यूनतम लक्जरी स्टड्स",
-                        "image": "/cat_earrings.png",
+                        "image": "",
                         "description": "ठाठ, हल्के और आधुनिक दैनिक-पहनने वाले आभूषण। कार्यकारी आत्मविश्वास के लिए सुरुचिपूर्ण सॉलिटेयर रिंग, स्टड्स और चिकनी ब्रेसलेट।",
                         "tips": ["एक प्रमुख आभूषण पहनें (जैसे सूक्ष्म स्टड्स या न्यूनतम ब्रेसलेट)।", "औपचारिक सूट के साथ सफेद सोना/प्लैटिनम सबसे अच्छे लगते हैं।", "आवाज करने वाले कंगन पहनने से बचें।"]
                     },
@@ -270,9 +241,9 @@ def run_updates():
                         "id": 4,
                         "title": "दैनिक पहनावा",
                         "subtitle": "बहुमुखी ब्रेसलेट",
-                        "image": "/cat_bracelets.png",
+                        "image": "",
                         "description": "आरामदायक, टिकाऊ, फिर भी सुरुचिपूर्ण सोने के छल्ले और कंगन। शानदार बनावट के साथ नियमित रूप से पहनने के लिए उपयुक्त।",
-                        "tips": ["अनोखे लुक के लिए सोने के विभिन्न रंगों को मिलाएं।", "स्मूथ और सुरक्षित लॉक स्टाइल चुनें।", "कलाई घड़ी के साथ लेयरिंग के लिए बेहतरीन।"]
+                        "tips": ["अनोखे लुक के लिए सोने के विभिन्न रंगों को मिलाएं।", "स्मूथ और सुरक्षित लॉक स्टाइल चुनें।", "कन्हई घड़ी के साथ लेयरिंग के लिए बेहतरीन।"]
                     }
                 ]),
                 "owners_list": json.dumps([

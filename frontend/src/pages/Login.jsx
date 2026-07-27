@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Lock, LogIn, Sparkles, User, Phone, Shield, UserCheck, ShoppingBag, ArrowRight, Mail, Eye, EyeOff, Key, ShieldCheck, ArrowLeft, CheckCircle } from 'lucide-react';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
+import { isAllowedEmailDomain, ALLOWED_EMAIL_DOMAIN_ERROR, normalizeEmail } from '../utils/emailValidator';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -111,9 +112,19 @@ export const Login = () => {
       return;
     }
 
+    const cleanInput = name.trim();
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanInput) || cleanInput.includes('@');
+    if (isEmail) {
+      if (!isAllowedEmailDomain(cleanInput)) {
+        setError(ALLOWED_EMAIL_DOMAIN_ERROR);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      await userLogin(name.trim(), mobile);
+      const loginIdentifier = isEmail ? normalizeEmail(cleanInput) : cleanInput;
+      await userLogin(loginIdentifier, mobile);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Invalid email/mobile or password.");
@@ -145,17 +156,23 @@ export const Login = () => {
 
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setResetSuccessMessage('');
-    if (!resetEmailOrMobile) {
+    const cleanResetInput = resetEmailOrMobile.trim();
+    if (!cleanResetInput) {
       setError("Please enter your registered email or mobile number.");
+      return;
+    }
+
+    const isResetEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanResetInput) || cleanResetInput.includes('@');
+    if (isResetEmail && !isAllowedEmailDomain(cleanResetInput)) {
+      setError(ALLOWED_EMAIL_DOMAIN_ERROR);
       return;
     }
 
     setLoading(true);
     try {
+      const resetIdentifier = isResetEmail ? normalizeEmail(cleanResetInput) : cleanResetInput;
       const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
-        email: resetEmailOrMobile.trim()
+        email: resetIdentifier
       });
       setResetSuccessMessage(response.data.message || "OTP sent successfully!");
       setResetStep(2);
@@ -183,8 +200,9 @@ export const Login = () => {
 
     setLoading(true);
     try {
+      const resetIdentifier = normalizeEmail(resetEmailOrMobile.trim());
       const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
-        email: resetEmailOrMobile.trim(),
+        email: resetIdentifier,
         otp: resetOtp.trim(),
         new_password: resetNewPassword
       });

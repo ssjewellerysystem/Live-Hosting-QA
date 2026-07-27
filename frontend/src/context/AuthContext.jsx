@@ -1,19 +1,11 @@
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
+import { API_BASE_URL, SERVER_BASE_URL } from '../config/env';
+import { normalizeEmail } from '../utils/emailValidator';
+
+export { API_BASE_URL, SERVER_BASE_URL };
 export const AuthContext = createContext();
-
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:5000/api';
-  }
-  return 'https://ssjewellery-main.onrender.com/api';
-};
-
-export const API_BASE_URL = getApiBaseUrl();
-export const SERVER_BASE_URL = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -111,7 +103,9 @@ export const AuthProvider = ({ children }) => {
 
   const userLogin = async (name, mobile) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/user-login`, { name, mobile });
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name?.trim() || '') || name?.includes('@');
+      const normalizedName = isEmail ? normalizeEmail(name) : name?.trim();
+      const response = await axios.post(`${API_BASE_URL}/auth/user-login`, { name: normalizedName, mobile });
       const { user: userData, token: userToken } = response.data;
       
       setUser(userData);
@@ -219,10 +213,11 @@ export const AuthProvider = ({ children }) => {
 
   const checkoutLogin = async (shippingDetails) => {
     try {
+      const normalizedEmail = shippingDetails.email ? normalizeEmail(shippingDetails.email) : shippingDetails.email;
       const response = await axios.post(`${API_BASE_URL}/auth/checkout-login`, {
         name: shippingDetails.name,
         phone: shippingDetails.phone,
-        email: shippingDetails.email,
+        email: normalizedEmail,
         address: {
           house_number: shippingDetails.house_number,
           building_name: shippingDetails.building_name,
@@ -266,8 +261,27 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = !!(user?.is_admin);
   const isAuthenticated = !!user;
 
+  const contextValue = React.useMemo(() => ({
+    user,
+    token,
+    login,
+    userLogin,
+    microsoftLogin,
+    oauthLogin,
+    checkoutLogin,
+    adminLogin,
+    logout,
+    updateUser,
+    loading,
+    isAdmin,
+    isAuthenticated,
+    language,
+    changeLanguage,
+    savePreferredLanguage
+  }), [user, token, loading, isAdmin, isAuthenticated, language]);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, userLogin, microsoftLogin, oauthLogin, checkoutLogin, adminLogin, logout, updateUser, loading, isAdmin, isAuthenticated, language, changeLanguage, savePreferredLanguage }}>
+    <AuthContext.Provider value={contextValue}>
       {!loading && children}
     </AuthContext.Provider>
   );

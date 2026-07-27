@@ -288,16 +288,35 @@ export const GlobalVideoFooter = () => {
 
       </div>
 
-      <div className="w-full max-w-[90%] mx-auto flex flex-col items-center justify-center text-center mt-4 pointer-events-none">
-        {/* Subtitle with gold accent */}
+      <div className="w-full max-w-[90%] mx-auto flex flex-col items-center justify-center text-center mt-1 sm:mt-1.5 pointer-events-none space-y-4 sm:space-y-4.5">
+        {/* Existing Tagline */}
         <motion.p
           initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 0.65, y: 0 }}
+          whileInView={{ opacity: 0.85, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="text-[9px] sm:text-xs tracking-[0.45em] uppercase text-[#D4A75F] font-bold mb-2"
+          className="text-[9px] sm:text-xs tracking-[0.45em] uppercase text-[#D4A75F] font-bold pointer-events-auto -mt-1 sm:-mt-2"
         >
           Crafting Timeless Elegance
+        </motion.p>
+
+        {/* Powered by Credit */}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.15 }}
+          className="text-xs sm:text-sm text-[#D4A75F]/80 dark:text-[#EFE7DB]/70 font-normal tracking-wide pointer-events-auto mt-3.5 sm:mt-4 pt-1 sm:pt-2"
+        >
+          Powered by:{" "}
+          <a
+            href="https://hexmap.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#D4A75F] font-semibold hover:text-[#FFF2D4] hover:underline underline-offset-4 transition-all duration-300 cursor-pointer"
+          >
+            HexMap Private Limited
+          </a>
         </motion.p>
       </div>
     </footer>

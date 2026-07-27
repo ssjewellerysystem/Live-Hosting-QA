@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, CheckCircle, ShoppingBag, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../context/AuthContext';
+import { normalizeEmail } from '../utils/emailValidator';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -58,7 +59,7 @@ export const ResetPassword = () => {
     setLoading(true);
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
-        email: email,
+        email: normalizeEmail(email),
         new_password: newPassword
       });
 

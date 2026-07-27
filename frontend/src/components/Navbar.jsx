@@ -7,6 +7,47 @@ import { CartContext } from '../context/CartContext';
 import { useTranslation } from '../hooks/useTranslation';
 import axios from 'axios';
 
+// Shared SSJewellery Brand Identity component for Desktop Navbar, Mobile Navbar & Mobile Drawer
+const NavbarBrandLogo = ({ onClick, isDrawer = false }) => (
+  <Link
+    to="/"
+    onClick={onClick}
+    className="flex items-center gap-2 sm:gap-[14px] flex-shrink-0 brand-typography-wrapper navbar-brand-logo no-zoom select-none group no-underline cursor-pointer"
+  >
+    <img
+      src="/navbar-logo.png"
+      alt="SSJewellery Logo"
+      className={`${
+        isDrawer
+          ? 'h-9 sm:h-11'
+          : 'h-[38px] sm:h-[48px] md:h-[56px] lg:h-[65px]'
+      } w-auto object-contain flex-shrink-0 no-zoom`}
+    />
+    <div className={`flex items-baseline whitespace-nowrap ${isDrawer ? 'flex' : 'hidden sm:flex'}`}>
+      <span
+        className={`font-great-vibes relative pb-0.5 sm:pb-1 transition-colors duration-300 select-none ${
+          isDrawer
+            ? 'text-xl sm:text-2xl text-white dark:text-[#EFE7DB]'
+            : 'text-xl sm:text-2xl md:text-3xl text-[#3F1D5A] dark:text-[#EFE7DB]'
+        }`}
+      >
+        SS
+        <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#D4A75F]"></span>
+      </span>
+      <span
+        className={`font-great-vibes ml-1.5 sm:ml-2 relative pb-0.5 sm:pb-1 transition-colors duration-300 select-none ${
+          isDrawer
+            ? 'text-xl sm:text-2xl text-white dark:text-[#EFE7DB]'
+            : 'text-xl sm:text-2xl md:text-3xl text-[#3F1D5A] dark:text-[#EFE7DB]'
+        }`}
+      >
+        Jewellery
+        <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#D4A75F]"></span>
+      </span>
+    </div>
+  </Link>
+);
+
 export const Navbar = () => {
   const { user, logout, isAdmin, language, changeLanguage, updateUser } = useContext(AuthContext);
   const { cartCount, wishlistCount, triggerAuthModal } = useContext(CartContext);
@@ -197,6 +238,17 @@ export const Navbar = () => {
     }
   }, [notificationsOpen, unreadCount]);
 
+  const handleLogoClick = (e) => {
+    setMobileMenuOpen(false);
+    if (location.pathname === '/' || location.pathname === '') {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchVal.trim()) {
@@ -250,23 +302,7 @@ export const Navbar = () => {
               </button>
 
               {/* SSJewellery Logo and Brand Name Identity */}
-              <Link to="/" className="flex items-center gap-[14px] flex-shrink-0 brand-typography-wrapper select-none group no-underline">
-                <img
-                  src="/navbar-logo.png"
-                  alt="SSJewellery Logo"
-                  className="h-[46px] md:h-[56px] lg:h-[65px] w-auto object-contain flex-shrink-0"
-                />
-                <div className="flex items-baseline whitespace-nowrap">
-                  <span className="font-great-vibes text-xl sm:text-2xl md:text-3xl text-[#3F1D5A] dark:text-[#EFE7DB] relative pb-1 transition-colors duration-300 select-none">
-                    SS
-                    <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#D4A75F]"></span>
-                  </span>
-                  <span className="font-great-vibes text-xl sm:text-2xl md:text-3xl text-[#3F1D5A] dark:text-[#EFE7DB] ml-2 relative pb-1 transition-colors duration-300 select-none">
-                    Jewellery
-                    <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#D4A75F]"></span>
-                  </span>
-                </div>
-              </Link>
+              <NavbarBrandLogo onClick={handleLogoClick} />
             </div>
 
             {/* CENTER SECTION: Search Bar (Desktop only) */}
@@ -728,22 +764,7 @@ export const Navbar = () => {
                 >
                   <Menu className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                 </button>
-                <Link to="/" className="flex items-center gap-1.5 sm:gap-[14px] flex-shrink-0 brand-typography-wrapper select-none group no-underline flex-nowrap">
-                  <img 
-                    src="/navbar-logo.png" 
-                    alt="SSJewellery Logo" 
-                    className="h-[38px] sm:h-[48px] lg:h-[65px] w-auto object-contain flex-shrink-0"
-                  />
-                  <div className="items-center hidden sm:flex whitespace-nowrap">
-                    <span className="font-cinzel text-sm sm:text-xl md:text-2xl font-bold tracking-[1px] sm:tracking-[2px] text-[#3F1D5A] dark:text-[#EFE7DB] transition-colors duration-300">
-                      SS
-                    </span>
-                    <span className="font-great-vibes text-base sm:text-2xl md:text-3xl text-[#3F1D5A] dark:text-[#EFE7DB] ml-1 relative transition-colors duration-300 select-none">
-                      Jewellery
-                      <span className="absolute bottom-0.5 left-0 w-full h-[1.5px] bg-[#D4A75F]"></span>
-                    </span>
-                  </div>
-                </Link>
+                <NavbarBrandLogo onClick={handleLogoClick} />
               </div>
 
               {/* CENTER SECTION: Search Bar (Desktop and Mobile) */}
@@ -916,7 +937,7 @@ export const Navbar = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 8, scale: 0.95 }}
                             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                            className="absolute right-4 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 border border-[#F2E8D9] dark:border-slate-850 rounded-2xl shadow-xl z-50 overflow-hidden origin-top-right"
+                            className="absolute right-0 sm:right-4 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-32px)] bg-white dark:bg-slate-900 border border-[#F2E8D9] dark:border-slate-850 rounded-2xl shadow-xl z-50 overflow-hidden origin-top-right"
                           >
                             <div className="px-3 py-2.5 bg-white dark:bg-slate-900 border-b border-[#F2E8D9]/50 dark:border-slate-800/80 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
@@ -1117,7 +1138,7 @@ export const Navbar = () => {
                             initial={{ opacity: 0, y: 8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-56 bg-[#0d1b2a] border border-[rgba(212,167,95,0.30)] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] py-2 z-50 origin-top-right overflow-hidden"
+                            className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-32px)] bg-[#0d1b2a] border border-[rgba(212,167,95,0.30)] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] py-2 z-50 origin-top-right overflow-hidden"
                           >
                             <div className="px-4 py-2.5 border-b border-[rgba(212,167,95,0.18)]">
                               <p className="text-[10px] text-[#D4A75F] font-bold uppercase tracking-wider">{language === 'hi' ? 'पंजीकृत ईमेल' : 'Signed in as'}</p>
@@ -1239,13 +1260,7 @@ export const Navbar = () => {
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-16 rounded-l-full bg-[rgba(212,167,95,0.35)]" />
               {/* Header */}
               <div className="flex items-center justify-between pb-5 border-b border-slate-800">
-                <div className="flex items-center gap-2 select-none">
-                  <img src="/logo.svg" alt="SS Logo" className="object-contain w-auto h-9" />
-                  <div className="flex items-center">
-                    <span className="text-base font-bold text-white font-cinzel">SS</span>
-                    <span className="ml-1 text-lg text-white font-great-vibes">Jewellery</span>
-                  </div>
-                </div>
+                <NavbarBrandLogo onClick={handleLogoClick} isDrawer={true} />
                 <button 
                   onClick={() => setMobileMenuOpen(false)} 
                   className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-350 hover:text-white cursor-pointer transition-colors"

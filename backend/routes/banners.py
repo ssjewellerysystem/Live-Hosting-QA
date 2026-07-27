@@ -54,7 +54,14 @@ def get_active_banners():
 @admin_required
 def get_all_banners():
     try:
-        banners = BannerModel.query.order_by(BannerModel.display_order.asc()).all()
+        query = BannerModel.query.order_by(BannerModel.display_order.asc())
+        page_arg = request.args.get('page')
+        limit_arg = request.args.get('limit') or request.args.get('page_size')
+        if page_arg or limit_arg or request.args.get('paginate') == 'true':
+            from backend.utils.pagination import parse_pagination_params, paginate_query
+            p_num, p_limit = parse_pagination_params()
+            return jsonify(paginate_query(query, page=p_num, limit=p_limit)), 200
+        banners = query.all()
         return jsonify([b.to_dict() for b in banners]), 200
     except Exception as e:
         return jsonify({"message": f"Error fetching all banners: {str(e)}"}), 500

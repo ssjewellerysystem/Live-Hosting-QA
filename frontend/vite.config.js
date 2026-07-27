@@ -8,7 +8,13 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  esbuild: {
+    drop: ['console', 'debugger']
+  },
   build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -22,7 +28,10 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'vendor-lucide';
             }
-            return 'vendor-others';
+            if (id.includes('axios')) {
+              return 'vendor-axios';
+            }
+            return 'vendor-libs';
           }
         }
       }
