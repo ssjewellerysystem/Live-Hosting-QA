@@ -2068,3 +2068,21 @@ def update_preferred_language(current_user):
         return jsonify({"message": "An error occurred while saving language preference."}), 500
 
 
+@auth_bp.route('/delete-account', methods=['DELETE', 'POST'])
+@token_required
+def delete_account_route(current_user):
+    if current_user.get("is_admin"):
+        return jsonify({"message": "Admin accounts cannot be deleted through this endpoint."}), 403
+
+    user_id = current_user.get("_id") or current_user.get("id")
+    if not user_id:
+        return jsonify({"message": "User identifier missing."}), 400
+
+    success, msg = UserModel.anonymize_user(user_id)
+    if success:
+        return jsonify({"message": "Account successfully deleted.", "success": True}), 200
+    else:
+        return jsonify({"message": msg or "Failed to delete account.", "success": False}), 500
+
+
+

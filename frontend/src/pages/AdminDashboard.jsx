@@ -4,13 +4,14 @@ import axios from 'axios';
 import { 
   BarChart3, Plus, Edit2, Trash2, CheckCircle2, ShieldAlert,
   ArrowUpRight, Users, ShoppingBag, Package, MessageSquare, AlertCircle, Upload, Eye, X,
-  AlertTriangle, Check, RefreshCw, Calendar, DollarSign, Clock, MapPin, Lock, Unlock, Shield, Search, Image, Bell, Mail
+  AlertTriangle, Check, RefreshCw, Calendar, DollarSign, Clock, MapPin, Lock, Unlock, Shield, Search, Image, Bell, Mail, Truck, ExternalLink
 } from 'lucide-react';
 import { AuthContext, API_BASE_URL, SERVER_BASE_URL } from '../context/AuthContext';
 import { HighDemandButton } from '../components/admin/HighDemandButton';
 import { MaintenanceButton } from '../components/admin/MaintenanceButton';
 import { formatPrice } from '../utils/priceFormatter';
 import { translateCategory } from '../utils/categoryTranslations';
+import { TrackingInfoModal } from '../components/admin/TrackingInfoModal';
 
 const AnalyticsTab = lazy(() => import('../components/admin/AnalyticsTab').then(m => ({ default: m.AnalyticsTab })));
 const ProductManagementTab = lazy(() => import('../components/admin/ProductManagementTab').then(m => ({ default: m.ProductManagementTab })));
@@ -99,6 +100,14 @@ export const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [trackingModalConfig, setTrackingModalConfig] = useState({
+    isOpen: false,
+    orderId: null,
+    targetStatus: null,
+    initialUrl: '',
+    initialId: '',
+    isEditing: false
+  });
   const [auditLogs, setAuditLogs] = useState([]);
   
   // Users Details tab state variables
@@ -719,13 +728,27 @@ export const AdminDashboard = () => {
   };
 
   const handleOrderTrackingUpdate = async (orderId, trackingData) => {
+    if (trackingData.status === 'Out for Delivery' && (!trackingData.tracking_url || !trackingData.tracking_id)) {
+      const order = orders.find(o => String(o._id || o.id) === String(orderId)) || selectedOrder;
+      setTrackingModalConfig({
+        isOpen: true,
+        orderId,
+        targetStatus: 'Out for Delivery',
+        initialUrl: trackingData.tracking_url || order?.tracking_url || '',
+        initialId: trackingData.tracking_id || order?.tracking_id || '',
+        isEditing: false
+      });
+      return;
+    }
+
     try {
       await axios.put(`${API_BASE_URL}/orders/${orderId}/status`, {
         status: trackingData.status,
         message: trackingData.message,
         delivery_date: trackingData.delivery_date,
         carrier: trackingData.carrier,
-        tracking_id: trackingData.tracking_id
+        tracking_id: trackingData.tracking_id,
+        tracking_url: trackingData.tracking_url
       });
       alert("Order shipment details updated successfully!");
       fetchOrders();
@@ -734,7 +757,8 @@ export const AdminDashboard = () => {
         status: trackingData.status,
         delivery_date: trackingData.delivery_date,
         carrier: trackingData.carrier,
-        tracking_id: trackingData.tracking_id,
+        tracking_id: trackingData.tracking_id || prev?.tracking_id,
+        tracking_url: trackingData.tracking_url || prev?.tracking_url,
         tracking_history: [
           ...(prev.tracking_history || []),
           {
@@ -775,8 +799,10 @@ export const AdminDashboard = () => {
   };
 
   const getCategoryData = () => {
-    const categories = ['Rings', 'Necklaces', 'Earrings', 'Bracelets', 'Bangles', 'Bridal Collection'];
-    return categories.map(cat => {
+    const categoryNames = categoriesList && categoriesList.length > 0
+      ? categoriesList.map(c => c.name)
+      : Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+    return categoryNames.map(cat => {
       const filtered = products.filter(p => p.category === cat);
       const count = filtered.length;
       const value = filtered.reduce((sum, p) => sum + (p.price * p.stock), 0);
@@ -865,6 +891,10 @@ export const AdminDashboard = () => {
   };
 
   const handleUpdateProductOrderStatus = async (dbOrderId, newStatus) => {
+    if (newStatus === 'Out for Delivery') {
+      handleOrderStatusUpdate(dbOrderId, newStatus);
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/orders/${dbOrderId}/status`, {
@@ -1321,6 +1351,7 @@ export const AdminDashboard = () => {
       await axios.put(`${API_BASE_URL}/products/${editingProduct._id}`, {
         name: editingProduct.name,
         category: editingProduct.category,
+        collection: editingProduct.collection || '',
         price: parseFloat(editingProduct.price),
         discount: parseInt(editingProduct.discount) || 0,
         stock: parseInt(editingProduct.stock),
@@ -1338,6 +1369,7 @@ export const AdminDashboard = () => {
       alert("Product updated successfully!");
       setEditingProduct(null);
       fetchProducts();
+      if (typeof fetchCollections === 'function') fetchCollections();
     } catch (err) {
       console.error(err);
       alert("Failed to update product details.");
@@ -1358,15 +1390,66 @@ export const AdminDashboard = () => {
   };
 
   // Update Order Status
-  const handleOrderStatusUpdate = async (orderId, newStatus) => {
-    try {
-      await axios.put(`${API_BASE_URL}/orders/${orderId}/status`, {
-        status: newStatus
+  const handleOrderStatusUpdate = async (orderId, newStatus, trackingPayload = null) => {
+    if (newStatus === 'Out for Delivery' && !trackingPayload) {
+      const order = orders.find(o => String(o._id || o.id) === String(orderId)) || (selectedOrder && String(selectedOrder._id || selectedOrder.id) === String(orderId) ? selectedOrder : null);
+      setTrackingModalConfig({
+        isOpen: true,
+        orderId,
+        targetStatus: newStatus,
+        initialUrl: order?.tracking_url || '',
+        initialId: order?.tracking_id || '',
+        isEditing: false
       });
+      return;
+    }
+
+    try {
+      const payload = { status: newStatus };
+      if (trackingPayload) {
+        payload.tracking_url = trackingPayload.tracking_url;
+        payload.tracking_id = trackingPayload.tracking_id;
+      }
+      await axios.put(`${API_BASE_URL}/orders/${orderId}/status`, payload);
       fetchOrders();
+      if (selectedOrder && String(selectedOrder._id || selectedOrder.id) === String(orderId)) {
+        setSelectedOrder(prev => prev ? {
+          ...prev,
+          status: newStatus,
+          tracking_url: payload.tracking_url || prev.tracking_url,
+          tracking_id: payload.tracking_id || prev.tracking_id
+        } : null);
+        setModalTracking(prev => ({
+          ...prev,
+          status: newStatus
+        }));
+      }
+      setTrackingModalConfig({ isOpen: false, orderId: null, targetStatus: null, initialUrl: '', initialId: '', isEditing: false });
     } catch (err) {
       console.error(err);
-      alert("Failed to update order status.");
+      alert(err.response?.data?.message || "Failed to update order status.");
+    }
+  };
+
+  const handleSaveTrackingInfo = async ({ tracking_url, tracking_id }) => {
+    if (trackingModalConfig.isEditing) {
+      try {
+        await axios.put(`${API_BASE_URL}/orders/${trackingModalConfig.orderId}/tracking`, {
+          tracking_url,
+          tracking_id
+        });
+        alert("Shipment tracking information updated successfully!");
+        fetchOrders();
+        if (selectedOrder && String(selectedOrder._id || selectedOrder.id) === String(trackingModalConfig.orderId)) {
+          setSelectedOrder(prev => prev ? { ...prev, tracking_url, tracking_id } : null);
+        }
+        setTrackingModalConfig({ isOpen: false, orderId: null, targetStatus: null, initialUrl: '', initialId: '', isEditing: false });
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || "Failed to update tracking information.");
+      }
+    } else {
+      await handleOrderStatusUpdate(trackingModalConfig.orderId, trackingModalConfig.targetStatus || 'Out for Delivery', { tracking_url, tracking_id });
     }
   };
 
@@ -1796,13 +1879,7 @@ export const AdminDashboard = () => {
                           </option>
                         ))
                       ) : (
-                        <>
-                          <option value="Rings">{translateCategory("Rings", editFormLang)}</option>
-                          <option value="Necklaces">{translateCategory("Necklaces", editFormLang)}</option>
-                          <option value="Earrings">{translateCategory("Earrings", editFormLang)}</option>
-                          <option value="Bracelets">{translateCategory("Bracelets", editFormLang)}</option>
-                          <option value="Bridal Collection">{translateCategory("Bridal Collection", editFormLang)}</option>
-                        </>
+                        <option value="">No categories available</option>
                       )}
                     </select>
                   </div>
@@ -2086,13 +2163,7 @@ export const AdminDashboard = () => {
                           </option>
                         ))
                       ) : (
-                        <>
-                          <option value="Rings">{translateCategory("Rings", formLang)}</option>
-                          <option value="Necklaces">{translateCategory("Necklaces", formLang)}</option>
-                          <option value="Earrings">{translateCategory("Earrings", formLang)}</option>
-                          <option value="Bracelets">{translateCategory("Bracelets", formLang)}</option>
-                          <option value="Bridal Collection">{translateCategory("Bridal Collection", formLang)}</option>
-                        </>
+                        <option value="">No categories available</option>
                       )}
                     </select>
                   </div>
@@ -2418,6 +2489,58 @@ export const AdminDashboard = () => {
                 </div>
               </div>
 
+              {/* Shipment Information Card */}
+              <div className="bg-slate-50/70 dark:bg-slate-955 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-3 text-xs">
+                <div className="flex justify-between items-center border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                  <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-[#5B1E7A] dark:text-[#D4A75F]" />
+                    <span>Shipment Information</span>
+                  </h4>
+                  {selectedOrder.status !== 'Delivered' && (
+                    <button
+                      onClick={() => setTrackingModalConfig({
+                        isOpen: true,
+                        orderId: selectedOrder._id || selectedOrder.id,
+                        targetStatus: selectedOrder.status,
+                        initialUrl: selectedOrder.tracking_url || '',
+                        initialId: selectedOrder.tracking_id || '',
+                        isEditing: true
+                      })}
+                      className="px-3 py-1 text-[11px] font-bold bg-[#5B1E7A]/10 hover:bg-[#5B1E7A]/20 text-[#5B1E7A] dark:bg-[#D4A75F]/20 dark:hover:bg-[#D4A75F]/30 dark:text-[#D4A75F] rounded-lg transition-colors border-none cursor-pointer"
+                    >
+                      Edit Tracking Info
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipment Status</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.status}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking ID</span>
+                    <span className="font-bold font-mono text-slate-800 dark:text-slate-200">{selectedOrder.tracking_id || 'Not assigned'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tracking URL</span>
+                    {selectedOrder.tracking_url ? (
+                      <a
+                        href={selectedOrder.tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#5B1E7A] dark:text-[#D4A75F] font-bold underline inline-flex items-center gap-1 truncate max-w-full"
+                      >
+                        <span>Track Shipment</span>
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">Not assigned</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Fulfillment & Live Order Tracking updates */}
               <div className="bg-slate-50/50 dark:bg-slate-955/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800 space-y-4 text-xs">
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-850">
@@ -2429,7 +2552,14 @@ export const AdminDashboard = () => {
                     <label className="block text-slate-400 font-semibold mb-1">Fulfillment Status</label>
                     <select
                       value={modalTracking.status}
-                      onChange={(e) => setModalTracking({ ...modalTracking, status: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setModalTracking(prev => ({ ...prev, status: val }));
+                        if (val === 'Out for Delivery') {
+                          const orderId = selectedOrder._id || selectedOrder.id;
+                          handleOrderStatusUpdate(orderId, 'Out for Delivery');
+                        }
+                      }}
                       className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl focus:outline-none text-slate-850 dark:text-slate-100"
                     >
                       <option value="Pending">Pending</option>
@@ -2931,6 +3061,17 @@ export const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Mandatory Tracking Info Modal */}
+      <TrackingInfoModal
+        isOpen={trackingModalConfig.isOpen}
+        onClose={() => setTrackingModalConfig({ isOpen: false, orderId: null, targetStatus: null, initialUrl: '', initialId: '', isEditing: false })}
+        onSubmit={handleSaveTrackingInfo}
+        orderId={trackingModalConfig.orderId}
+        initialTrackingUrl={trackingModalConfig.initialUrl}
+        initialTrackingId={trackingModalConfig.initialId}
+        isEditing={trackingModalConfig.isEditing}
+      />
 
       {/* Toast Alert */}
       {toast.show && (

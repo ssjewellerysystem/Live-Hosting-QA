@@ -65,13 +65,7 @@ const CategorySkeleton = () => (
         <div className="skeleton-premium h-3 w-64 rounded mt-3 animate-pulse" />
       </div>
       <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
-        {[
-          { label: "Rings" },
-          { label: "Necklaces" },
-          { label: "Earrings" },
-          { label: "Bracelets" },
-          { label: "Bridal Collection" }
-        ].map((cat, idx) => (
+        {[1, 2, 3, 4, 5].map((_, idx) => (
           <div key={idx} className="flex flex-col items-center justify-center w-24 sm:w-28">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[#F2E8D9]/60 dark:border-slate-800/80 p-1 flex items-center justify-center overflow-hidden relative">
               <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
@@ -96,13 +90,7 @@ const MobileCategorySkeleton = () => (
         <div className="skeleton-premium h-6 w-36 rounded animate-pulse" />
       </div>
       <div className="flex overflow-x-auto gap-3.5 pb-2">
-        {[
-          { label: "Rings" },
-          { label: "Necklaces" },
-          { label: "Earrings" },
-          { label: "Bracelets" },
-          { label: "Bridal Collection" }
-        ].map((cat, idx) => (
+        {[1, 2, 3, 4, 5].map((_, idx) => (
           <div key={idx} className="flex-none flex flex-col items-center justify-center w-[76px]">
             <div className="w-[68px] h-[68px] rounded-full border-2 border-[#F2E8D9]/60 dark:border-slate-800/80 p-1 flex items-center justify-center overflow-hidden relative">
               <div className="absolute inset-0 luxury-gold-shimmer pointer-events-none" />
@@ -740,14 +728,6 @@ const BannerSlider = React.memo(({
   );
 });
 
-const DEFAULT_CATEGORIES = [
-  { name: "Rings", label: "Rings", img: null },
-  { name: "Necklaces", label: "Necklaces", img: null },
-  { name: "Earrings", label: "Earrings", img: null },
-  { name: "Bracelets", label: "Bracelets", img: null },
-  { name: "Bridal Collection", label: "Bridal Collection", img: null }
-];
-
 const getCategoryDefaultImg = (name, img) => {
   if (img && img !== '/logo.svg' && !img.includes('cat_')) return img;
   return null;
@@ -763,7 +743,7 @@ const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCat
     const fetchCategories = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/products/categories`);
-        if (isMounted && response.data && response.data.length > 0) {
+        if (isMounted && response.data) {
           const mapped = response.data.map(cat => ({
             name: cat.name,
             label: cat.name,
@@ -781,8 +761,6 @@ const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCat
     return () => { isMounted = false; };
   }, []);
 
-  const displayCategories = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES;
-
   if (loading && parentLoading) {
     return (
       <>
@@ -791,6 +769,12 @@ const CategoryGrid = React.memo(({ activeCategory, loading: parentLoading, onCat
       </>
     );
   }
+
+  if (!loading && (!categories || categories.length === 0)) {
+    return null;
+  }
+
+  const displayCategories = categories;
 
   return (
     <>
@@ -1366,6 +1350,17 @@ export const Home = () => {
   const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
   const [bannerError, setBannerError] = useState(null);
   const [bannerSuccess, setBannerSuccess] = useState(null);
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    axios.get(`${API_BASE_URL}/products/categories`)
+      .then(res => {
+        if (isMounted && res.data) setDbCategories(res.data);
+      })
+      .catch(err => console.error("Error fetching db categories:", err));
+    return () => { isMounted = false; };
+  }, []);
 
   const [siteSettings, setSiteSettings] = useState({
     owner_image: "/owner.png",
@@ -1610,6 +1605,9 @@ export const Home = () => {
         if (activeCategory && activeCategory !== 'All') {
           params.push(`category=${encodeURIComponent(activeCategory)}`);
         }
+        if (activeCollection && activeCollection !== 'All') {
+          params.push(`collection=${encodeURIComponent(activeCollection)}`);
+        }
         if (activeSearch) {
           params.push(`search=${encodeURIComponent(activeSearch)}`);
         }
@@ -1630,8 +1628,15 @@ export const Home = () => {
         if (activeSearch) {
           setAllProductsLoading(true);
           let allUrl = `${API_BASE_URL}/products`;
+          const allParams = [];
           if (activeCategory && activeCategory !== 'All') {
-            allUrl += `?category=${encodeURIComponent(activeCategory)}`;
+            allParams.push(`category=${encodeURIComponent(activeCategory)}`);
+          }
+          if (activeCollection && activeCollection !== 'All') {
+            allParams.push(`collection=${encodeURIComponent(activeCollection)}`);
+          }
+          if (allParams.length > 0) {
+            allUrl += `?${allParams.join('&')}`;
           }
           const allResponse = await axios.get(allUrl);
           let allFetched = allResponse.data || [];
@@ -2710,12 +2715,9 @@ export const Home = () => {
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                         >
                           <option value="">Choose Category...</option>
-                          <option value="Rings">Rings</option>
-                          <option value="Necklaces">Necklaces</option>
-                          <option value="Earrings">Earrings</option>
-                          <option value="Bracelets">Bracelets</option>
-                          <option value="Bangles">Bangles</option>
-                          <option value="Bridal Collection">Bridal Collection</option>
+                          {dbCategories.map(cat => (
+                            <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                          ))}
                         </select>
                       </div>
 

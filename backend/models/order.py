@@ -35,6 +35,7 @@ class OrderModel(db.Model):
 
     carrier = db.Column(db.String(100), nullable=True)
     tracking_id = db.Column(db.String(100), nullable=True)
+    tracking_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Kolkata')))
     terms_accepted = db.Column(db.Boolean, default=False, nullable=True)
     terms_accepted_at = db.Column(db.DateTime, nullable=True)
@@ -67,6 +68,9 @@ class OrderModel(db.Model):
             "order_status": self.order_status,
             "status": self.order_status,
             "delivery_date": self.delivery_date,
+            "carrier": self.carrier,
+            "tracking_id": self.tracking_id,
+            "tracking_url": self.tracking_url,
             "tracking_history": self.tracking_history or [],
             "return_request": self.return_request or {
                 "status": "None",
@@ -189,7 +193,7 @@ class OrderModel(db.Model):
             return []
 
     @staticmethod
-    def update_status(order_id, status, message=None, delivery_date=None, carrier=None, tracking_id=None):
+    def update_status(order_id, status, message=None, delivery_date=None, carrier=None, tracking_id=None, tracking_url=None):
         try:
             order = None
             if str(order_id).isdigit():
@@ -219,12 +223,39 @@ class OrderModel(db.Model):
                 order.carrier = carrier
             if tracking_id:
                 order.tracking_id = tracking_id
+            if tracking_url:
+                order.tracking_url = tracking_url
                 
             db.session.commit()
             return True
         except Exception as e:
             db.session.rollback()
             print("Error updating order status:", e)
+            return False
+
+    @staticmethod
+    def update_tracking(order_id, tracking_url=None, tracking_id=None, carrier=None):
+        try:
+            order = None
+            if str(order_id).isdigit():
+                order = OrderModel.query.with_for_update().get(int(order_id))
+            if not order:
+                order = OrderModel.query.filter_by(order_id=str(order_id)).with_for_update().first()
+            if not order:
+                return False
+
+            if tracking_url is not None:
+                order.tracking_url = tracking_url
+            if tracking_id is not None:
+                order.tracking_id = tracking_id
+            if carrier is not None:
+                order.carrier = carrier
+
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            print("Error updating order tracking info:", e)
             return False
 
     @staticmethod
@@ -315,4 +346,25 @@ class OrderModel(db.Model):
             return False
 
 Order = OrderModel
+
+
+def ensure_tracking_columns():
+    try:
+        from backend.extensions import db
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        columns = [c['name'] for c in inspector.get_columns('orders')]
+        if 'tracking_url' not in columns:
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE orders ADD COLUMN tracking_url VARCHAR(500)"))
+                conn.commit()
+                print("[DB] Added tracking_url column to orders table.")
+        if 'tracking_id' not in columns:
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE orders ADD COLUMN tracking_id VARCHAR(100)"))
+                conn.commit()
+                print("[DB] Added tracking_id column to orders table.")
+    except Exception as e:
+        print("[DB] Note on ensure_tracking_columns:", e)
+
 

@@ -565,6 +565,62 @@ class UserModel(db.Model):
             db.session.rollback()
             return False
 
+    @staticmethod
+    def anonymize_user(user_id):
+        import uuid
+        try:
+            uid = int(user_id)
+            user = UserModel.query.with_for_update().get(uid)
+            if not user:
+                return False, "User not found"
+
+            old_email = user.email
+            anonymized_email = f"deleted_{uid}_{uuid.uuid4().hex[:8]}@deleted.local"
+
+            # 1. Anonymize user personal data and disable login
+            user.full_name = "Deleted User"
+            user.email = anonymized_email
+            user.phone = None
+            user.password_hash = f"$2b$12$DELETEDACCOUNTNOLOGIN_{uuid.uuid4().hex}"
+            user.is_blocked = True
+            user.email_verified = False
+            user.microsoft_id = None
+            user.provider = "deleted"
+            user.provider_id = None
+            user.notifications = []
+
+            # 2. Delete user personal delivery addresses
+            DeliveryAddress.query.filter_by(user_id=uid).delete(synchronize_session=False)
+
+            # 3. Delete wishlist items
+            Wishlist.query.filter_by(user_id=uid).delete(synchronize_session=False)
+
+            # 4. Clear active cart and items
+            if user.cart:
+                CartItem.query.filter_by(cart_id=user.cart.id).delete(synchronize_session=False)
+                db.session.delete(user.cart)
+            Cart.query.filter_by(user_id=uid).delete(synchronize_session=False)
+
+            db.session.commit()
+
+            # 5. Log audit action
+            try:
+                from backend.utils.audit import log_admin_action
+                log_admin_action(
+                    action_type="Account Deletion",
+                    module="User Profile",
+                    details=f"User account ID {uid} ({old_email}) was permanently deleted and anonymized upon user request."
+                )
+            except Exception:
+                pass
+
+            return True, "Account deleted successfully"
+        except Exception as e:
+            db.session.rollback()
+            print("Error in anonymize_user:", e)
+            return False, str(e)
+
+
 class UserStatusAuditLog(db.Model):
     __tablename__ = 'user_status_audit_logs'
     

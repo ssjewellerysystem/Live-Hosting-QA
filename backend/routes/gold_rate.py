@@ -42,7 +42,7 @@ def get_gold_rate():
             official_timestamp = format_official_update_timestamp(effective_dt)
 
             data_payload = {
-                "city": gold_rec.city if gold_rec else "Jaipur",
+                "city": gold_rec.city if gold_rec else "Central India",
                 "state": gold_rec.state if gold_rec else "Rajasthan",
                 "gold": {
                     "22k_per_gram": g22,
@@ -64,11 +64,15 @@ def get_gold_rate():
             }
 
             msg = "Showing last saved rates from database." if is_historical_fallback else "Rates fetched successfully from database."
-            return jsonify({
+            resp = jsonify({
                 "success": True,
                 "message": msg,
                 "data": data_payload
-            }), 200
+            })
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp, 200
 
         # Fallback to site_settings JSON if gold_rates table is completely empty
         setting = SiteSettingModel.query.filter_by(key='metal_rates').first()
@@ -76,15 +80,19 @@ def get_gold_rate():
             data = json.loads(setting.value)
             data["source"] = "database_settings"
             data["updated_at"] = format_official_update_timestamp(data.get("rate_date") or today_str)
-            return jsonify({
+            resp = jsonify({
                 "success": True,
                 "message": "Rates fetched successfully from database.",
                 "data": data
-            }), 200
+            })
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp, 200
 
         # Default non-zero fallback if database is brand new
         default_payload = {
-            "city": "Jaipur",
+            "city": "Central India",
             "state": "Rajasthan",
             "gold": {
                 "22k_per_gram": 13534.0,
@@ -103,18 +111,24 @@ def get_gold_rate():
             "updated_at": format_official_update_timestamp(today_str),
             "source": "default_fallback"
         }
-        return jsonify({
+        resp = jsonify({
             "success": True,
             "message": "Showing default rates.",
             "data": default_payload
-        }), 200
+        })
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp, 200
 
     except Exception as e:
-        return jsonify({
+        resp = jsonify({
             "success": False,
             "message": f"Error fetching rates from database: {str(e)}",
             "data": None
-        }), 500
+        })
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return resp, 500
 
 
 @gold_rate_bp.route('/refresh', methods=['POST'])

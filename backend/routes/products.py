@@ -122,19 +122,11 @@ def get_all_categories():
                 "name_hi": cat.name_hi or cat.name,
                 "image_url": image_url if (image_url and image_url != "/logo.svg") else None
             })
-        if result:
-            categories_cache.set('all_categories', result)
+        categories_cache.set('all_categories', result)
         return jsonify(result), 200
     except Exception as e:
         print("Error fetching categories:", e)
-        fallback = [
-            {"id": "1", "_id": "1", "name": "Rings", "name_en": "Rings", "name_hi": "अंगूठियाँ", "image_url": None},
-            {"id": "2", "_id": "2", "name": "Necklaces", "name_en": "Necklaces", "name_hi": "हार", "image_url": None},
-            {"id": "3", "_id": "3", "name": "Earrings", "name_en": "Earrings", "name_hi": "झुमके", "image_url": None},
-            {"id": "4", "_id": "4", "name": "Bracelets", "name_en": "Bracelets", "name_hi": "कंगन", "image_url": None},
-            {"id": "5", "_id": "5", "name": "Bridal Collection", "name_en": "Bridal Collection", "name_hi": "ब्राइडल कलेक्शन", "image_url": None}
-        ]
-        return jsonify(fallback), 200
+        return jsonify([]), 200
 
 @products_bp.route('/collections', methods=['GET'])
 def get_all_collections():

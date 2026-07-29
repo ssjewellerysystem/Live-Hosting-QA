@@ -343,6 +343,11 @@ def seed_database():
 # Run initialization inside app context if db tables are initialized
 with app.app_context():
     db.create_all()
+    try:
+        from backend.models.order import ensure_tracking_columns
+        ensure_tracking_columns()
+    except Exception as ex:
+        print("[APP] Error ensuring tracking columns:", ex)
     seed_database()
 
     try:

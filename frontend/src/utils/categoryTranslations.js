@@ -9,7 +9,8 @@ export const categoryMap = {
 export const uiLabelsMap = {
   'All Products': 'सभी उत्पाद',
   'Showing premium handpicked items in stock.': 'स्टॉक में उपलब्ध प्रीमियम चयनित उत्पाद',
-  'Shop By Category': 'श्रेणी के अनुसार खरीदें'
+  'Shop By Category': 'श्रेणी के अनुसार खरीदें',
+  'No categories available.': 'कोई श्रेणी उपलब्ध नहीं है।'
 };
 
 export const translateCategory = (categoryName, language) => {

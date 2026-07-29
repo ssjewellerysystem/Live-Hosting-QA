@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  User, Settings, Mail, Phone, MapPin, Key, LogOut, Package, ShoppingBag, 
+import {
+  User, Settings, Mail, Phone, MapPin, Key, LogOut, Package, ShoppingBag,
   Heart, Bookmark, ChevronDown, ChevronUp, Download, Clock, Check, X, ShieldAlert,
-  Globe
+  Globe, Trash2
 } from 'lucide-react';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -31,9 +31,9 @@ const formatTimestamp = (dateInput) => {
 export const Profile = () => {
   const navigate = useNavigate();
   const { user, updateUser, token, logout, savePreferredLanguage } = useContext(AuthContext);
-  const { 
+  const {
     wishlist, removeFromWishlist, addToCart,
-    savedForLater, moveToCartItem, removeFromSavedForLater 
+    savedForLater, moveToCartItem, removeFromSavedForLater
   } = useContext(CartContext);
   const { t, language } = useTranslation();
 
@@ -76,6 +76,30 @@ export const Profile = () => {
   const [langLoading, setLangLoading] = useState(false);
   const [langMessage, setLangMessage] = useState('');
   const [langError, setLangError] = useState('');
+
+  // Account Deletion states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
+
+  const handleDeleteAccount = async () => {
+    if (!token) return;
+    setIsDeletingAccount(true);
+    setDeleteAccountError('');
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.delete(`${API_BASE_URL}/auth/delete-account`, config);
+      setShowDeleteModal(false);
+      logout();
+      navigate('/');
+    } catch (err) {
+      console.error("Failed to delete account:", err);
+      setDeleteAccountError(err.response?.data?.message || "Failed to delete account. Please try again.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
 
   // Orders states
   const [orders, setOrders] = useState([]);
@@ -391,11 +415,11 @@ export const Profile = () => {
   return (
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen font-sans transition-colors duration-300">
       <div className="max-w-[97%] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
-        
+
         {/* Profile Welcome Header */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between shadow-sm relative overflow-hidden">
           <div className="absolute -top-12 -right-12 h-32 w-32 bg-[#D4A75F]/5 rounded-full blur-2xl pointer-events-none" />
-          
+
           <div className="flex items-center space-x-4">
             <div className="h-16 w-16 bg-[#D4A75F] text-white flex items-center justify-center text-xl font-bold uppercase rounded-2xl shadow-md">
               {user.name.charAt(0)}
@@ -434,17 +458,17 @@ export const Profile = () => {
 
         {/* Dashboard Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT SIDE: Forms & Settings (7 Columns) */}
           <div className="lg:col-span-7 space-y-8">
-            
+
             {/* 1. Personal Info & Account Settings */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center space-x-2.5 mb-4 border-b border-slate-100 dark:border-slate-850 pb-3">
                 <Settings className="h-5 w-5 text-[#D4A75F]" />
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Account Settings & Personal Info</h3>
               </div>
-              
+
               {profileMessage && (
                 <div className="bg-[#D4A75F]/10 border border-[#D4A75F]/20 text-[#D4A75F] p-4 rounded-xl text-xs font-semibold mb-4 text-center">
                   {profileMessage}
@@ -510,7 +534,7 @@ export const Profile = () => {
                 {/* 2. Address Management */}
                 <div className="border-t border-slate-100 dark:border-slate-850 pt-4">
                   <p className="font-bold text-[#D4A75F] text-xs mb-3 uppercase tracking-wider">Address Management</p>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-455 mb-1">Street Address</label>
@@ -529,9 +553,8 @@ export const Profile = () => {
                         type="text"
                         value={alternateMobile || ''}
                         onChange={(e) => handleAlternateMobileChange(e.target.value)}
-                        className={`w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-955 border ${
-                          validationError ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-[#D4A75F]'
-                        } rounded-xl focus:outline-none focus:ring-1 text-slate-800 dark:text-white`}
+                        className={`w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-955 border ${validationError ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-[#D4A75F]'
+                          } rounded-xl focus:outline-none focus:ring-1 text-slate-800 dark:text-white`}
                         placeholder="e.g. 9829276750"
                       />
                       {alternateMobile && (
@@ -608,7 +631,7 @@ export const Profile = () => {
                 <Key className="h-5 w-5 text-[#D4A75F]" />
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Security Settings</h3>
               </div>
-              
+
               {passwordMessage && (
                 <div className="bg-[#D4A75F]/10 border border-[#D4A75F]/20 text-[#D4A75F] p-4 rounded-xl text-xs font-semibold mb-4 text-center">
                   {passwordMessage}
@@ -660,7 +683,7 @@ export const Profile = () => {
                 <Globe className="h-5 w-5 text-[#D4A75F]" />
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Language Preferences</h3>
               </div>
-              
+
               {langMessage && (
                 <div className="bg-[#D4A75F]/10 border border-[#D4A75F]/20 text-[#D4A75F] p-4 rounded-xl text-xs font-semibold mb-4 text-center">
                   {langMessage}
@@ -677,7 +700,7 @@ export const Profile = () => {
                   <label className="block text-xs font-bold text-slate-455 mb-3 uppercase tracking-wider">
                     Preferred Language
                   </label>
-                  
+
                   <div className="flex flex-col space-y-2">
                     <label className="flex items-center space-x-2 text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                       <input
@@ -718,7 +741,7 @@ export const Profile = () => {
 
           {/* RIGHT SIDE: My Orders, Wishlist, Buy Requests (5 Columns) */}
           <div className="lg:col-span-5 space-y-8">
-            
+
             {/* 4. My Orders Accordion Card */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-850 pb-3">
@@ -767,7 +790,7 @@ export const Profile = () => {
                         {isExpanded && (
                           <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/60 space-y-2 text-xs">
                             <p className="text-[10px] font-semibold text-slate-400"><Clock className="inline h-3 w-3 mr-1" /> Placed on: {formatTimestamp(order.created_at)}</p>
-                            
+
                             <div className="divide-y divide-slate-100 dark:divide-slate-800">
                               {order.items.map((item, idx) => (
                                 <div key={idx} className="py-1.5 flex justify-between">
@@ -823,10 +846,9 @@ export const Profile = () => {
                           <p className="text-xs font-extrabold text-slate-800 dark:text-white">{req.product_name || "Custom Jewellery"}</p>
                           <p className="text-[10px] text-slate-450">Category: {req.category || 'N/A'}</p>
                         </div>
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${
-                          req.status === 'Approved' || req.status === 'Available' ? 'bg-[#D4A75F]/10 text-[#D4A75F]' :
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${req.status === 'Approved' || req.status === 'Available' ? 'bg-[#D4A75F]/10 text-[#D4A75F]' :
                           req.status === 'Rejected' ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'
-                        }`}>
+                          }`}>
                           {req.status}
                         </span>
                       </div>
@@ -921,7 +943,90 @@ export const Profile = () => {
 
         </div>
 
+        {/* Account Delete Section - Always at the bottom before footer */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7">
+            <div className="bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-900/50 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center space-x-2.5 mb-4 border-b border-rose-100 dark:border-rose-900/40 pb-3">
+                <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Account Delete</h3>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Permanently delete your account and personal information. Your completed orders and payment records will be retained for business and audit purposes.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteAccountError('');
+                  setShowDeleteModal(true);
+                }}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete My Account</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-3 bg-red-50 dark:bg-red-950/50 rounded-2xl text-red-600 dark:text-red-400">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                Delete Your Account?
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+              Are you sure you want to permanently delete your account? This action cannot be undone. Your profile and personal information will be removed, but your completed orders and payment records will be retained for business and audit purposes.
+            </p>
+
+            {deleteAccountError && (
+              <div className="bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900 text-red-650 dark:text-red-400 p-3 rounded-xl text-xs font-semibold mb-4 text-center">
+                {deleteAccountError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteAccountError('');
+                }}
+                disabled={isDeletingAccount}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete My Account</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
