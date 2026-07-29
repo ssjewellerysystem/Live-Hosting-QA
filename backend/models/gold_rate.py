@@ -7,7 +7,7 @@ class GoldRateModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     metal_type = db.Column(db.String(20), default='gold', nullable=False) # 'gold' | 'silver'
     purity = db.Column(db.String(20), nullable=True)                      # '24k', '22k', '18k', '14k', '1g', '1kg'
-    city = db.Column(db.String(50), default='Jaipur', nullable=False)
+    city = db.Column(db.String(50), default='Central India', nullable=False)
     state = db.Column(db.String(50), default='Rajasthan', nullable=False)
     rate_per_gram = db.Column(db.Float, nullable=True)
     price_24k = db.Column(db.Float, nullable=True)                        # Compatibility

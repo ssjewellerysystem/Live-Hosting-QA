@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Coins, TrendingUp, Info, RefreshCw, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatPrice } from '../utils/priceFormatter';
 import { API_BASE_URL } from '../context/AuthContext';
 
 const getGoldRateUrl = () => {
-  return API_BASE_URL.endsWith('/api') ? `${API_BASE_URL}/gold-rate` : `${API_BASE_URL}/api/gold-rate`;
+  const baseUrl = API_BASE_URL.endsWith('/api') ? `${API_BASE_URL}/gold-rate` : `${API_BASE_URL}/api/gold-rate`;
+  return `${baseUrl}?_t=${Date.now()}`;
 };
 
 export const GoldCalculator = () => {
-  const { language } = useTranslation();
+  const { t } = useTranslation();
   const [weight, setWeight] = useState(10);           // always stored in GRAMS
   const [weightUnit, setWeightUnit] = useState('g');   // 'g' | 'kg'
   const [selectedPurity, setSelectedPurity] = useState('22k');
@@ -32,8 +33,6 @@ export const GoldCalculator = () => {
       const json = await res.json();
       if (json.success && json.data) {
         const { gold, silver, updated_at } = json.data;
-        // Build price map from real API data
-        // 18K = 75% of 24K price; 14K = ~58% of 24K price
         const g24 = gold['24k_per_gram'] || 0;
         const g22 = gold['22k_per_gram'] || 0;
         setApiRates({
@@ -56,18 +55,15 @@ export const GoldCalculator = () => {
 
   useEffect(() => { fetchRates(); }, [fetchRates]);
 
-  // Gold prices map (from API or skeleton)
   const currentPrices = useMemo(() => {
     if (apiRates) return apiRates;
     return { '24k': 0, '22k': 0, '18k': 0, '14k': 0 };
   }, [apiRates]);
 
-  // Active price per gram depends on metal type
   const activePricePerGram = useMemo(() => {
     if (metalType === 'silver') return silverRate || 0;
     return currentPrices[selectedPurity] || 0;
   }, [metalType, silverRate, currentPrices, selectedPurity]);
-
 
   const calculations = useMemo(() => {
     const pricePerGram = activePricePerGram;
@@ -79,34 +75,6 @@ export const GoldCalculator = () => {
       grandTotal: Math.round(grandTotal)
     };
   }, [weight, activePricePerGram]);
-
-  // Translation helpers
-  const text = {
-    en: {
-      title: "Daily Gold & Silver Rate — Central India",
-      subtitle: "Real rates updated once daily at 9:00 AM IST.",
-      goldPrice: "Today's Gold Rate (per gram)",
-      weightLabel: "Jewellery Metal Weight",
-      purityLabel: "Select Gold Purity",
-      calculationSummary: "Estimated Price Breakdown",
-      metalCost: "Metal Cost",
-      totalPrice: "Estimated Grand Total",
-      helperNote: "Note: Rates are updated daily at 9 AM IST. Final price may vary by design, certification, and store rates.",
-      liveIndicator: "DAILY UPDATED RATE"
-    },
-    hi: {
-      title: "दैनिक सोना-चाँदी दर — मध्य भारत",
-      subtitle: "रेट प्रतिदिन सुबह 9 बजे IST पर अपडेट होते हैं।",
-      goldPrice: "आज की सोने की दर (प्रति ग्राम)",
-      weightLabel: "आभूषण धातु का वजन",
-      purityLabel: "सोने की शुद्धता चुनें",
-      calculationSummary: "अनुमानित मूल्य विवरण",
-      metalCost: "धातु की लागत",
-      totalPrice: "अनुमानित कुल मूल्य",
-      helperNote: "नोट: रेट प्रतिदिन सुबह 9 बजे अपडेट होते हैं। अंतिम मूल्य डिजाइन और स्टोर दर के आधार पर भिन्न हो सकता है।",
-      liveIndicator: "दैनिक अपडेट दर"
-    }
-  }[language === 'hi' ? 'hi' : 'en'];
 
   return (
     <motion.section
@@ -128,7 +96,7 @@ export const GoldCalculator = () => {
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-[#D4A75F] text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                {text.liveIndicator}
+                {t('calculator.live_indicator')}
               </div>
 
               {/* Metal Toggle */}
@@ -140,7 +108,7 @@ export const GoldCalculator = () => {
                       : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-amber-500/40 hover:text-amber-400'
                     }`}
                 >
-                  <span className="text-base">🥇</span> Gold
+                  <span className="text-base">🥇</span> {t('calculator.gold_tab')}
                 </button>
                 <button
                   onClick={() => setMetalType('silver')}
@@ -149,17 +117,15 @@ export const GoldCalculator = () => {
                       : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-400/40 hover:text-slate-300'
                     }`}
                 >
-                  <span className="text-base">🥈</span> Silver
+                  <span className="text-base">🥈</span> {t('calculator.silver_tab')}
                 </button>
               </div>
 
               <h2 className="text-xl sm:text-3xl font-bold font-serif text-[#EFE7DB] tracking-wide">
-                {metalType === 'silver' ? 'Silver Rate Calculator — Jaipur' : text.title}
+                {metalType === 'silver' ? t('calculator.silver_title') : t('calculator.gold_title')}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
-                {metalType === 'silver'
-                  ? (language === 'hi' ? 'चयनित वजन के आधार पर चांदी का मूल्य अनुमान' : 'Silver price estimate based on selected weight')
-                  : text.subtitle}
+                {metalType === 'silver' ? t('calculator.silver_subtitle') : t('calculator.gold_subtitle')}
               </p>
             </div>
 
@@ -167,7 +133,7 @@ export const GoldCalculator = () => {
             {metalType === 'gold' && (
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold tracking-wide uppercase calculator-section-label">
-                  {text.purityLabel}
+                  {t('calculator.purity_label')}
                 </label>
                 <div className="grid grid-cols-4 gap-2.5">
                   {Object.keys(currentPrices).map((purity) => (
@@ -190,7 +156,7 @@ export const GoldCalculator = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold tracking-wide uppercase calculator-section-label">
-                  {text.weightLabel}
+                  {t('calculator.weight_label')}
                 </label>
                 {/* Unit Toggle */}
                 <div className="flex items-center gap-1.5">
@@ -265,9 +231,9 @@ export const GoldCalculator = () => {
               {/* Error Banner */}
               {ratesError && (
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-                  <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Could not load live rates — showing last saved data</span>
+                  <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> {t('calculator.error_load_rates')}</span>
                   <button onClick={fetchRates} className="flex items-center gap-1 text-red-300 hover:text-white transition-colors cursor-pointer">
-                    <RefreshCw className="w-3 h-3" /> Retry
+                    <RefreshCw className="w-3 h-3" /> {t('calculator.retry_btn')}
                   </button>
                 </div>
               )}
@@ -279,8 +245,8 @@ export const GoldCalculator = () => {
                     <Coins className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase block tracking-wider">{text.goldPrice}</span>
-                    <span className="text-sm font-extrabold text-[#EFE7DB]">{selectedPurity.toUpperCase()} Gold — Jaipur</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block tracking-wider">{t('calculator.todays_gold_rate')}</span>
+                    <span className="text-sm font-extrabold text-[#EFE7DB]">{t('calculator.gold_rate_region', { purity: selectedPurity.toUpperCase() })}</span>
                   </div>
                 </div>
                 <motion.div
@@ -294,7 +260,7 @@ export const GoldCalculator = () => {
                   ) : (
                     <>
                       <span className="text-lg font-black text-[#D4A75F]">₹{formatPrice(calculations.pricePerGram)}</span>
-                      <span className="text-[10px] text-slate-500 font-bold block">per gram</span>
+                      <span className="text-[10px] text-slate-500 font-bold block">{t('calculator.per_gram')}</span>
                     </>
                   )}
                 </motion.div>
@@ -307,11 +273,11 @@ export const GoldCalculator = () => {
                     <div className="p-2 rounded-lg bg-slate-700/40 text-slate-300">
                       <TrendingUp className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-400">Silver Rate — Jaipur</span>
+                    <span className="text-xs font-bold text-slate-400">{t('calculator.silver_rate_region')}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-black text-slate-200">₹{formatPrice(silverRate)}</span>
-                    <span className="text-[10px] text-slate-500 block">per gram</span>
+                    <span className="text-[10px] text-slate-500 block">{t('calculator.per_gram')}</span>
                   </div>
                 </div>
               )}
@@ -319,7 +285,7 @@ export const GoldCalculator = () => {
               {/* Last Updated */}
               {updatedAt && (
                 <p className="text-[10px] text-slate-600 text-right px-1">
-                  Last updated: {updatedAt}
+                  {t('calculator.last_updated')} {updatedAt}
                 </p>
               )}
             </div>
@@ -331,12 +297,12 @@ export const GoldCalculator = () => {
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider border-b border-slate-800 pb-3 flex items-center gap-1.5 calculator-section-label">
                   <Info className="h-4 w-4 text-[#D4A75F]" />
-                  {text.calculationSummary}
+                  {t('calculator.calculation_summary')}
                 </h3>
 
                 <div className="mt-4 space-y-3.5 text-xs text-slate-400">
                   <div className="flex items-center justify-between">
-                    <span>{text.metalCost} ({weight >= 1000 ? `${(weight / 1000).toFixed(3)}kg` : `${weight}g`})</span>
+                    <span>{t('calculator.metal_cost')} ({weight >= 1000 ? `${(weight / 1000).toFixed(3)}kg` : `${weight}g`})</span>
                     <span className="font-semibold text-slate-200">₹{formatPrice(calculations.metalCost)}</span>
                   </div>
                 </div>
@@ -345,7 +311,7 @@ export const GoldCalculator = () => {
               {/* Total Summary */}
               <div className="pt-4 space-y-4 border-t border-slate-800">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-bold text-slate-200">{text.totalPrice}</span>
+                  <span className="text-sm font-bold text-slate-200">{t('calculator.estimated_total')}</span>
                   <motion.span
                     key={calculations.grandTotal}
                     initial={{ opacity: 0 }}
@@ -358,7 +324,7 @@ export const GoldCalculator = () => {
                 </div>
 
                 <p className="text-[10px] leading-relaxed text-slate-500 italic mt-2">
-                  {text.helperNote}
+                  {t('calculator.helper_note')}
                 </p>
               </div>
             </div>

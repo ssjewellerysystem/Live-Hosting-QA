@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { translateCategory } from '../utils/categoryTranslations';
 import axios from 'axios';
 
 // Shared SSJewellery Brand Identity component for Desktop Navbar, Mobile Navbar & Mobile Drawer
@@ -269,14 +270,23 @@ export const Navbar = () => {
     }
   };
 
+  const [navCategories, setNavCategories] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    axios.get(`${API_BASE_URL}/products/categories`)
+      .then(res => {
+        if (isMounted && res.data) {
+          setNavCategories(res.data);
+        }
+      })
+      .catch(err => console.error("Error fetching navbar categories:", err));
+    return () => { isMounted = false; };
+  }, []);
+
   const categories = [
     { code: 'All', label: t('common.all') },
-    { code: 'Necklaces', label: t('common.electronics') },
-    { code: 'Rings', label: t('common.fashion') },
-    { code: 'Earrings', label: t('common.grocery') },
-    { code: 'Bracelets', label: t('common.books') },
-    { code: 'Bangles', label: t('common.bangles') },
-    { code: 'Bridal Collection', label: t('common.bridal') }
+    ...navCategories.map(c => ({ code: c.name, label: translateCategory(c.name, language) }))
   ];
 
   return (
@@ -1420,27 +1430,22 @@ export const Navbar = () => {
                 </div>
 
                 {/* CATEGORIES */}
-                <div className="py-5 space-y-3.5">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Categories</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { name: 'Necklaces', code: 'Necklaces' },
-                      { name: 'Rings', code: 'Rings' },
-                      { name: 'Earrings', code: 'Earrings' },
-                      { name: 'Bracelets', code: 'Bracelets' },
-                      { name: 'Bangles', code: 'Bangles' },
-                      { name: 'Bridal Collection', code: 'Bridal Collection' }
-                    ].map((cat, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleCategorySelect(cat.code)}
-                        className="py-2 px-2 text-[11px] font-semibold text-slate-300 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 rounded-lg transition-all cursor-pointer text-center truncate"
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
+                {navCategories && navCategories.length > 0 && (
+                  <div className="py-5 space-y-3.5">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Categories</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {navCategories.map((cat, idx) => (
+                        <button
+                          key={cat.id || idx}
+                          onClick={() => handleCategorySelect(cat.name)}
+                          className="py-2 px-2 text-[11px] font-semibold text-slate-300 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 rounded-lg transition-all cursor-pointer text-center truncate"
+                        >
+                          {translateCategory(cat.name, language)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Collapsible Sections: About & Contact */}
                 <div className="py-2">

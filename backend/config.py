@@ -142,7 +142,7 @@ class Config:
     ENABLE_PUSH_NOTIFICATIONS = _get_bool_env("ENABLE_PUSH_NOTIFICATIONS", default_feature_flag)
     ENABLE_WEBHOOKS = _get_bool_env("ENABLE_WEBHOOKS", default_feature_flag)
     ENABLE_ANALYTICS = _get_bool_env("ENABLE_ANALYTICS", default_feature_flag)
-    ENABLE_RAPID_API = _get_bool_env("ENABLE_RAPID_API", default_feature_flag)
+    ENABLE_RAPID_API = _get_bool_env("ENABLE_RAPID_API", True)
 
     # Logging Level
     LOGGING_LEVEL = os.environ.get("LOG_LEVEL") or ("DEBUG" if IS_DEV else ("INFO" if IS_QA else "WARNING"))

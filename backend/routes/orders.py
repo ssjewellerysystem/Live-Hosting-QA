@@ -338,6 +338,7 @@ def update_order_status(id):
     delivery_date = data.get("delivery_date")
     carrier = data.get("carrier")
     tracking_id = data.get("tracking_id")
+    tracking_url = data.get("tracking_url")
     
     if not status:
         return jsonify({"message": "Please provide the status parameter."}), 400
@@ -360,7 +361,28 @@ def update_order_status(id):
         return jsonify({"message": f"Invalid status value. Must be one of {valid_statuses}"}), 400
         
     status = normalized_status
-    success = OrderModel.update_status(id, status, message, delivery_date, carrier, tracking_id)
+
+    # Validate mandatory tracking URL and ID for "Out for Delivery"
+    if status == "Out for Delivery":
+        order_check = None
+        if str(id).isdigit():
+            order_check = OrderModel.query.get(int(id))
+        if not order_check:
+            order_check = OrderModel.query.filter_by(order_id=str(id)).first()
+            
+        final_tracking_url = tracking_url or (order_check.tracking_url if order_check else None)
+        final_tracking_id = tracking_id or (order_check.tracking_id if order_check else None)
+
+        if not final_tracking_url or not str(final_tracking_url).strip():
+            return jsonify({"message": "Tracking URL is required for Out for Delivery status."}), 400
+        if not final_tracking_id or not str(final_tracking_id).strip():
+            return jsonify({"message": "Tracking ID is required for Out for Delivery status."}), 400
+
+    success = OrderModel.update_status(
+        id, status, message, delivery_date, carrier, 
+        tracking_id=tracking_id.strip() if tracking_id else None, 
+        tracking_url=tracking_url.strip() if tracking_url else None
+    )
     if not success:
         return jsonify({"message": "Order status update failed. Check order ID."}), 500
         
@@ -391,6 +413,45 @@ def update_order_status(id):
     return jsonify({
         "message": "Order status updated successfully!",
         "status": status
+    }), 200
+
+@orders_bp.route('/<id>/tracking', methods=['PUT'])
+@admin_required
+def update_order_tracking(id):
+    data = request.get_json() or {}
+    tracking_url = data.get("tracking_url")
+    tracking_id = data.get("tracking_id")
+    carrier = data.get("carrier")
+    
+    if not tracking_url or not str(tracking_url).strip():
+        return jsonify({"message": "Tracking URL is required."}), 400
+    if not tracking_id or not str(tracking_id).strip():
+        return jsonify({"message": "Tracking ID is required."}), 400
+
+    order_obj = None
+    if str(id).isdigit():
+        order_obj = OrderModel.query.get(int(id))
+    if not order_obj:
+        order_obj = OrderModel.query.filter_by(order_id=str(id)).first()
+
+    if not order_obj:
+        return jsonify({"message": "Order not found."}), 404
+
+    if order_obj.status == "Delivered":
+        return jsonify({"message": "Tracking information cannot be edited for delivered orders."}), 400
+        
+    success = OrderModel.update_tracking(
+        id, 
+        tracking_url=tracking_url.strip(), 
+        tracking_id=tracking_id.strip(), 
+        carrier=carrier.strip() if carrier else None
+    )
+    if not success:
+        return jsonify({"message": "Failed to update tracking information."}), 500
+        
+    return jsonify({
+        "message": "Tracking information updated successfully!",
+        "order": order_obj.to_dict()
     }), 200
 
 @orders_bp.route('/<id>/return', methods=['POST'])

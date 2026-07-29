@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Package, Calendar, MapPin, Truck, ChevronDown, ChevronUp, AlertCircle, 
   ShoppingBag, FileText, Heart, Bookmark, User, Key, Bell, RotateCcw, 
-  CheckCircle, ArrowRight, ShieldAlert, Check, XCircle
+  CheckCircle, ArrowRight, ShieldAlert, Check, XCircle, Copy, ExternalLink
 } from 'lucide-react';
 import { AuthContext, API_BASE_URL } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -68,6 +68,14 @@ export const MyOrders = () => {
   const [returnReason, setReturnReason] = useState('');
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnMessage, setReturnMessage] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopyTrackingId = (trackingId) => {
+    if (!trackingId) return;
+    navigator.clipboard.writeText(trackingId);
+    setCopiedId(trackingId);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
 
   // Buy Requests states
   const [buyRequests, setBuyRequests] = useState([]);
@@ -521,7 +529,19 @@ export const MyOrders = () => {
                               </p>
                             </div>
 
-                            <div className="flex items-center space-x-2">
+                             <div className="flex items-center space-x-2">
+                              {order.tracking_url && (
+                                <a
+                                  href={order.tracking_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-colors"
+                                >
+                                  <Truck className="h-3.5 w-3.5" />
+                                  <span>Track Shipment</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
                               <button
                                 onClick={() => setTrackingOrder(order)}
                                 className="px-3 py-1.5 bg-[#D4A75F]/10 dark:bg-[#D4A75F]/20 text-[#D4A75F] dark:text-[#D4A75F] border border-[#D4A75F]/10 dark:border-[#D4A75F]/45 text-xs font-bold rounded-xl hover:bg-[#D4A75F]/20 transition-colors"
@@ -536,6 +556,40 @@ export const MyOrders = () => {
                               </button>
                             </div>
                           </div>
+
+                          {(order.tracking_id || order.tracking_url) && (
+                            <div className="px-4 pb-3 pt-1">
+                              <div className="bg-[#D4A75F]/5 dark:bg-[#D4A75F]/10 border border-[#D4A75F]/20 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div className="flex items-center space-x-2">
+                                  <Truck className="h-4 w-4 text-[#D4A75F]" />
+                                  <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tracking ID</span>
+                                    <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{order.tracking_id || 'Assigned'}</span>
+                                  </div>
+                                  {order.tracking_id && (
+                                    <button
+                                      onClick={() => handleCopyTrackingId(order.tracking_id)}
+                                      className="p-1 text-slate-400 hover:text-[#D4A75F] rounded transition-colors bg-transparent border-none cursor-pointer"
+                                      title="Copy Tracking ID"
+                                    >
+                                      {copiedId === order.tracking_id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </button>
+                                  )}
+                                </div>
+                                {order.tracking_url && (
+                                  <a
+                                    href={order.tracking_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#D4A75F] text-white text-xs font-bold rounded-lg shadow-sm hover:bg-[#b88c46] transition-colors self-start sm:self-auto"
+                                  >
+                                    <span>Track Shipment</span>
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Expanded content */}
                           {isExpanded && (
@@ -996,6 +1050,39 @@ export const MyOrders = () => {
                 {t(`my_orders.status.${trackingOrder.status}`) || trackingOrder.status}
               </span>
             </div>
+
+            {/* Shipment Information Card */}
+            {(trackingOrder.tracking_id || trackingOrder.tracking_url) && (
+              <div className="bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shipment Details</p>
+                  {trackingOrder.tracking_id && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500 font-medium">Tracking ID:</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-100">{trackingOrder.tracking_id}</span>
+                      <button
+                        onClick={() => handleCopyTrackingId(trackingOrder.tracking_id)}
+                        className="p-1 text-slate-400 hover:text-[#D4A75F] rounded transition-colors bg-transparent border-none cursor-pointer"
+                        title="Copy Tracking ID"
+                      >
+                        {copiedId === trackingOrder.tracking_id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {trackingOrder.tracking_url && (
+                  <a
+                    href={trackingOrder.tracking_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#5B1E7A] hover:bg-[#D4A75F] text-white text-xs font-bold rounded-xl shadow-md transition-all self-start sm:self-auto"
+                  >
+                    <span>Track Shipment</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* LIVE TIMELINE BAR */}
             {trackingOrder.status === 'Cancelled' ? (
