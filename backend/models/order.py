@@ -42,7 +42,7 @@ class OrderModel(db.Model):
     
     # Relationships
     items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan', lazy=True)
-    transaction = db.relationship('TransactionModel', primaryjoin="foreign(TransactionModel.order_id) == OrderModel.order_id", uselist=False, viewonly=True)
+    transaction = db.relationship('TransactionModel', primaryjoin="foreign(TransactionModel.order_id) == OrderModel.id", uselist=False, viewonly=True)
 
 
     def to_dict(self):
@@ -221,16 +221,18 @@ class OrderModel(db.Model):
                 order.delivery_date = delivery_date
             if carrier:
                 order.carrier = carrier
-            if tracking_id:
-                order.tracking_id = tracking_id
-            if tracking_url:
-                order.tracking_url = tracking_url
+            if tracking_id is not None:
+                order.tracking_id = str(tracking_id).strip() if str(tracking_id).strip() else None
+            if tracking_url is not None:
+                order.tracking_url = str(tracking_url).strip() if str(tracking_url).strip() else None
                 
+            print(f"[DEBUG Admin Save DB] Updating order '{order.order_id}' (db_id={order.id}): tracking_id='{order.tracking_id}', tracking_url='{order.tracking_url}'")
             db.session.commit()
+            print(f"[DEBUG Admin Save DB] Commit successful for order '{order.order_id}'")
             return True
         except Exception as e:
             db.session.rollback()
-            print("Error updating order status:", e)
+            print("[DEBUG Admin Save DB Error] Error updating order status:", e)
             return False
 
     @staticmethod
@@ -245,17 +247,19 @@ class OrderModel(db.Model):
                 return False
 
             if tracking_url is not None:
-                order.tracking_url = tracking_url
+                order.tracking_url = str(tracking_url).strip() if str(tracking_url).strip() else None
             if tracking_id is not None:
-                order.tracking_id = tracking_id
+                order.tracking_id = str(tracking_id).strip() if str(tracking_id).strip() else None
             if carrier is not None:
-                order.carrier = carrier
+                order.carrier = str(carrier).strip() if str(carrier).strip() else None
 
+            print(f"[DEBUG Admin Tracking DB] Updating order '{order.order_id}' (db_id={order.id}): tracking_id='{order.tracking_id}', tracking_url='{order.tracking_url}'")
             db.session.commit()
+            print(f"[DEBUG Admin Tracking DB] Commit successful for order '{order.order_id}'")
             return True
         except Exception as e:
             db.session.rollback()
-            print("Error updating order tracking info:", e)
+            print("[DEBUG Admin Tracking DB Error] Error updating order tracking info:", e)
             return False
 
     @staticmethod

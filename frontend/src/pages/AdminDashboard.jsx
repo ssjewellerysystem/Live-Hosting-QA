@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useContext, Suspense, lazy, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -86,6 +86,28 @@ export const AdminDashboard = () => {
     const tab = getTabFromUrl();
     setActiveTab(tab);
   }, [location.search]);
+
+  // Mobile horizontal scrollable navigation tab references & auto-scroll into view
+  const mobileTabsContainerRef = useRef(null);
+  const activeTabRef = useRef(null);
+
+  useEffect(() => {
+    if (mobileTabsContainerRef.current && activeTabRef.current) {
+      const container = mobileTabsContainerRef.current;
+      const activeEl = activeTabRef.current;
+      
+      const containerWidth = container.clientWidth;
+      const activeElWidth = activeEl.clientWidth;
+      const activeElOffsetLeft = activeEl.offsetLeft;
+
+      const scrollTarget = activeElOffsetLeft - (containerWidth / 2) + (activeElWidth / 2);
+      
+      container.scrollTo({
+        left: Math.max(0, scrollTarget),
+        behavior: 'smooth'
+      });
+    }
+  }, [activeTab]);
   const [stats, setStats] = useState({
     total_users: 0,
     total_products: 0,
@@ -599,14 +621,14 @@ export const AdminDashboard = () => {
           <div className="flex gap-2.5 w-full xl:w-auto justify-end">
             <button
               onClick={handleMarkAllNotifAsRead}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 rounded-xl shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 rounded-xl shadow-xs transition-all cursor-pointer"
             >
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span>Mark All Read</span>
             </button>
             <button
               onClick={handleClearReadNotif}
-              className="flex items-center gap-1.5 px-4 py-2 bg-rose-555 hover:bg-rose-600 text-xs font-bold text-white rounded-xl shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer border-none"
             >
               <Trash2 className="h-4 w-4" />
               <span>Clear Read</span>
@@ -616,41 +638,41 @@ export const AdminDashboard = () => {
 
         {/* Notifications Grid / List */}
         {filteredNotifs.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-12 text-center">
-            <Bell className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4 opacity-45" />
-            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-350">No notifications found</h4>
-            <p className="text-xs text-slate-400 dark:text-slate-505 mt-1">Try clearing filters or search terms.</p>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center">
+            <Bell className="h-12 w-12 mx-auto text-slate-400 dark:text-slate-500 mb-4 opacity-50" />
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">No notifications found</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Try clearing filters or search terms.</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
-              <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex justify-between items-center">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Showing {filteredNotifs.length} of {validNotifs.length} notifications
               </span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-850">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredNotifs.map((n) => {
                 const isUnread = n.status === 'unread';
                 const getStyles = (type) => {
                   switch (type) {
                     case 'SUPPORT_TICKET':
                       return {
-                        bg: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/20',
+                        bg: 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-500/25 dark:text-indigo-300',
                         icon: <MessageSquare className="h-5 w-5" />
                       };
                     case 'BUY_REQUEST':
                       return {
-                        bg: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/20',
+                        bg: 'bg-rose-500/15 text-rose-700 dark:bg-rose-500/25 dark:text-rose-300',
                         icon: <ShoppingBag className="h-5 w-5" />
                       };
                     case 'LOW_STOCK':
                       return {
-                        bg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/20',
+                        bg: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300',
                         icon: <AlertTriangle className="h-5 w-5" />
                       };
                     default:
                       return {
-                        bg: 'bg-slate-500/10 text-slate-500 dark:bg-slate-500/20',
+                        bg: 'bg-slate-500/15 text-slate-800 dark:bg-slate-500/25 dark:text-slate-200',
                         icon: <Bell className="h-5 w-5" />
                       };
                   }
@@ -670,7 +692,7 @@ export const AdminDashboard = () => {
                     key={n.id}
                     onClick={handleCardClick}
                     className={`p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-colors cursor-pointer ${
-                      isUnread ? 'bg-emerald-50/10 dark:bg-emerald-950/2' : 'hover:bg-slate-50 dark:hover:bg-slate-850/50'
+                      isUnread ? 'bg-[#D4A75F]/10 dark:bg-[#D4A75F]/10 hover:bg-[#D4A75F]/15 dark:hover:bg-[#D4A75F]/15' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex gap-4 items-start min-w-0 flex-1">
@@ -679,21 +701,21 @@ export const AdminDashboard = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${styles.bg}`}>
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md ${styles.bg}`}>
                             {n.type}
                           </span>
                           {isUnread && (
                             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                           )}
                         </div>
-                        <h4 className={`text-sm font-bold mt-1.5 ${isUnread ? 'text-slate-850 dark:text-slate-100 font-extrabold' : 'text-slate-650 dark:text-slate-350'}`}>
+                        <h4 className={`text-sm mt-1.5 ${isUnread ? 'text-slate-950 dark:text-slate-100 font-extrabold' : 'text-slate-800 dark:text-slate-300 font-bold'}`}>
                           {n.title}
                         </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed whitespace-pre-line">
+                        <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed font-medium whitespace-pre-line">
                           {n.description}
                         </p>
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                          <span className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                          <span className="flex items-center gap-1 font-bold">
                             <Clock className="h-3.5 w-3.5" />
                             {n.created_at ? new Date(n.created_at).toLocaleString() : 'N/A'}
                           </span>
@@ -705,14 +727,14 @@ export const AdminDashboard = () => {
                       {isUnread ? (
                         <button
                           onClick={() => handleMarkNotifAsRead(n.id)}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer border-none shadow-xs"
                         >
                           <Check className="h-3.5 w-3.5" />
                           <span>Mark as Read</span>
                         </button>
                       ) : (
-                        <span className="flex items-center gap-1 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-450 font-bold rounded-xl text-xs border border-slate-200/50 dark:border-slate-700/50">
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="flex items-center gap-1 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs border border-slate-200 dark:border-slate-700">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>Read</span>
                         </span>
                       )}
@@ -877,10 +899,10 @@ export const AdminDashboard = () => {
     setSelectedAnalyticsProduct(product);
     setProductAnalyticsData(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/analytics/product/${product._id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const rawToken = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const token = (rawToken && rawToken !== 'null' && rawToken !== 'undefined') ? rawToken : null;
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/admin/analytics/product/${product._id}`, { headers });
       const data = await response.json();
       if (response.ok) {
         setProductAnalyticsData(data);
@@ -1549,7 +1571,58 @@ export const AdminDashboard = () => {
             </div>
 
             {/* Dashboard Tabs navigation */}
-            <div className="flex flex-wrap gap-1 md:space-x-2 border-b border-slate-200 dark:border-slate-800 pb-px mb-8">
+            {/* Mobile Only (Below 1024px): Single Row Horizontal Scrollable Navigation */}
+            <div className="lg:hidden mb-6 w-full">
+              <div 
+                ref={mobileTabsContainerRef}
+                className="flex items-center gap-2.5 overflow-x-auto overflow-y-hidden flex-nowrap whitespace-nowrap no-scrollbar py-2.5 px-1 scroll-smooth ios-smooth-scroll"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none'
+                }}
+              >
+                {[
+                  { id: 'overview', label: 'Analytics' },
+                  { id: 'products', label: 'Products' },
+                  { id: 'orders', label: 'Orders' },
+                  { id: 'buy-requests', label: 'Buy Requests' },
+                  { id: 'users', label: 'Users' },
+                  { id: 'support', label: 'Messages' },
+                  { id: 'audit', label: 'Audit Trail' },
+                  { id: 'notifications', label: 'Notifications' }
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      ref={isActive ? activeTabRef : null}
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`flex-shrink-0 min-h-[44px] px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all duration-200 select-none cursor-pointer border-none ${
+                        isActive
+                          ? 'bg-[#D4A75F] text-white font-bold shadow-md shadow-[#D4A75F]/30 scale-[1.02]'
+                          : 'bg-transparent text-slate-800 dark:text-slate-200 hover:bg-[#D4A75F]/15 hover:text-[#D4A75F] dark:hover:bg-[#D4A75F]/20 dark:hover:text-[#D4A75F]'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {tab.id === 'buy-requests' && buyRequests.some(r => r.status === 'Pending') && (
+                        <span className={`text-[9px] font-black h-4 w-4 flex items-center justify-center rounded-full animate-pulse ${
+                          isActive ? 'bg-white text-[#D4A75F]' : 'bg-rose-500 text-white'
+                        }`}>
+                          {buyRequests.filter(r => r.status === 'Pending').length}
+                        </span>
+                      )}
+                      {tab.id === 'notifications' && notifications.some(n => n.status === 'unread') && (
+                        <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'}`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Navigation (1024px and above) */}
+            <div className="hidden lg:flex flex-wrap gap-1 md:space-x-2 border-b border-slate-200 dark:border-slate-800 pb-px mb-8">
               <button
                 onClick={() => handleTabChange('overview')}
                 className={`pb-3 px-3 md:px-4 text-xs md:text-sm border-b-2 transition-all duration-200 ${
@@ -1676,6 +1749,8 @@ export const AdminDashboard = () => {
                   handleOpenOrdersModal={handleOpenOrdersModal}
                   handleOpenAnalyticsModal={handleOpenAnalyticsModal}
                   handleDeleteProduct={handleDeleteProduct}
+                  setIsAddModalOpen={setIsAddModalOpen}
+                  setIsAddImagesOpen={setIsAddImagesOpen}
                 />
               )}
 
@@ -1740,48 +1815,50 @@ export const AdminDashboard = () => {
                   <span>Product Audit Trail Logs ({auditLogs.length})</span>
                 </h3>
 
-                <table className="w-full text-left text-xs min-w-[800px]">
+                <table className="w-full text-left text-xs min-w-[800px] border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase font-bold">
-                      <th className="py-2.5">Date & Time (IST)</th>
-                      <th className="py-2.5">Product</th>
-                      <th className="py-2.5">Admin ID</th>
-                      <th className="py-2.5">Action Type</th>
-                      <th className="py-2.5">Field Changed</th>
-                      <th className="py-2.5 text-right">Old Value</th>
-                      <th className="py-2.5 text-right">New Value</th>
+                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase font-bold align-middle">
+                      <th className="py-2.5 px-3 text-left align-middle">Date & Time (IST)</th>
+                      <th className="py-2.5 px-3 text-left align-middle">Product</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Admin ID</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Action Type</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Field Changed</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Old Value</th>
+                      <th className="py-2.5 px-3 text-center align-middle">New Value</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-850">
                     {auditLogs.map(log => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <td className="py-3.5 text-slate-500 admin-timestamp-text">
+                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20 h-12 align-middle">
+                        <td className="py-3.5 px-3 text-left align-middle text-slate-500 dark:text-slate-400 admin-timestamp-text whitespace-nowrap">
                           {log.created_at ? new Date(log.created_at).toLocaleString() : "N/A"}
                         </td>
-                        <td className="py-3.5 font-bold text-slate-800 dark:text-slate-100">
+                        <td className="py-3.5 px-3 text-left align-middle font-bold text-slate-800 dark:text-white">
                           {log.product_name}
                         </td>
-                        <td className="py-3.5 text-slate-500 font-mono">
+                        <td className="py-3.5 px-3 text-center align-middle text-slate-500 dark:text-white font-mono">
                           {log.admin_id || "N/A"}
                         </td>
-                        <td className="py-3.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            log.action_type?.includes("Creation")
-                              ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
-                              : log.action_type?.includes("Delete")
-                              ? 'text-rose-500 bg-rose-500/10 border-rose-500/20'
-                              : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
-                          }`}>
-                            {log.action_type}
-                          </span>
+                        <td className="py-3.5 px-3 text-center align-middle">
+                          <div className="flex items-center justify-center">
+                            <span className={`inline-flex items-center justify-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-bold border w-auto ${
+                              log.action_type?.includes("Creation")
+                                ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                                : log.action_type?.includes("Delete")
+                                ? 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                                : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+                            }`}>
+                              {log.action_type}
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3.5 text-slate-500">
+                        <td className="py-3.5 px-3 text-center align-middle text-slate-500 dark:text-white">
                           {log.field_name || "N/A"}
                         </td>
-                        <td className="py-3.5 text-right text-rose-500 max-w-[150px] truncate" title={log.old_value}>
+                        <td className="py-3.5 px-3 text-center align-middle text-rose-500 dark:text-rose-400 max-w-[150px] truncate mx-auto" title={log.old_value}>
                           {log.old_value || "N/A"}
                         </td>
-                        <td className="py-3.5 text-right text-emerald-500 max-w-[150px] truncate" title={log.new_value}>
+                        <td className="py-3.5 px-3 text-center align-middle text-emerald-500 dark:text-emerald-400 max-w-[150px] truncate mx-auto" title={log.new_value}>
                           {log.new_value || "N/A"}
                         </td>
                       </tr>
@@ -2991,20 +3068,10 @@ export const AdminDashboard = () => {
                     </div>
                   ))}
                 </div>
-
-                {/* Chart Image */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 rounded-3xl flex flex-col justify-center items-center">
-                  <span className="text-xs font-bold text-slate-500 mb-2">Live Matplotlib Chart Report</span>
-                  <img 
-                    src={`${SERVER_BASE_URL}${productAnalyticsData.chart_url}`}
-                    alt="Sales Trend Chart" 
-                    className="max-h-[280px] w-auto object-contain rounded-xl"
-                  />
-                </div>
               </div>
             ) : (
               <div className="flex-grow flex items-center justify-center py-12 text-slate-400 text-xs">
-                Generating live Pandas & Matplotlib reports...
+                Loading product analytics data...
               </div>
             )}
           </div>

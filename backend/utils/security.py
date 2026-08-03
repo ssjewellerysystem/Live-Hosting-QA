@@ -66,21 +66,33 @@ def decrypt(cipher_text):
     if not cipher_str.startswith("BB_ENC:"):
         return cipher_str
         
+    encoded = cipher_str[len("BB_ENC:"):]
     try:
-        encoded = cipher_str[len("BB_ENC:"):]
         combined = base64.b64decode(encoded.encode('utf-8'))
-        
         iv = combined[:16]
         ciphertext = combined[16:]
         
         cipher = Cipher(algorithms.AES(ENCRYPTION_KEY), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
-        
         padded_data = decryptor.update(ciphertext) + decryptor.finalize()
-        
         unpadder = padding.PKCS7(128).unpadder()
         plain_text = unpadder.update(padded_data) + unpadder.finalize()
+        return plain_text.decode('utf-8')
+    except Exception:
+        pass
+
+    # Attempt fallback with standard static key for cross-environment compatibility
+    try:
+        default_key = hashlib.sha256("supersecret_SSJewellery_key_123".encode('utf-8')).digest()
+        combined = base64.b64decode(encoded.encode('utf-8'))
+        iv = combined[:16]
+        ciphertext = combined[16:]
         
+        cipher = Cipher(algorithms.AES(default_key), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+        unpadder = padding.PKCS7(128).unpadder()
+        plain_text = unpadder.update(padded_data) + unpadder.finalize()
         return plain_text.decode('utf-8')
     except Exception as e:
         print(f"Decryption error: {e}")

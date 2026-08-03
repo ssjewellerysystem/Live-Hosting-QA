@@ -55,15 +55,24 @@ export const ForgotPassword = () => {
       setStep(2);
       // Store email/mobile temporarily for verify and resend
       sessionStorage.setItem('reset_pending_email', response.data.email || normalizedInput);
-      if (response.data.otp) {
-        setDevOtp(response.data.otp);
+      const devOtpCode = response.data.dev_otp || response.data.otp;
+      if (devOtpCode) {
+        setDevOtp(devOtpCode);
       }
       if (response.data.otp_mode) {
         setOtpMode(response.data.otp_mode);
       }
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || "Account not found. Please register first.");
+      console.error("[FORGOT PASSWORD FRONTEND ERROR]", err);
+      if (!err.response) {
+        setError("Unable to contact server. Please check your network connection.");
+      } else if (err.response.status === 404) {
+        setError(err.response.data?.message || "Account not found. Please register first.");
+      } else if (err.response.status === 500) {
+        setError(err.response.data?.message || "Server error occurred. Please try again later.");
+      } else {
+        setError(err.response.data?.message || "An error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -125,6 +134,7 @@ export const ForgotPassword = () => {
         otp: otpCode
       });
       
+      setDevOtp('');
       setSuccessMessage(response.data.message || "OTP verified successfully!");
       // Mark as verified for /reset-password protection
       sessionStorage.setItem('otp_verified', 'true');
@@ -161,8 +171,9 @@ export const ForgotPassword = () => {
       setSuccessMessage(response.data.message || "OTP code resent successfully!");
       // Reset input fields
       setOtpDigits(['', '', '', '', '', '']);
-      if (response.data.otp) {
-        setDevOtp(response.data.otp);
+      const devOtpCode = response.data.dev_otp || response.data.otp;
+      if (devOtpCode) {
+        setDevOtp(devOtpCode);
       }
       if (response.data.otp_mode) {
         setOtpMode(response.data.otp_mode);
@@ -283,6 +294,23 @@ export const ForgotPassword = () => {
                 <ArrowRight className="h-4.5 w-4.5" />
               </button>
 
+              {devOtp && (
+                <div className="mt-4 p-4 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-dashed border-amber-300 dark:border-amber-700/50 rounded-2xl text-center shadow-md backdrop-blur-sm">
+                  <div className="text-xs font-black tracking-wider text-amber-700 dark:text-amber-400 uppercase mb-1">
+                    DEV MODE ONLY
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">
+                    Generated OTP:
+                  </div>
+                  <div className="text-3xl font-black tracking-widest text-amber-600 dark:text-amber-400 my-1 select-all">
+                    {devOtp}
+                  </div>
+                  <div className="text-[11px] font-semibold italic text-slate-500 dark:text-slate-400 mt-1">
+                    (Email sending disabled)
+                  </div>
+                </div>
+              )}
+
               <div className="text-center mt-4">
                 <Link
                   to="/login"
@@ -312,6 +340,23 @@ export const ForgotPassword = () => {
                 </p>
               </div>
 
+              {devOtp && (
+                <div className="p-4 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-dashed border-amber-300 dark:border-amber-700/50 rounded-2xl text-center shadow-md backdrop-blur-sm my-4">
+                  <div className="text-xs font-black tracking-wider text-amber-700 dark:text-amber-400 uppercase mb-1">
+                    DEV MODE ONLY
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">
+                    Generated Reset Password OTP
+                  </div>
+                  <div className="text-3xl font-black tracking-widest text-amber-600 dark:text-amber-400 my-1 select-all">
+                    {devOtp}
+                  </div>
+                  <div className="text-[11px] font-semibold italic text-slate-500 dark:text-slate-400 mt-1">
+                    (Email sending disabled)
+                  </div>
+                </div>
+              )}
+
               {/* 6-digit input structure [ _ _ _ _ _ _ ] */}
               <div className="flex justify-center gap-2 sm:gap-3 my-6">
                 {otpDigits.map((digit, index) => (
@@ -327,18 +372,6 @@ export const ForgotPassword = () => {
                   />
                 ))}
               </div>
-
-              {otpMode === 'development' && devOtp && (
-                <div className="mt-4 p-4 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-center shadow-sm backdrop-blur-sm">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 border border-amber-300/30 text-[10px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    Development Mode OTP
-                  </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-350">
-                    Development OTP: <strong className="text-amber-700 dark:text-amber-400 text-base tracking-widest font-black ml-1 select-all">{devOtp}</strong>
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-4 mt-5">
                 <button

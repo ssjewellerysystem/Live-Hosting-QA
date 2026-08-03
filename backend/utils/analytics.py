@@ -31,11 +31,14 @@ def cache_chart_file(timeout=600):
             elif func_name == "generate_orders_chart":
                 filename = "orders_volume_trend.png"
             elif func_name == "generate_product_sales_chart":
-                filename = f"product_{args[0]}_sales.png"
+                p = kwargs.get('period') or (args[1] if len(args) > 1 else '30d')
+                filename = f"product_{args[0]}_{p}_sales.png"
             elif func_name == "generate_product_revenue_chart":
-                filename = f"product_{args[0]}_revenue.png"
+                p = kwargs.get('period') or (args[1] if len(args) > 1 else '30d')
+                filename = f"product_{args[0]}_{p}_revenue.png"
             elif func_name == "generate_product_orders_chart":
-                filename = f"product_{args[0]}_orders.png"
+                p = kwargs.get('period') or (args[1] if len(args) > 1 else '30d')
+                filename = f"product_{args[0]}_{p}_orders.png"
             elif func_name == "generate_product_stock_chart":
                 filename = f"product_{args[0]}_stock.png"
             else:
@@ -67,30 +70,41 @@ def apply_premium_style():
     plt.rcParams['grid.linewidth'] = 0.5
 
 @cache_chart_file()
-def generate_product_sales_chart(product_id):
+def generate_product_sales_chart(product_id, period='30d'):
     apply_premium_style()
     prod_id = int(product_id)
     product = ProductModel.query.get(prod_id)
     if not product:
         return None
 
-    # Query all order items for this product
-    items = db.session.query(
+    query = db.session.query(
         OrderItem.quantity,
         OrderItem.price,
         OrderModel.created_at
     ).join(OrderModel, OrderModel.id == OrderItem.order_id).filter(
         OrderItem.product_id == prod_id,
         OrderModel.order_status != "Cancelled"
-    ).all()
+    )
 
-    filename = f"product_{prod_id}_sales.png"
+    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    if period == '7d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=7)))
+        title_suffix = "(Last 7 Days)"
+    elif period == '30d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=30)))
+        title_suffix = "(Last 30 Days)"
+    else:
+        title_suffix = "(All Time)"
+
+    items = query.all()
+
+    filename = f"product_{prod_id}_{period}_sales.png"
     filepath = os.path.join(CHARTS_DIR, filename)
 
     if not items:
         # Create empty placeholder chart
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, 'No Sales Data Available for this Product', 
+        ax.text(0.5, 0.5, f'No Sales Data ({title_suffix})', 
                 horizontalalignment='center', verticalalignment='center',
                 fontsize=14, color='#64748b', weight='bold')
         ax.set_axis_off()
@@ -113,8 +127,9 @@ def generate_product_sales_chart(product_id):
     # Plotting daily sales
     ax.plot(daily_sales['date'], daily_sales['quantity'], marker='o', color='#3b82f6', 
             linewidth=2, label='Daily Sales (Units)')
+    ax.fill_between(daily_sales['date'], daily_sales['quantity'], color='#3b82f6', alpha=0.1)
     
-    ax.set_title(f"Sales Trend: {product.name}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
+    ax.set_title(f"Sales Trend: {product.name} {title_suffix}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
     ax.set_xlabel("Date", fontsize=10, color='#475569')
     ax.set_ylabel("Units Sold", fontsize=10, color='#475569')
     
@@ -494,28 +509,40 @@ def generate_orders_chart():
     return f"/static/uploads/charts/{filename}"
 
 @cache_chart_file()
-def generate_product_revenue_chart(product_id):
+def generate_product_revenue_chart(product_id, period='30d'):
     apply_premium_style()
     prod_id = int(product_id)
     product = ProductModel.query.get(prod_id)
     if not product:
         return None
 
-    items = db.session.query(
+    query = db.session.query(
         OrderItem.quantity,
         OrderItem.price,
         OrderModel.created_at
     ).join(OrderModel, OrderModel.id == OrderItem.order_id).filter(
         OrderItem.product_id == prod_id,
         OrderModel.order_status != "Cancelled"
-    ).all()
+    )
 
-    filename = f"product_{prod_id}_revenue.png"
+    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    if period == '7d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=7)))
+        title_suffix = "(Last 7 Days)"
+    elif period == '30d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=30)))
+        title_suffix = "(Last 30 Days)"
+    else:
+        title_suffix = "(All Time)"
+
+    items = query.all()
+
+    filename = f"product_{prod_id}_{period}_revenue.png"
     filepath = os.path.join(CHARTS_DIR, filename)
 
     if not items:
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, 'No Revenue Data Available', 
+        ax.text(0.5, 0.5, f'No Revenue Data ({title_suffix})', 
                 horizontalalignment='center', verticalalignment='center',
                 fontsize=14, color='#64748b', weight='bold')
         ax.set_axis_off()
@@ -534,8 +561,9 @@ def generate_product_revenue_chart(product_id):
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(daily_revenue['date'], daily_revenue['revenue'], marker='o', color='#10b981', 
             linewidth=2, label='Daily Revenue (₹)')
+    ax.fill_between(daily_revenue['date'], daily_revenue['revenue'], color='#10b981', alpha=0.1)
     
-    ax.set_title(f"Revenue Trend: {product.name}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
+    ax.set_title(f"Revenue Trend: {product.name} {title_suffix}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
     ax.set_xlabel("Date", fontsize=10, color='#475569')
     ax.set_ylabel("Revenue (₹)", fontsize=10, color='#475569')
     plt.xticks(rotation=30, ha='right')
@@ -548,27 +576,39 @@ def generate_product_revenue_chart(product_id):
     return f"/static/uploads/charts/{filename}"
 
 @cache_chart_file()
-def generate_product_orders_chart(product_id):
+def generate_product_orders_chart(product_id, period='30d'):
     apply_premium_style()
     prod_id = int(product_id)
     product = ProductModel.query.get(prod_id)
     if not product:
         return None
 
-    items = db.session.query(
+    query = db.session.query(
         OrderItem.order_id,
         OrderModel.created_at
     ).join(OrderModel, OrderModel.id == OrderItem.order_id).filter(
         OrderItem.product_id == prod_id,
         OrderModel.order_status != "Cancelled"
-    ).all()
+    )
 
-    filename = f"product_{prod_id}_orders.png"
+    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    if period == '7d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=7)))
+        title_suffix = "(Last 7 Days)"
+    elif period == '30d':
+        query = query.filter(OrderModel.created_at >= (now - timedelta(days=30)))
+        title_suffix = "(Last 30 Days)"
+    else:
+        title_suffix = "(All Time)"
+
+    items = query.all()
+
+    filename = f"product_{prod_id}_{period}_orders.png"
     filepath = os.path.join(CHARTS_DIR, filename)
 
     if not items:
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, 'No Orders Data Available', 
+        ax.text(0.5, 0.5, f'No Orders Data ({title_suffix})', 
                 horizontalalignment='center', verticalalignment='center',
                 fontsize=14, color='#64748b', weight='bold')
         ax.set_axis_off()
@@ -586,8 +626,9 @@ def generate_product_orders_chart(product_id):
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(daily_orders['date'], daily_orders['order_id'], marker='o', color='#6366f1', 
             linewidth=2, label='Daily Orders')
+    ax.fill_between(daily_orders['date'], daily_orders['order_id'], color='#6366f1', alpha=0.1)
     
-    ax.set_title(f"Orders Trend: {product.name}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
+    ax.set_title(f"Orders Trend: {product.name} {title_suffix}", fontsize=12, fontweight='bold', pad=15, color='#1e293b')
     ax.set_xlabel("Date", fontsize=10, color='#475569')
     ax.set_ylabel("Order Count", fontsize=10, color='#475569')
     plt.xticks(rotation=30, ha='right')

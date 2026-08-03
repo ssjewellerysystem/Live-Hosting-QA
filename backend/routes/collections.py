@@ -155,3 +155,27 @@ def delete_collection(collection_id):
         db.session.rollback()
         print("Error deleting collection:", e)
         return jsonify({"message": "Failed to delete collection"}), 500
+
+@collections_bp.route('/<collection_identifier>/products', methods=['GET'])
+def get_collection_products(collection_identifier):
+    try:
+        from sqlalchemy import func
+        coll = None
+        if str(collection_identifier).isdigit():
+            coll = CollectionModel.query.get(int(collection_identifier))
+        if not coll:
+            coll_str = str(collection_identifier).strip().lower()
+            coll = CollectionModel.query.filter(
+                (func.lower(CollectionModel.slug) == coll_str) |
+                (func.lower(CollectionModel.name) == coll_str)
+            ).first()
+        
+        if not coll:
+            return jsonify([]), 200
+
+        products = ProductModel.query.filter_by(collection_id=coll.id).order_by(ProductModel.created_at.desc()).all()
+        return jsonify([p.to_dict() for p in products]), 200
+    except Exception as e:
+        print("Error fetching collection products:", e)
+        return jsonify([]), 500
+

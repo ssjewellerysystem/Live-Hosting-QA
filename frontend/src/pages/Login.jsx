@@ -103,6 +103,7 @@ export const Login = () => {
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [resetSuccessMessage, setResetSuccessMessage] = useState('');
+  const [resetDevOtp, setResetDevOtp] = useState('');
 
   const handleCustomerSubmit = async (e) => {
     e.preventDefault();
@@ -176,6 +177,10 @@ export const Login = () => {
       });
       setResetSuccessMessage(response.data.message || "OTP sent successfully!");
       setResetStep(2);
+      const devOtpCode = response.data.dev_otp || response.data.otp;
+      if (devOtpCode) {
+        setResetDevOtp(devOtpCode);
+      }
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Account not found. Please register first.");
@@ -198,15 +203,31 @@ export const Login = () => {
       return;
     }
 
+    if (resetNewPassword.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const resetIdentifier = normalizeEmail(resetEmailOrMobile.trim());
+      const cleanResetInput = resetEmailOrMobile.trim();
+      const isResetEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanResetInput) || cleanResetInput.includes('@');
+      const resetIdentifier = isResetEmail ? normalizeEmail(cleanResetInput) : cleanResetInput;
+
+      // Step 1: Call production OTP verification endpoint to validate code and mark is_verified = True in DB
+      await axios.post(`${API_BASE_URL}/auth/verify-reset-otp`, {
+        email: resetIdentifier,
+        otp: resetOtp.trim()
+      });
+
+      // Step 2: Now call production reset-password endpoint
       const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
         email: resetIdentifier,
-        otp: resetOtp.trim(),
         new_password: resetNewPassword
       });
-      setResetSuccessMessage("Password reset successfully! Redirecting to login...");
+
+      setResetSuccessMessage(response.data.message || "Password reset successfully! Redirecting to login...");
+      setResetDevOtp('');
       setTimeout(() => {
         setShowForgotPassword(false);
         setResetStep(1);
@@ -215,11 +236,12 @@ export const Login = () => {
         setResetNewPassword('');
         setResetConfirmPassword('');
         setResetSuccessMessage('');
+        setResetDevOtp('');
         setError('');
       }, 2000);
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to reset password. Please verify the OTP.");
+      setError(err.response?.data?.message || "Failed to reset password. Please check your verification OTP.");
     } finally {
       setLoading(false);
     }
@@ -361,6 +383,23 @@ export const Login = () => {
                       </div>
                     )}
 
+                    {resetDevOtp && (
+                      <div className="p-4 bg-amber-50/80 dark:bg-amber-950/30 border-2 border-dashed border-amber-300 dark:border-amber-700/50 rounded-2xl text-center shadow-md backdrop-blur-sm mb-4">
+                        <div className="text-xs font-black tracking-wider text-amber-700 dark:text-amber-400 uppercase mb-1">
+                          DEV MODE ONLY
+                        </div>
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">
+                          Generated Reset Password OTP
+                        </div>
+                        <div className="text-3xl font-black tracking-widest text-amber-600 dark:text-amber-400 my-1 select-all">
+                          {resetDevOtp}
+                        </div>
+                        <div className="text-[11px] font-semibold italic text-slate-500 dark:text-slate-400 mt-1">
+                          (Email sending disabled)
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-3.5">
                       <div>
                         <label className="block text-[11px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider mb-1.5">
@@ -425,7 +464,7 @@ export const Login = () => {
 
                     <button
                       type="button"
-                      onClick={() => { setResetStep(1); setError(''); setResetSuccessMessage(''); }}
+                      onClick={() => { setResetStep(1); setError(''); setResetSuccessMessage(''); setResetDevOtp(''); }}
                       className="w-full text-center text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline mt-2 bg-transparent border-0 cursor-pointer"
                     >
                       Back to Step 1

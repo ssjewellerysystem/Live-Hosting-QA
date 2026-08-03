@@ -538,12 +538,39 @@ export const ProductDetails = ({ productId }) => {
   const [stockHistory, setStockHistory] = useState([]);
   const [salesData, setSalesData] = useState({ sales: [], total_sold: 0, total_revenue: 0, daily_sales: [] });
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [timeFilter, setTimeFilter] = useState('30d');
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState(''); // 'Saving...', 'Saved!', etc.
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const [savingDetails, setSavingDetails] = useState(false);
   const [savingStock, setSavingStock] = useState(false);
   const [savingFinancials, setSavingFinancials] = useState(false);
+
+  const fetchProductAnalytics = async (filterPeriod = timeFilter) => {
+    if (!isAdmin || !id) return;
+    setAnalyticsLoading(true);
+    const activeToken = token || localStorage.getItem('bb_token') || localStorage.getItem('token');
+    const cleanToken = activeToken ? activeToken.toString().replace(/^Bearer\s+/i, '').trim() : null;
+    if (cleanToken && cleanToken !== 'null' && cleanToken !== 'undefined' && cleanToken.length > 10) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
+    }
+    const config = cleanToken ? { headers: { Authorization: `Bearer ${cleanToken}` } } : {};
+    try {
+      const analyticsRes = await axios.get(`${API_BASE_URL}/admin/analytics/product/${id}?period=${filterPeriod}`, config);
+      setAnalyticsData(analyticsRes.data);
+    } catch (err) {
+      console.error("Failed to fetch product analytics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const handleTimeFilterChange = (newFilter) => {
+    if (newFilter === timeFilter) return;
+    setTimeFilter(newFilter);
+    fetchProductAnalytics(newFilter);
+  };
 
   const getLocalizedFeatures = () => {
     if (!product) return [];
@@ -623,21 +650,44 @@ export const ProductDetails = ({ productId }) => {
   };
 
   const fetchAdminData = async () => {
-    if (!isAdmin) return;
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    if (!isAdmin || !id) return;
+    const activeToken = token || localStorage.getItem('bb_token') || localStorage.getItem('token');
+    const cleanToken = activeToken ? activeToken.toString().replace(/^Bearer\s+/i, '').trim() : null;
+    if (cleanToken && cleanToken !== 'null' && cleanToken !== 'undefined' && cleanToken.length > 10) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
+    }
+    const config = cleanToken ? { headers: { Authorization: `Bearer ${cleanToken}` } } : {};
+
+    // 1. Audit Logs (General Edits)
     try {
-      const [logsRes, historyRes, salesRes, analyticsRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/products/${id}/logs`, config),
-        axios.get(`${API_BASE_URL}/products/${id}/stock-history`, config),
-        axios.get(`${API_BASE_URL}/products/${id}/sales`, config),
-        axios.get(`${API_BASE_URL}/admin/analytics/product/${id}`, config)
-      ]);
-      setLogs(logsRes.data);
-      setStockHistory(historyRes.data);
-      setSalesData(salesRes.data);
-      setAnalyticsData(analyticsRes.data);
+      const logsRes = await axios.get(`${API_BASE_URL}/products/${id}/logs`, config);
+      setLogs(Array.isArray(logsRes.data) ? logsRes.data : []);
     } catch (err) {
-      console.error("Failed to fetch admin data:", err);
+      console.error("Failed to fetch product audit logs:", err);
+    }
+
+    // 2. Stock History (Stock Updates)
+    try {
+      const historyRes = await axios.get(`${API_BASE_URL}/products/${id}/stock-history`, config);
+      setStockHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
+    } catch (err) {
+      console.error("Failed to fetch product stock history:", err);
+    }
+
+    // 3. Product Sales Data
+    try {
+      const salesRes = await axios.get(`${API_BASE_URL}/products/${id}/sales`, config);
+      setSalesData(salesRes.data || { sales: [], total_sold: 0, total_revenue: 0, daily_sales: [] });
+    } catch (err) {
+      console.error("Failed to fetch product sales data:", err);
+    }
+
+    // 4. Product Analytics
+    try {
+      const analyticsRes = await axios.get(`${API_BASE_URL}/admin/analytics/product/${id}?period=${timeFilter}`, config);
+      setAnalyticsData(analyticsRes.data || null);
+    } catch (err) {
+      console.error("Failed to fetch product analytics:", err);
     }
   };
 
@@ -1668,7 +1718,7 @@ export const ProductDetails = ({ productId }) => {
                          type="text"
                          value={discountedPrice}
                          disabled
-                         className="w-full px-3 py-2 text-sm bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/50 rounded-lg font-bold text-emerald-600"
+                         className="w-full px-3 py-2 text-sm bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/50 rounded-lg font-bold text-emerald-600 dark:text-white"
                        />
                      </div>
                      <div>
@@ -1737,7 +1787,7 @@ export const ProductDetails = ({ productId }) => {
                        </div>
                        <div className="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-2 mt-2">
                          <span className="text-slate-500">Available:</span>
-                         <span className="font-black text-emerald-600">{Math.max(0, product.stock - (salesData.sales?.filter(s => s.status === 'Pending').length || 0))} units</span>
+                         <span className="font-black text-emerald-600 dark:text-emerald-400">{Math.max(0, product.stock - (salesData.sales?.filter(s => s.status === 'Pending').length || 0))} units</span>
                        </div>
                      </div>
                    </div>
@@ -1829,101 +1879,59 @@ export const ProductDetails = ({ productId }) => {
               
               {/* Pandas Analytics Section */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-indigo-500" />
                     Performance Analytics
                   </h3>
                   <div className="flex gap-2">
-                    <span className="px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold text-slate-500">7 Days</span>
-                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded text-xs font-bold text-indigo-600">30 Days</span>
-                    <span className="px-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold text-slate-500">All Time</span>
+                    {[
+                      { id: '7d', label: '7 Days' },
+                      { id: '30d', label: '30 Days' },
+                      { id: 'all', label: 'All Time' }
+                    ].map((filter) => {
+                      const isActive = timeFilter === filter.id;
+                      return (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          onClick={() => handleTimeFilterChange(filter.id)}
+                          className={`px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-indigo-500 text-white shadow-sm border border-indigo-500'
+                              : 'bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {filter.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-850">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Orders</span>
-                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">{analyticsData?.sales_stats?.orders_count ?? salesData?.sales?.length ?? 0}</span>
+                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">
+                      {analyticsLoading ? '...' : (analyticsData?.sales_stats?.orders_count ?? 0)}
+                    </span>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-850">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Units Sold</span>
-                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">{salesData.total_sold || 0}</span>
+                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">
+                      {analyticsLoading ? '...' : (analyticsData?.sales_stats?.total_sold ?? 0)}
+                    </span>
                   </div>
                   <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
                     <span className="text-[10px] text-indigo-600 dark:text-[#4ADE80] font-bold uppercase tracking-wider block mb-1">Revenue Generated</span>
-                    <span className="text-xl font-black text-indigo-600 dark:text-[#4ADE80] price-amount">₹{formatPrice(analyticsData?.sales_stats?.revenue_generated ?? salesData?.total_revenue ?? 0)}</span>
+                    <span className="text-xl font-black text-indigo-600 dark:text-[#4ADE80] price-amount">
+                      {analyticsLoading ? '...' : `₹${formatPrice(analyticsData?.sales_stats?.revenue_generated ?? 0)}`}
+                    </span>
                   </div>
                   <div className="bg-emerald-50/50 dark:bg-[rgba(212,167,95,0.08)] p-4 rounded-xl border border-emerald-100 dark:border-[rgba(212,167,95,0.25)]">
                     <span className="text-[10px] text-emerald-600 dark:text-[#D4A75F] font-bold dark:font-semibold uppercase tracking-wider dark:tracking-[0.08em] block mb-1">CONVERSION RATE</span>
-                    <span className="text-xl dark:text-[24px] font-black dark:font-bold text-emerald-600 dark:text-[#FFD700]">3.8%</span>
-                  </div>
-                </div>
-
-                {/* Combined Charts Box - "One Box" */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-100 dark:border-slate-850">
-                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-1.5 pb-2 border-b border-slate-200/50 dark:border-slate-800/60">
-                    <BarChart2 className="h-4 w-4 text-[#D4A75F]" />
-                    Visual Trend Charts
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Revenue Chart */}
-                    <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2">Revenue Trend (30 Days)</span>
-                      <div className="h-44 sm:h-52 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2 overflow-hidden shadow-inner cursor-zoom-in group/chart relative">
-                        {analyticsData?.charts?.revenue_chart ? (
-                          <img 
-                            src={`${API_BASE_URL.replace('/api', '')}${analyticsData.charts.revenue_chart}`} 
-                            alt="Revenue Trend" 
-                            onClick={() => {
-                              setZoomedImage(`${API_BASE_URL.replace('/api', '')}${analyticsData.charts.revenue_chart}`);
-                              setZoomedTitle('Revenue Trend (30 Days)');
-                            }}
-                            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-300 group-hover/chart:scale-[1.02]" 
-                          />
-                        ) : (
-                          <div className="w-full h-full animate-pulse flex flex-col items-end justify-end space-y-2 pb-2">
-                            <div className="w-full flex items-end justify-around space-x-2 h-4/5">
-                              <div className="w-1/6 h-[30%] bg-slate-200 dark:bg-slate-800 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[50%] bg-slate-200 dark:bg-slate-800 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[40%] bg-slate-200 dark:bg-slate-800 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[80%] bg-slate-200 dark:bg-slate-800 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[60%] bg-slate-200 dark:bg-slate-800 rounded-t-sm"></div>
-                            </div>
-                            <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded mt-2"></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Sales Chart */}
-                    <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2">Sales Volume & Orders Trend</span>
-                      <div className="h-44 sm:h-52 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2 overflow-hidden shadow-inner cursor-zoom-in group/chart relative">
-                        {analyticsData?.charts?.sales_trend ? (
-                          <img 
-                            src={`${API_BASE_URL.replace('/api', '')}${analyticsData.charts.sales_trend}`} 
-                            alt="Sales Trend" 
-                            onClick={() => {
-                              setZoomedImage(`${API_BASE_URL.replace('/api', '')}${analyticsData.charts.sales_trend}`);
-                              setZoomedTitle('Sales Volume & Orders Trend');
-                            }}
-                            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal transition-transform duration-300 group-hover/chart:scale-[1.02]" 
-                          />
-                        ) : (
-                          <div className="w-full h-full animate-pulse flex flex-col items-end justify-end space-y-2 pb-2">
-                            <div className="w-full flex items-end justify-around space-x-2 h-4/5">
-                              <div className="w-1/6 h-[20%] bg-indigo-100 dark:bg-indigo-900/40 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[45%] bg-indigo-100 dark:bg-indigo-900/40 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[65%] bg-indigo-100 dark:bg-indigo-900/40 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[35%] bg-indigo-100 dark:bg-indigo-900/40 rounded-t-sm"></div>
-                              <div className="w-1/6 h-[85%] bg-indigo-100 dark:bg-indigo-900/40 rounded-t-sm"></div>
-                            </div>
-                            <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded mt-2"></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <span className="text-xl dark:text-[24px] font-black dark:font-bold text-emerald-600 dark:text-[#FFD700]">
+                      {analyticsLoading ? '...' : `${analyticsData?.sales_stats?.conversion_rate ?? 0}%`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1936,8 +1944,28 @@ export const ProductDetails = ({ productId }) => {
                     Audit Trail & History
                   </h3>
                   <div className="flex border-b border-slate-200 dark:border-slate-800">
-                    <button onClick={() => setActiveAdminTab('audit-trail')} className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${activeAdminTab !== 'stock-logs' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>General Edits</button>
-                    <button onClick={() => setActiveAdminTab('stock-logs')} className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${activeAdminTab === 'stock-logs' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Stock Updates</button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAdminTab('audit-trail')}
+                      className={`px-4 py-2 text-xs font-bold border-b-2 transition-all duration-200 cursor-pointer rounded-t-lg ${
+                        activeAdminTab !== 'stock-logs'
+                          ? 'border-[#D4A75F] text-[#D4A75F] dark:text-[#FFD700] bg-[#D4A75F]/10 dark:bg-[rgba(212,167,95,0.12)] shadow-sm'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      General Edits
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveAdminTab('stock-logs')}
+                      className={`px-4 py-2 text-xs font-bold border-b-2 transition-all duration-200 cursor-pointer rounded-t-lg ${
+                        activeAdminTab === 'stock-logs'
+                          ? 'border-[#D4A75F] text-[#D4A75F] dark:text-[#FFD700] bg-[#D4A75F]/10 dark:bg-[rgba(212,167,95,0.12)] shadow-sm'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      Stock Updates
+                    </button>
                   </div>
                 </div>
 
@@ -1959,7 +1987,7 @@ export const ProductDetails = ({ productId }) => {
                         ) : (
                           logs.map((log, idx) => (
                             <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                              <td className="px-6 py-3 text-slate-500 text-xs">{new Date(log.created_at).toLocaleString()}</td>
+                              <td className="px-6 py-3 text-slate-500 dark:text-white text-xs admin-timestamp-text">{new Date(log.created_at).toLocaleString()}</td>
                               <td className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300 text-xs">Admin System</td>
                               <td className="px-6 py-3 font-mono font-medium text-amber-600 text-xs bg-amber-50 dark:bg-amber-900/10 inline-block mt-2 mb-2 rounded px-2">{log.field_name || 'System Edit'}</td>
                               <td className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400 line-through text-xs truncate max-w-[150px]" title={log.old_value}>{log.old_value || '-'}</td>
@@ -1985,7 +2013,7 @@ export const ProductDetails = ({ productId }) => {
                         ) : (
                           stockHistory.map((log, idx) => (
                             <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                              <td className="px-6 py-3 text-slate-500 text-xs">{new Date(log.created_at).toLocaleString()}</td>
+                              <td className="px-6 py-3 text-slate-500 dark:text-white text-xs admin-timestamp-text">{new Date(log.created_at).toLocaleString()}</td>
                               <td className="px-6 py-3 capitalize font-semibold text-slate-700 dark:text-slate-300 text-xs">{log.change_type.replace('_', ' ')}</td>
                               <td className={`px-6 py-3 text-right font-bold text-xs ${log.change_amount > 0 ? 'text-emerald-500' : log.change_amount < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                                 {log.change_amount > 0 ? `+${log.change_amount}` : log.change_amount}
