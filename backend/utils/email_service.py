@@ -1,160 +1,248 @@
 import os
-from dotenv import load_dotenv
+import smtplib
+import threading
+import time
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import current_app
-from flask_mail import Message
-from backend.extensions import mail
 from backend.config import Config
-
-load_dotenv()
+from backend.utils.email_templates import (
+    get_forgot_password_otp_html,
+    get_order_confirmation_html,
+    get_buy_request_approval_html,
+    get_registration_otp_html
+)
 
 class EmailDeliveryStatus(dict):
     def __bool__(self):
         return bool(self.get("success", False))
 
-def send_email(to_email, subject, body, is_html=False):
+def _log_email_to_db(recipient, subject, email_type, status, failure_reason=None):
     """
-    Sends an email using Flask-Mail if ENABLE_EMAIL feature flag is active.
-    Returns an EmailDeliveryStatus instance containing success status, configuration details, and errors.
+    Safely records an email log entry into the database.
+    Does not crash or interrupt application flow if logging fails.
     """
-    if not Config.ENABLE_EMAIL:
-        print(f"[EMAIL SYSTEM] Email delivery skipped: ENABLE_EMAIL is OFF in {Config.ENVIRONMENT} environment.")
-        return EmailDeliveryStatus({
-            "success": True,
-            "status": "disabled_by_feature_flag",
-            "configuration": {"environment": Config.ENVIRONMENT},
-            "error": None
-        })
-
     try:
-        # Check if configuration exists
-        server = current_app.config.get("MAIL_SERVER")
-        port = current_app.config.get("MAIL_PORT")
-        username = current_app.config.get("MAIL_USERNAME")
-        password = current_app.config.get("MAIL_PASSWORD")
-        
-        config_info = {
-            "smtp_host": server,
-            "smtp_port": port,
-            "smtp_user": username,
-            "gmail_mode": bool(server and "gmail" in server.lower())
-        }
+        from backend.app import app
+        from backend.extensions import db
+        from backend.models.email_log import EmailLog
 
-        if not (server and port and username and password):
-            err_msg = "SMTP configuration is incomplete. Please specify EMAIL_ADDRESS and EMAIL_APP_PASSWORD in .env."
-            print(f"[SMTP ERROR] {err_msg}")
-            return EmailDeliveryStatus({
-                "success": False,
-                "status": "failed",
-                "configuration": config_info,
-                "error": err_msg
-            })
-            
-        # Formulate Message
-        msg = Message(
-            subject=subject,
-            recipients=[to_email]
-        )
-        if is_html or "<html>" in body:
-            msg.html = body
-        else:
-            msg.body = body
-            
-        # Send
-        mail.send(msg)
-        
-        print(f"Email successfully sent via Flask-Mail to {to_email}")
-        return EmailDeliveryStatus({
-            "success": True,
-            "status": "delivered",
-            "configuration": config_info,
-            "error": None
-        })
-    except Exception as e:
-        # Check configuration here to build config_info in case context error or other
-        try:
-            server = current_app.config.get("MAIL_SERVER")
-            port = current_app.config.get("MAIL_PORT")
-            username = current_app.config.get("MAIL_USERNAME")
-        except Exception:
-            server, port, username = None, None, None
-            
-        config_info = {
-            "smtp_host": server,
-            "smtp_port": port,
-            "smtp_user": username,
-            "gmail_mode": bool(server and "gmail" in server.lower())
-        }
-        error_msg = f"SMTP Transmission Failure: {str(e)}"
-        print(f"Error sending email to {to_email}: {error_msg}")
+        with app.app_context():
+            log_entry = EmailLog(
+                recipient=str(recipient),
+                subject=str(subject),
+                email_type=str(email_type),
+                status=str(status),
+                failure_reason=str(failure_reason) if failure_reason else None
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+    except Exception as ex:
+        print(f"[EMAIL LOGGING WARNING] Could not persist email log to database: {ex}")
+
+
+def send_email_smtp(to_email, subject, body, email_type="GENERAL", is_html=True, max_retries=2):
+    """
+    Core SMTP transmission function using Python's built-in smtplib.
+    Handles connection, TLS, authentication, retries, and database logging.
+    """
+    # Recipients validation
+    if not to_email or "@" not in str(to_email):
+        err = f"Invalid recipient email address: {to_email}"
+        print(f"[SMTP ERROR] {err}")
+        _log_email_to_db(to_email or "UNKNOWN", subject, email_type, "FAILED", err)
         return EmailDeliveryStatus({
             "success": False,
             "status": "failed",
-            "configuration": config_info,
-            "error": error_msg
+            "error": err
         })
 
-def send_order_confirmation(email, order):
-    """
-    Formulate order confirmation email template if ENABLE_ORDER_CONFIRMATION is active.
-    """
-    if not Config.ENABLE_ORDER_CONFIRMATION:
-        print(f"[ORDER CONFIRMATION] Order confirmation email skipped: ENABLE_ORDER_CONFIRMATION is OFF in {Config.ENVIRONMENT} environment.")
+    # Retrieve configuration
+    smtp_host = Config.SMTP_HOST
+    smtp_port = Config.SMTP_PORT
+    smtp_user = Config.SMTP_EMAIL
+    smtp_password = Config.SMTP_PASSWORD
+    smtp_tls = Config.SMTP_TLS
+    sender_email = Config.SMTP_FROM
+
+    # Security check: Password missing
+    if not smtp_password:
+        err = "SMTP password is not configured in environment variables (SMTP_PASSWORD / EMAIL_APP_PASSWORD)."
+        print(f"[SMTP WARNING] {err}")
+        _log_email_to_db(to_email, subject, email_type, "FAILED", err)
         return EmailDeliveryStatus({
-            "success": True,
-            "status": "disabled_by_feature_flag",
-            "configuration": {"environment": Config.ENVIRONMENT},
-            "error": None
+            "success": False,
+            "status": "failed",
+            "error": err
         })
 
-    items_html = ""
-    for item in order.get("items", []):
-        items_html += f"""
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #ddd;">{item.get('name')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">{item.get('quantity')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">₹{item.get('price')}</td>
-        </tr>
-        """
-        
-    body_html = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-                <h2 style="color: #10b981; border-bottom: 2px solid #10b981; padding-bottom: 10px;">SSJewellery Order Confirmed!</h2>
-                <p>Hello,</p>
-                <p>Thank you for shopping with SSJewellery! Your order has been placed successfully.</p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                    <p style="margin: 0;"><strong>Order ID:</strong> {order.get('order_id')}</p>
-                    <p style="margin: 0;"><strong>Estimated Delivery:</strong> {order.get('delivery_date')}</p>
-                    <p style="margin: 0;"><strong>Total Amount Paid:</strong> ₹{order.get('total_amount')}</p>
-                </div>
-                <h3>Order Items</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background-color: #f3f4f6;">
-                            <th style="padding: 10px; text-align: left;">Product</th>
-                            <th style="padding: 10px; text-align: center;">Qty</th>
-                            <th style="padding: 10px; text-align: right;">Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {items_html}
-                    </tbody>
-                </table>
-                <h3 style="margin-top: 20px;">Shipping Address</h3>
-                <p style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 0;">
-                    <strong>{order.get('shipping_address', {}).get('name')}</strong><br>
-                    Phone: {order.get('shipping_address', {}).get('phone') or order.get('shipping_address', {}).get('mobile', '')}<br>
-                    {order.get('shipping_address', {}).get('address') or order.get('shipping_address', {}).get('street', '')}<br>
-                    {order.get('shipping_address', {}).get('city')}, {order.get('shipping_address', {}).get('state')} - {order.get('shipping_address', {}).get('pincode')}
-                </p>
-                <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center;">
-                    If you have any questions, contact our support team. This is an automated email, please do not reply.
-                </p>
-            </div>
-        </body>
-    </html>
-    """
-    subject = f"Your SSJewellery Order {order.get('order_id')} is confirmed!"
-    return send_email(email, subject, body_html, is_html=True)
+    # Construct MIME message safely
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = str(subject)
+        msg["From"] = sender_email
+        msg["To"] = str(to_email)
 
+        # Content type
+        if is_html or "<html>" in str(body).lower():
+            msg.attach(MIMEText(body, "html", "utf-8"))
+        else:
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+    except Exception as err_mime:
+        err = f"Failed to construct MIME message: {err_mime}"
+        print(f"[SMTP ERROR] {err}")
+        _log_email_to_db(to_email, subject, email_type, "FAILED", err)
+        return EmailDeliveryStatus({"success": False, "status": "failed", "error": err})
+
+    # Retry loop for resilient SMTP transmission
+    attempt = 0
+    last_error = None
+
+    while attempt <= max_retries:
+        attempt += 1
+        try:
+            print(f"[SMTP EMAIL] Connection attempt {attempt}/{max_retries + 1} to {smtp_host}:{smtp_port} for {to_email}...")
+            
+            # Choose SSL vs TLS
+            if smtp_port == 465:
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=12)
+            else:
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=12)
+                if smtp_tls:
+                    server.starttls()
+
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, [to_email], msg.as_string())
+            server.quit()
+
+            print(f"[SMTP SUCCESS] Email '{subject}' successfully sent to {to_email}")
+            _log_email_to_db(to_email, subject, email_type, "SENT")
+            return EmailDeliveryStatus({
+                "success": True,
+                "status": "delivered",
+                "recipient": to_email,
+                "error": None
+            })
+        except Exception as ex:
+            last_error = str(ex)
+            print(f"[SMTP RETRY WARNING] Attempt {attempt} failed sending to {to_email}: {last_error}")
+            if attempt <= max_retries:
+                time.sleep(1.5)
+
+    final_err = f"SMTP transmission failed after {max_retries + 1} attempts: {last_error}"
+    print(f"[SMTP ERROR] {final_err}")
+    _log_email_to_db(to_email, subject, email_type, "FAILED", final_err)
+    return EmailDeliveryStatus({
+        "success": False,
+        "status": "failed",
+        "recipient": to_email,
+        "error": final_err
+    })
+
+
+def send_email(to_email, subject, body, email_type="GENERAL", is_html=True, sync=False):
+    """
+    Centralized entry point for sending emails.
+    Can run synchronously or asynchronously in a daemon thread.
+    """
+    if not Config.ENABLE_EMAIL:
+        print(f"[EMAIL SYSTEM] Skipped sending to {to_email}: ENABLE_EMAIL is OFF.")
+        _log_email_to_db(to_email, subject, email_type, "DISABLED", "ENABLE_EMAIL feature flag is OFF")
+        return EmailDeliveryStatus({"success": True, "status": "disabled", "error": None})
+
+    if sync:
+        return send_email_smtp(to_email, subject, body, email_type=email_type, is_html=is_html)
+    else:
+        # Non-blocking async execution
+        thread = threading.Thread(
+            target=send_email_smtp,
+            args=(to_email, subject, body),
+            kwargs={"email_type": email_type, "is_html": is_html},
+            daemon=True
+        )
+        thread.start()
+        return EmailDeliveryStatus({"success": True, "status": "queued_async", "error": None})
+
+
+# --- Specialized Trigger Functions ---
+
+def send_forgot_password_otp(to_email, otp_code, name=None):
+    """
+    Feature 1 — Sends Password Reset OTP email.
+    Respects ENABLE_EMAIL_FORGOT_PASSWORD_OTP flag.
+    """
+    if not getattr(Config, "ENABLE_EMAIL_FORGOT_PASSWORD_OTP", True):
+        print(f"[EMAIL SYSTEM] Password reset email skipped for {to_email}: ENABLE_EMAIL_FORGOT_PASSWORD_OTP is OFF.")
+        _log_email_to_db(to_email, "SSJewellery Password Reset OTP", "FORGOT_PASSWORD_OTP", "DISABLED")
+        return EmailDeliveryStatus({"success": True, "status": "disabled"})
+
+    subject = "SSJewellery Password Reset OTP"
+    html_body = get_forgot_password_otp_html(name, otp_code)
+    # Password reset needs synchronous execution or quick delivery confirmation
+    return send_email(to_email, subject, html_body, email_type="FORGOT_PASSWORD_OTP", is_html=True, sync=True)
+
+
+def send_order_confirmation(to_email, order):
+    """
+    Feature 3 — Sends Order Confirmation email.
+    Respects ENABLE_EMAIL_ORDER_CONFIRMATION flag.
+    Executed asynchronously so order placement is NEVER delayed.
+    """
+    if not getattr(Config, "ENABLE_EMAIL_ORDER_CONFIRMATION", True):
+        print(f"[EMAIL SYSTEM] Order confirmation email skipped for {to_email}: ENABLE_EMAIL_ORDER_CONFIRMATION is OFF.")
+        _log_email_to_db(to_email, "Your SSJewellery Order Has Been Confirmed", "ORDER_CONFIRMATION", "DISABLED")
+        return EmailDeliveryStatus({"success": True, "status": "disabled"})
+
+    # Clean dummy/guest email domains
+    if not to_email or "@SSJewellery.com" in str(to_email) or "@admin.local" in str(to_email):
+        print(f"[EMAIL SYSTEM] Order confirmation email skipped for dummy address {to_email}")
+        return EmailDeliveryStatus({"success": True, "status": "skipped_dummy_email"})
+
+    subject = "Your SSJewellery Order Has Been Confirmed"
+    user_name = (order.get("shipping_address") or {}).get("name") or "Valued Customer"
+    html_body = get_order_confirmation_html(user_name, order)
+    
+    # Asynchronous dispatch
+    return send_email(to_email, subject, html_body, email_type="ORDER_CONFIRMATION", is_html=True, sync=False)
+
+
+def send_buy_request_approval(to_email, product_name, request_id, quantity=1, availability_date=None, delivery_date=None, admin_note=None, name=None):
+    """
+    Feature 4 — Sends Buy Request Approval email.
+    Respects ENABLE_EMAIL_BUY_REQUEST_CONFIRMATION flag.
+    """
+    if not getattr(Config, "ENABLE_EMAIL_BUY_REQUEST_CONFIRMATION", True):
+        print(f"[EMAIL SYSTEM] Buy request confirmation email skipped for {to_email}: ENABLE_EMAIL_BUY_REQUEST_CONFIRMATION is OFF.")
+        _log_email_to_db(to_email, "Your Buy Request Has Been Approved", "BUY_REQUEST_APPROVAL", "DISABLED")
+        return EmailDeliveryStatus({"success": True, "status": "disabled"})
+
+    if not to_email or "@SSJewellery.com" in str(to_email) or "@admin.local" in str(to_email):
+        print(f"[EMAIL SYSTEM] Buy request email skipped for dummy address {to_email}")
+        return EmailDeliveryStatus({"success": True, "status": "skipped_dummy_email"})
+
+    subject = "Your Buy Request Has Been Approved"
+    html_body = get_buy_request_approval_html(
+        name=name,
+        product_name=product_name,
+        request_id=request_id,
+        quantity=quantity,
+        availability_date=availability_date,
+        delivery_date=delivery_date,
+        admin_note=admin_note
+    )
+    return send_email(to_email, subject, html_body, email_type="BUY_REQUEST_APPROVAL", is_html=True, sync=False)
+
+
+def send_registration_otp(to_email, otp_code, name=None):
+    """
+    Feature 2 — Registration OTP Email (Disabled by default).
+    Only sends if ENABLE_EMAIL_REGISTRATION_OTP is explicitly True.
+    """
+    if not getattr(Config, "ENABLE_EMAIL_REGISTRATION_OTP", False):
+        print(f"[EMAIL SYSTEM] Registration OTP email skipped for {to_email}: ENABLE_EMAIL_REGISTRATION_OTP is OFF.")
+        _log_email_to_db(to_email, "SSJewellery Registration Code", "REGISTRATION_OTP", "DISABLED")
+        return EmailDeliveryStatus({"success": True, "status": "disabled"})
+
+    subject = "SSJewellery Registration Code"
+    html_body = get_registration_otp_html(name, otp_code)
+    return send_email(to_email, subject, html_body, email_type="REGISTRATION_OTP", is_html=True, sync=True)

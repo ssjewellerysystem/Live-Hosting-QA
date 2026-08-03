@@ -13,6 +13,9 @@ import { MaintenanceButton } from '../components/admin/MaintenanceButton';
 import { formatPrice } from '../utils/priceFormatter';
 import { translateCategory } from '../utils/categoryTranslations';
 import { TrackingInfoModal } from '../components/admin/TrackingInfoModal';
+import { CategoryBannerManagement } from '../components/admin/CategoryBannerManagement';
+import { CollectionBannerManagement } from '../components/admin/CollectionBannerManagement';
+
 
 const AdminPaymentManagement = React.lazy(() => import('../components/AdminPaymentManagement').then(m => ({ default: m.AdminPaymentManagement })));
 
@@ -1922,10 +1925,10 @@ export const AdminControl = () => {
     setSelectedAnalyticsProduct(product);
     setProductAnalyticsData(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/admin/analytics/product/${product._id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const rawToken = localStorage.getItem('bb_token') || localStorage.getItem('token');
+      const token = (rawToken && rawToken !== 'null' && rawToken !== 'undefined') ? rawToken : null;
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/admin/analytics/product/${product._id}`, { headers });
       const data = await response.json();
       if (response.ok) {
         setProductAnalyticsData(data);
@@ -2451,8 +2454,8 @@ export const AdminControl = () => {
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Category Management</h4>
-              <p className="text-xs text-slate-400">Add, edit translations, and change custom category cover images.</p>
+              <h4 className="text-lg font-bold text-slate-900 dark:text-white">Category Management</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Add, edit translations, and change custom category cover images.</p>
             </div>
             <button
               onClick={() => {
@@ -2462,52 +2465,52 @@ export const AdminControl = () => {
                 setCategorySuccess('');
                 setShowCategoryModal(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Add Category</span>
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                  <th className="pb-3 pl-2">Cover</th>
-                  <th className="pb-3">System Name</th>
-                  <th className="pb-3">English Name</th>
-                  <th className="pb-3">Hindi Name</th>
-                  <th className="pb-3 text-right pr-2">Actions</th>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-300 font-extrabold whitespace-nowrap">
+                  <th className="pb-3.5 pl-4 pr-6">Cover</th>
+                  <th className="pb-3.5 px-4">System Name</th>
+                  <th className="pb-3.5 px-4">English Name</th>
+                  <th className="pb-3.5 px-4">Hindi Name</th>
+                  <th className="pb-3.5 pr-4 pl-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/50 dark:divide-slate-800/50">
                 {safeCategories.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400 text-xs font-medium">
+                    <td colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-300 text-xs font-medium">
                       No categories found.
                     </td>
                   </tr>
                 ) : (
                   safeCategories.map((cat) => (
                     <tr key={cat.id || cat.name} className="text-sm hover:bg-slate-50/50 dark:hover:bg-slate-850/30">
-                      <td className="py-3 pl-2">
+                      <td className="py-3.5 pl-4 pr-6 whitespace-nowrap">
                         {cat.image_url && typeof cat.image_url === 'string' && cat.image_url !== '/logo.svg' && !cat.image_url.includes('cat_') ? (
                           <img
                             src={cat.image_url}
                             alt={cat.name || 'Category'}
-                            className="w-10 h-10 object-cover rounded-full border border-slate-200 dark:border-slate-800"
+                            className="w-10 h-10 object-cover rounded-full border border-slate-200 dark:border-slate-700 shadow-sm"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1B0B26] to-[#3F1D5A] border border-[#D4A75F]/30 flex items-center justify-center text-[#D4A75F]">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1B0B26] to-[#3F1D5A] border border-[#D4A75F]/40 flex items-center justify-center text-[#D4A75F] shadow-sm">
                             <Sparkles className="w-4 h-4 animate-pulse" />
                           </div>
                         )}
                       </td>
-                      <td className="py-3 font-semibold text-slate-850 dark:text-slate-200">{cat.name}</td>
-                      <td className="py-3 text-slate-600 dark:text-slate-400">{cat.name_en || cat.name}</td>
-                      <td className="py-3 text-slate-600 dark:text-slate-400">{cat.name_hi || cat.name}</td>
-                      <td className="py-3 text-right pr-2">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">{cat.name}</td>
+                      <td className="py-3.5 px-4 text-slate-700 dark:text-slate-200 font-medium whitespace-nowrap">{cat.name_en || cat.name}</td>
+                      <td className="py-3.5 px-4 text-slate-700 dark:text-slate-200 font-medium whitespace-nowrap">{cat.name_hi || cat.name}</td>
+                      <td className="py-3.5 pr-4 pl-4 text-right whitespace-nowrap">
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => {
@@ -2522,13 +2525,13 @@ export const AdminControl = () => {
                               setCategorySuccess('');
                               setShowCategoryModal(true);
                             }}
-                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg transition-all"
+                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg transition-all cursor-pointer"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(cat.id)}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-400 hover:text-red-500 rounded-lg transition-all"
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-400 hover:text-red-500 rounded-lg transition-all cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -2974,23 +2977,23 @@ export const AdminControl = () => {
         {/* SECTION 3: VIDEO SHOWCASE */}
         <form onSubmit={handleSaveHomepageSettings} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
           <div>
-            <h4 className="text-lg font-bold text-slate-850 dark:text-slate-100">Video Showcase Settings</h4>
-            <p className="text-xs text-slate-400">Change the dynamic background video URL or upload a custom video file.</p>
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white">Video Showcase Settings</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Change the dynamic background video URL or upload a custom video file.</p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Video File URL</label>
-              <div className="flex gap-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Video File URL</label>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                 <input
                   type="text"
                   value={homepageSettings?.video_showcase_url || ''}
                   onChange={(e) => setHomepageSettings(prev => ({ ...prev, video_showcase_url: e.target.value }))}
                   placeholder="/golden-stage.mp4"
-                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full sm:flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500 min-h-[38px] sm:min-h-[44px]"
                 />
-                <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-200 dark:border-slate-800">
-                  <Upload className="h-4 w-4" />
+                <label className="w-full sm:w-auto cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 sm:px-4 sm:py-3 rounded-xl text-xs font-bold flex items-center justify-center sm:justify-start gap-1.5 transition-all border border-slate-200 dark:border-slate-800 whitespace-nowrap min-h-[38px] sm:min-h-[44px]">
+                  <Upload className="h-4 w-4 flex-shrink-0" />
                   <span>Upload Video</span>
                   <input
                     type="file"
@@ -3022,7 +3025,7 @@ export const AdminControl = () => {
             <button
               type="submit"
               disabled={homepageUpdating}
-              className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 sm:py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
             >
               {homepageUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               <span>Save Video Showcase</span>
@@ -3184,9 +3187,17 @@ export const AdminControl = () => {
             </button>
           </div>
         </form>
+
+        {/* SECTION 5: CATEGORY BANNER MANAGEMENT */}
+        <CategoryBannerManagement categories={safeCategories} />
+
+        {/* SECTION 6: COLLECTION BANNER MANAGEMENT */}
+        <CollectionBannerManagement collections={safeCollections} />
       </div>
     );
   };
+
+
 
   if (!user || !isAdmin) {
     return (
@@ -3516,7 +3527,7 @@ export const AdminControl = () => {
                         <BarChart3 className="h-5 w-5 text-emerald-500" />
                         <span>Admin Analytics Summary Cards</span>
                       </h2>
-                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-stretch">
                         {[
                           {
                             label: "Total Registered",
@@ -3555,14 +3566,24 @@ export const AdminControl = () => {
                           }
                         ].map(card => {
                           const IconComponent = card.icon;
+                          const isTotalRevenue = card.label === "Total Revenue";
                           return (
-                            <div key={card.label} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{card.label}</span>
-                                <span className={`text-xl font-black mt-1 block ${card.color} ${card.label === "Total Revenue" ? "price-amount" : ""}`}>{card.val}</span>
+                            <div
+                              key={card.label}
+                              className={`bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-3 sm:p-5 rounded-2xl shadow-sm flex items-center justify-between gap-2.5 sm:gap-3 overflow-hidden min-w-0 h-full ${
+                                isTotalRevenue ? "col-span-2 sm:col-span-1 lg:col-span-1" : "col-span-1"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[clamp(9px,2.3vw,10px)] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight sm:tracking-wider block truncate leading-tight">
+                                  {card.label}
+                                </span>
+                                <span className={`text-[clamp(16px,4vw,20px)] sm:text-xl font-black mt-0.5 block truncate leading-none ${card.color} ${isTotalRevenue ? "price-amount" : ""}`}>
+                                  {card.val}
+                                </span>
                               </div>
-                              <div className={`${card.bgColor} p-2.5 rounded-xl ${card.color}`}>
-                                <IconComponent className="h-5 w-5" />
+                              <div className={`${card.bgColor} p-2 sm:p-2.5 rounded-xl ${card.color} flex-shrink-0 shrink-0 flex items-center justify-center`}>
+                                <IconComponent className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                               </div>
                             </div>
                           );
@@ -3723,26 +3744,6 @@ export const AdminControl = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Matplotlib Charts Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
-                      {[
-                        { title: "Revenue Trend (30 Days)", img: overviewAnalytics.charts.revenue_trend },
-                        { title: "Top Selling Products", img: overviewAnalytics.charts.top_selling_products },
-                        { title: "Low Stock Inventory Analytics", img: overviewAnalytics.charts.low_stock_inventory }
-                      ].map(chart => (
-                        <div key={chart.title} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col items-center">
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 self-start">{chart.title}</h4>
-                          <div className="w-full bg-slate-50 dark:bg-slate-955/60 border border-slate-105 dark:border-slate-850 p-2 rounded-2xl flex justify-start items-center overflow-x-auto">
-                            <img
-                              src={`${SERVER_BASE_URL}${chart.img}`}
-                              alt={chart.title}
-                              className="max-h-[220px] min-w-[500px] lg:min-w-0 w-auto object-contain rounded-lg"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
 
@@ -3769,7 +3770,7 @@ export const AdminControl = () => {
                         getLowStockProducts().map(p => (
                           <div key={p.id} className="p-3 border border-slate-100 dark:border-slate-850 hover:border-slate-200 dark:hover:border-slate-750 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between transition-all">
                             <div className="max-w-[70%]">
-                              <span className="text-xs font-bold text-slate-800 dark:text-slate-250 block truncate">{p.name}</span>
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate">{p.name}</span>
                               <span className="text-[10px] font-bold text-slate-400 block mt-0.5">{p.category} • <span className="price-amount">₹{formatPrice(p.price)}</span></span>
                             </div>
                             <div className="text-right">
@@ -3872,26 +3873,28 @@ export const AdminControl = () => {
             {/* TAB CONTENT: PRODUCTS MANAGEMENT */}
             {activeTab === 'products' && (
               <div className="w-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-base font-extrabold flex items-center gap-2">
-                    <span>Catalog Products</span>
-                    <span className="px-2.5 py-1 text-xs bg-[#D4A75F] text-[#111827] rounded-full font-bold shadow-sm">
-                      {products.length}
+                <div className="flex justify-between items-center mb-5 sm:mb-6 gap-3">
+                  <div className="flex flex-col items-start min-w-0">
+                    <h3 className="text-sm sm:text-base font-extrabold whitespace-nowrap text-slate-800 dark:text-slate-100">
+                      Catalog Products
+                    </h3>
+                    <span className="mt-1 px-2.5 py-0.5 text-[10px] sm:text-xs bg-[#D4A75F] text-[#111827] rounded-full font-bold shadow-sm inline-block">
+                      {products.length} {products.length === 1 ? 'Product' : 'Products'}
                     </span>
-                  </h3>
+                  </div>
                   <button
                     onClick={() => {
                       setIsAddModalOpen(true);
                       setIsAddImagesOpen(false);
                     }}
-                    className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition-all"
+                    className="px-2.5 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[11px] sm:text-xs font-bold shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all flex-shrink-0 min-h-[40px] active:scale-95"
                   >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Product</span>
+                    <Plus className="h-3.5 sm:h-4 w-3.5 sm:w-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Add Product</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {products.map(p => {
                     const discountedPrice = Math.round(p.price - (p.price * (p.discount / 100)));
 
@@ -3914,80 +3917,48 @@ export const AdminControl = () => {
                     };
 
                     return (
-                      <div key={p._id || p.id} className="border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 rounded-xl md:rounded-2xl p-3 md:p-4.5 flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative">
+                      <div key={p._id || p.id} className="w-full border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20 rounded-2xl p-4 sm:p-4.5 flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative h-auto">
                         <div>
-                          {/* Desktop/Tablet Header Row (Hidden on mobile < 768px, visible on md+) */}
-                          <div className="hidden md:flex items-start justify-between gap-2 sm:gap-3 mb-3">
-                            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 flex-shrink-0">
-                                <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt={p.name} className="h-full w-full object-cover" />
-                              </div>
-                              <div className="flex flex-col justify-center min-w-0 flex-1">
-                                <span className="text-[9px] sm:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{p.category}</span>
-                                <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={p.name}>{p.name}</h4>
-                              </div>
+                          {/* Delete Product Button - Fixed at Top Right Corner */}
+                          <button
+                            type="button"
+                            onClick={() => setProductToDelete(p)}
+                            title="Delete Product"
+                            className="absolute top-3.5 right-3.5 w-8 h-8 flex items-center justify-center rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-500/20 hover:scale-105 transition-all duration-200 cursor-pointer flex-shrink-0 z-30"
+                          >
+                            <Trash2 className="h-4 w-4 text-white" />
+                          </button>
+
+                          {/* Header Row: Image, Category & Title */}
+                          <div className="flex items-start gap-3 pr-10 mb-3.5">
+                            <div className="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 flex-shrink-0">
+                              <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt={p.name} className="h-full w-full object-cover" />
                             </div>
-
-                            {/* Delete Product Button */}
-                            <button
-                              type="button"
-                              onClick={() => setProductToDelete(p)}
-                              title="Delete Product"
-                              className="w-8 h-8 flex items-center justify-center rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-500/20 hover:scale-105 transition-all duration-200 cursor-pointer flex-shrink-0 z-30"
-                            >
-                              <Trash2 className="h-4 w-4 text-white" />
-                            </button>
-                          </div>
-
-                          {/* Mobile Header Layout (Visible on mobile < 768px, hidden on md+) */}
-                          <div className="block md:hidden mb-3">
-                            {/* Top row: Image & Category */}
-                            <div className="flex items-center gap-2.5 mb-2">
-                              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-955 border border-slate-100 dark:border-slate-800 flex-shrink-0">
-                                <img src={p.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200'} alt={p.name} className="h-full w-full object-cover" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="text-[9px] sm:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">{p.category}</span>
-                              </div>
-                            </div>
-
-                            {/* Title row */}
-                            <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 break-words mt-1 mb-2.5" title={p.name}>
-                              {p.name}
-                            </h4>
-
-                            {/* Delete Button Row (Right aligned, between Title and Pricing Box, 8-12px spacing) */}
-                            <div className="flex justify-end my-2.5">
-                              <button
-                                type="button"
-                                onClick={() => setProductToDelete(p)}
-                                title="Delete Product"
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-500/20 hover:scale-105 transition-all duration-200 cursor-pointer flex-shrink-0 z-30"
-                              >
-                                <Trash2 className="h-4 w-4 text-white" />
-                              </button>
+                            <div className="flex flex-col justify-center min-w-0 flex-1">
+                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">{p.category}</span>
+                              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 break-words line-clamp-2" title={p.name}>{p.name}</h4>
                             </div>
                           </div>
 
                           {/* Price / Discount History */}
-                          <div className="bg-white dark:bg-slate-900 border border-slate-150/40 dark:border-slate-800/80 p-2 sm:p-2.5 rounded-xl text-[10px] sm:text-xs space-y-1 mb-3">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-0.5 sm:gap-0">
-                              <span className="text-slate-400 font-medium">Pricing:</span>
-                              <div className="flex flex-wrap items-center gap-1">
+                          <div className="bg-white dark:bg-slate-900 border border-slate-150/40 dark:border-slate-800/80 p-3 rounded-xl text-xs space-y-1 mb-3.5 w-full">
+                            <div className="flex justify-between items-baseline gap-2">
+                              <span className="text-slate-400 font-medium flex-shrink-0">Pricing:</span>
+                              <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                 {p.discount > 0 ? (
                                   <>
-                                    <span className="text-slate-455 dark:text-slate-505 line-through price-amount">₹{formatPrice(p.price)}</span>
+                                    <span className="text-slate-455 dark:text-slate-505 line-through price-amount text-xs">₹{formatPrice(p.price)}</span>
                                     <span className="text-slate-400">↓</span>
-                                    <span className="text-slate-900 dark:text-slate-100 font-extrabold text-xs sm:text-sm price-amount">₹{formatPrice(discountedPrice)}</span>
-                                    <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-455 rounded">{p.discount}% OFF</span>
+                                    <span className="text-slate-900 dark:text-slate-100 font-extrabold text-sm price-amount">₹{formatPrice(discountedPrice)}</span>
+                                    <span className="px-1.5 py-0.5 text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-955/40 dark:text-rose-455 rounded whitespace-nowrap">{p.discount}% OFF</span>
                                   </>
                                 ) : (
-                                  <span className="text-slate-900 dark:text-slate-105 font-extrabold text-xs sm:text-sm price-amount">₹{formatPrice(p.price)}</span>
+                                  <span className="text-slate-900 dark:text-slate-100 font-extrabold text-sm price-amount">₹{formatPrice(p.price)}</span>
                                 )}
                               </div>
                             </div>
                             {p.discount > 0 && p.discount_applied_at && (
-                              <div className="text-[8px] sm:text-[9px] text-slate-400 flex justify-between border-t border-slate-100 dark:border-slate-850/50 pt-1 mt-1">
+                              <div className="text-[9px] text-slate-400 flex justify-between border-t border-slate-100 dark:border-slate-850/50 pt-1.5 mt-1.5">
                                 <span>Applied On:</span>
                                 <span className="font-semibold">{formatAudit(p.discount_applied_at)}</span>
                               </div>
@@ -3995,63 +3966,64 @@ export const AdminControl = () => {
                           </div>
 
                           {/* Stock Display */}
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-0.5 sm:gap-0 mb-3">
-                            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Stock Status:</span>
-                            <span className={`stock-badge-container ${p.stock === 0
-                                ? 'stock-badge-out-of-stock'
-                                : p.stock < 10
-                                  ? 'stock-badge-low-stock'
+                          <div className="flex justify-between items-center mb-3.5 w-full">
+                            <span className="text-xs text-slate-400 font-medium">Stock Status:</span>
+                            <span className={`stock-badge-container ${
+                              p.stock === 0 
+                                ? 'stock-badge-out-of-stock' 
+                                : p.stock < 10 
+                                  ? 'stock-badge-low-stock' 
                                   : 'stock-badge-in-stock'
-                              }`}>
-                              {p.stock === 0 ? "Out Of Stock" : p.stock < 10 ? `${p.stock} Left` : `${p.stock} Units`}
+                            }`}>
+                              {p.stock === 0 ? "Out Of Stock" : p.stock < 10 ? `Low Stock: ${p.stock} Units` : `Stock: ${p.stock} Units`}
                             </span>
                           </div>
 
                           {/* Audit Logs */}
-                          <div className="border-t border-slate-100 dark:border-slate-850/60 pt-2.5 pb-2 text-[9px] sm:text-[10px] text-slate-400 space-y-1">
-                            <div className="flex justify-between">
+                          <div className="border-t border-slate-100 dark:border-slate-855/60 pt-3 pb-2 text-[10px] text-slate-400 space-y-1.5">
+                            <div className="flex justify-between items-center">
                               <span>Created:</span>
-                              <span className="font-semibold text-slate-550 dark:text-slate-450">{formatAudit(p.created_at)}</span>
+                              <span className="font-semibold text-slate-550 dark:text-slate-455">{formatAudit(p.created_at)}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span>Modified:</span>
-                              <span className="font-semibold text-slate-550 dark:text-slate-450">{formatAudit(p.updated_at || p.created_at)}</span>
+                              <span className="font-semibold text-slate-550 dark:text-slate-455">{formatAudit(p.updated_at || p.created_at)}</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Quick Actions Grid */}
-                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-850/60">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-850/60">
                           <button
                             onClick={() => {
                               setEditingProduct({ ...p, image_url: p.images?.[0] || '' });
                               setEditProductImages(initEditImages(p));
                               setIsEditImagesOpen(false);
                             }}
-                            className="py-1.5 sm:py-2 px-1 sm:px-2.5 text-[9px] sm:text-[10px] font-bold bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg sm:rounded-xl transition-all text-center flex items-center justify-center gap-1"
+                            className="py-2 px-2 text-[10px] sm:text-[11px] font-bold bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <Edit2 className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                            <Edit2 className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate">Edit</span>
                           </button>
                           <button
                             onClick={() => handleOpenStockModal(p)}
-                            className="py-1.5 sm:py-2 px-1 sm:px-2.5 text-[9px] sm:text-[10px] font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-450 rounded-lg sm:rounded-xl transition-all text-center flex items-center justify-center gap-1"
+                            className="py-2 px-2 text-[10px] sm:text-[11px] font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-455 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <Package className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                            <Package className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate">Stock</span>
                           </button>
                           <button
                             onClick={() => handleOpenOrdersModal(p)}
-                            className="py-1.5 sm:py-2 px-1 sm:px-2.5 text-[9px] sm:text-[10px] font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 text-purple-650 dark:text-purple-400 rounded-lg sm:rounded-xl transition-all text-center flex items-center justify-center gap-1"
+                            className="py-2 px-2 text-[10px] sm:text-[11px] font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 text-purple-650 dark:text-purple-400 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <ShoppingBag className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                            <ShoppingBag className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate">Orders</span>
                           </button>
                           <button
                             onClick={() => handleOpenAnalyticsModal(p)}
-                            className="py-1.5 sm:py-2 px-1 sm:px-2.5 text-[9px] sm:text-[10px] font-bold border border-[#D4A75F]/35 dark:border-[#D4A75F] bg-[#D4A75F]/8 dark:bg-[rgba(212,167,95,0.12)] text-[#9A7232] dark:text-[#D4A75F] hover:bg-[#D4A75F] hover:text-white dark:hover:bg-[#D4A75F] dark:hover:text-white dark:hover:border-transparent hover:translate-y-[-2px] shadow-[0_4px_12px_rgba(212,167,95,0.08)] dark:shadow-[0_4px_12px_rgba(212,167,95,0.20)] rounded-lg sm:rounded-xl transition-all duration-[250ms] ease-in-out text-center flex items-center justify-center gap-1"
+                            className="py-2 px-2 text-[10px] sm:text-[11px] font-bold border border-[#D4A75F]/35 dark:border-[#D4A75F] bg-[#D4A75F]/8 dark:bg-[rgba(212,167,95,0.12)] text-[#9A7232] dark:text-[#D4A75F] hover:bg-[#D4A75F] hover:text-white dark:hover:bg-[#D4A75F] dark:hover:text-white dark:hover:border-transparent hover:translate-y-[-2px] shadow-[0_4px_12px_rgba(212,167,95,0.08)] dark:shadow-[0_4px_12px_rgba(212,167,95,0.20)] rounded-xl transition-all duration-[250ms] ease-in-out text-center flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <BarChart3 className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
+                            <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate">Sales</span>
                           </button>
                         </div>
@@ -4064,73 +4036,109 @@ export const AdminControl = () => {
 
             {/* TAB CONTENT: ORDERS MANAGEMENT */}
             {activeTab === 'orders' && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm overflow-x-auto">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm">
                 <h3 className="text-base font-bold mb-4">Customer Orders list ({orders.length})</h3>
 
-                <table className="w-full text-left text-xs min-w-[650px]">
-                  <thead>
-                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase font-bold">
-                      <th className="py-2.5">Order ID</th>
-                      <th className="py-2.5">Date</th>
-                      <th className="py-2.5">Total Amount</th>
-                      <th className="py-2.5">Customer / Address</th>
-                      <th className="py-2.5">Status</th>
-                      <th className="py-2.5">Update Status</th>
-                      <th className="py-2.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-850">
-                    {orders.map(o => (
-                      <tr key={o._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <td className="py-3.5 font-mono font-bold text-slate-700 dark:text-slate-300">{o.order_id}</td>
-                        <td className="py-3.5 text-slate-500 admin-datetime-text">{formatTimestamp(o.created_at)}</td>
-                        <td className="py-3.5 font-bold text-slate-800 dark:text-slate-100 price-amount">₹{formatPrice(o.total_amount)}</td>
-                        <td className="py-3.5 max-w-[200px] truncate text-slate-550" title={o.shipping_address?.address}>
-                          {o.shipping_address?.name} - {o.shipping_address?.address}, {o.shipping_address?.city}
-                        </td>
-                        <td className="py-3.5">
-                          <span className={`px-[12px] py-[4px] rounded-full text-[10px] font-semibold border shadow-sm ${(o.status || '').toLowerCase() === 'pending'
-                              ? 'status-badge-pending'
-                              : (o.status || '').toLowerCase() === 'processing' || (o.status || '').toLowerCase() === 'confirmed' || (o.status || '').toLowerCase() === 'packed'
-                                ? 'bg-[#3B82F6] text-white border-[#2563EB]'
-                                : (o.status || '').toLowerCase() === 'shipped' || (o.status || '').toLowerCase() === 'dispatched'
+                <div className="overflow-x-auto scrollbar-thin">
+                  <table className="w-full text-center text-xs min-w-[780px] align-middle">
+                    <thead>
+                      <tr className="border-b border-slate-200/80 dark:border-slate-800 text-slate-400 uppercase font-bold text-[11px] tracking-wider">
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">Order ID</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">Date</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">Total Amount</th>
+                        <th className="py-3 px-4 text-center min-w-[180px]">Customer / Address</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[140px]">Status</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[150px]">Update Status</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[110px]">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                      {orders.map(o => {
+                        const renderOrderDate = (dateInput) => {
+                          if (!dateInput) return null;
+                          const d = new Date(dateInput);
+                          if (isNaN(d.getTime())) {
+                            return <span className="whitespace-nowrap">{dateInput}</span>;
+                          }
+                          const day = String(d.getDate()).padStart(2, '0');
+                          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const month = months[d.getMonth()];
+                          const year = d.getFullYear();
+                          let hours = d.getHours();
+                          const ampm = hours >= 12 ? 'PM' : 'AM';
+                          hours = hours % 12;
+                          hours = hours ? hours : 12;
+                          const hoursStr = String(hours).padStart(2, '0');
+                          const minutes = String(d.getMinutes()).padStart(2, '0');
+
+                          return (
+                            <div className="flex flex-col items-center justify-center whitespace-nowrap">
+                              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs whitespace-nowrap">{`${day} ${month} ${year}`}</span>
+                              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 whitespace-nowrap mt-0.5">{`${hoursStr}:${minutes} ${ampm}`}</span>
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <tr key={o._id} className="hover:bg-slate-50/70 dark:hover:bg-slate-850/30 transition-colors align-middle">
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-800 dark:text-slate-100 text-center whitespace-nowrap">
+                              {o.order_id}
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              {renderOrderDate(o.created_at)}
+                            </td>
+                            <td className="py-3.5 px-4 font-extrabold text-slate-900 dark:text-white price-amount text-center whitespace-nowrap">
+                              ₹{formatPrice(o.total_amount)}
+                            </td>
+                            <td className="py-3.5 px-4 max-w-[200px] truncate text-slate-600 dark:text-slate-300 text-center" title={o.shipping_address?.address}>
+                              {o.shipping_address?.name} - {o.shipping_address?.address}, {o.shipping_address?.city}
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-extrabold border shadow-2xs whitespace-nowrap min-w-[115px] text-center ${
+                                (o.status || '').toLowerCase() === 'pending'
+                                  ? 'status-badge-pending'
+                                  : (o.status || '').toLowerCase() === 'processing' || (o.status || '').toLowerCase() === 'confirmed' || (o.status || '').toLowerCase() === 'packed'
+                                  ? 'bg-[#3B82F6] text-white border-[#2563EB]'
+                                  : (o.status || '').toLowerCase() === 'shipped' || (o.status || '').toLowerCase() === 'dispatched'
                                   ? 'bg-[#06B6D4] text-white border-[#0891B2]'
                                   : (o.status || '').toLowerCase() === 'out for delivery'
-                                    ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
-                                    : (o.status || '').toLowerCase() === 'delivered'
-                                      ? 'status-badge-success'
-                                      : (o.status || '').toLowerCase() === 'cancelled'
-                                        ? 'bg-[#EF4444] text-white border-[#DC2626]'
-                                        : 'bg-[#6B7280] text-white border-[#4B5563]'
-                            }`}>
-                            {o.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5">
-                          <select
-                            value={o.status}
-                            onChange={(e) => handleOrderStatusUpdate(o._id, e.target.value)}
-                            className="text-xs bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-855 px-2 py-1 rounded-lg focus:outline-none text-slate-850 dark:text-slate-100"
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Dispatched">Dispatched</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
-                            <option value="Delivered">Delivered</option>
-                          </select>
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <button
-                            onClick={() => setSelectedOrder(o)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-[#D4A75F]/10 dark:hover:bg-[#D4A75F]/15 dark:text-[#D4A75F] rounded-lg transition-colors font-bold"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            <span>Details</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                                  ? 'bg-[#8B5CF6] text-white border-[#7C3AED]'
+                                  : (o.status || '').toLowerCase() === 'delivered'
+                                  ? 'status-badge-success'
+                                  : (o.status || '').toLowerCase() === 'cancelled'
+                                  ? 'bg-[#EF4444] text-white border-[#DC2626]'
+                                  : 'bg-[#6B7280] text-white border-[#4B5563]'
+                              }`}>
+                                {o.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              <select
+                                value={o.status}
+                                onChange={(e) => handleOrderStatusUpdate(o._id, e.target.value)}
+                                className="text-xs bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4A75F]/30 text-slate-800 dark:text-slate-100 font-medium cursor-pointer mx-auto shadow-2xs"
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Dispatched">Dispatched</option>
+                                <option value="Out for Delivery">Out for Delivery</option>
+                                <option value="Delivered">Delivered</option>
+                              </select>
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              <button
+                                onClick={() => setSelectedOrder(o)}
+                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-[#D4A75F]/15 dark:hover:bg-[#D4A75F]/25 dark:text-[#D4A75F] border border-emerald-200/60 dark:border-[#D4A75F]/30 rounded-xl transition-all font-bold text-xs shadow-2xs active:scale-95 cursor-pointer"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                <span>Details</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -4174,11 +4182,11 @@ export const AdminControl = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4 mb-6 gap-4">
                   <div>
-                    <h3 className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-slate-150">
+                    <h3 className="text-base font-bold flex items-center gap-2 text-slate-800 dark:text-white">
                       <Settings className="h-5 w-5 text-emerald-500" />
                       <span>Site Configuration</span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1">Manage carousel banners, FAQs, and support links shown across the website.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Manage carousel banners, FAQs, and support links shown across the website.</p>
                   </div>
                 </div>
 
@@ -4423,10 +4431,10 @@ export const AdminControl = () => {
                     ) : supportLinks.length === 0 ? (
                       <p className="text-slate-400 italic text-xs py-6 text-center">No support links found.</p>
                     ) : (
-                      <div className="border border-slate-150 dark:border-slate-800 rounded-2xl overflow-hidden text-xs">
-                        <table className="w-full text-left">
+                      <div className="border border-slate-150 dark:border-slate-800 rounded-2xl overflow-x-auto max-w-full text-xs" style={{ WebkitOverflowScrolling: 'touch' }}>
+                        <table className="w-full min-w-[600px] text-left">
                           <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-150 dark:border-slate-800 text-slate-500 font-bold">
+                            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-150 dark:border-slate-800 text-slate-500 font-bold whitespace-nowrap">
                               <th className="p-3">Title</th>
                               <th className="p-3">Icon</th>
                               <th className="p-3">Destination Link / Value</th>
@@ -4438,19 +4446,19 @@ export const AdminControl = () => {
                             {supportLinks.map((link) => {
                               return (
                                 <tr key={link.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20">
-                                  <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">{link.title}</td>
-                                  <td className="p-3 text-slate-500">
+                                  <td className="p-3 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">{link.title}</td>
+                                  <td className="p-3 text-slate-500 whitespace-nowrap">
                                     <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-[10px]">
                                       {link.icon}
                                     </span>
                                   </td>
                                   <td className="p-3 font-mono text-slate-600 dark:text-slate-400 max-w-xs truncate">{link.url}</td>
-                                  <td className="p-3">
+                                  <td className="p-3 whitespace-nowrap">
                                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${link.is_active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
                                       {link.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                   </td>
-                                  <td className="p-3 text-right">
+                                  <td className="p-3 text-right whitespace-nowrap">
                                     <div className="flex justify-end gap-1.5">
                                       <button
                                         onClick={() => startEditSupportLink(link)}
@@ -4518,47 +4526,49 @@ export const AdminControl = () => {
                   <span>Product Audit Trail Logs ({auditLogs.length})</span>
                 </h3>
 
-                <table className="w-full text-left text-xs min-w-[800px]">
+                <table className="w-full text-left text-xs min-w-[800px] border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase font-bold">
-                      <th className="py-2.5">Date & Time (IST)</th>
-                      <th className="py-2.5">Product</th>
-                      <th className="py-2.5">Admin ID</th>
-                      <th className="py-2.5">Action Type</th>
-                      <th className="py-2.5">Field Changed</th>
-                      <th className="py-2.5 text-right">Old Value</th>
-                      <th className="py-2.5 text-right">New Value</th>
+                    <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase font-bold align-middle">
+                      <th className="py-2.5 px-3 text-left align-middle">Date & Time (IST)</th>
+                      <th className="py-2.5 px-3 text-left align-middle">Product</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Admin ID</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Action Type</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Field Changed</th>
+                      <th className="py-2.5 px-3 text-center align-middle">Old Value</th>
+                      <th className="py-2.5 px-3 text-center align-middle">New Value</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-850">
                     {auditLogs.map(log => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                        <td className="py-3.5 text-slate-500">
+                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20 h-12 align-middle">
+                        <td className="py-3.5 px-3 text-left align-middle text-slate-500 dark:text-slate-400 admin-timestamp-text whitespace-nowrap">
                           {log.created_at ? new Date(log.created_at).toLocaleString() : "N/A"}
                         </td>
-                        <td className="py-3.5 font-bold text-slate-800 dark:text-slate-100">
+                        <td className="py-3.5 px-3 text-left align-middle font-bold text-slate-800 dark:text-white">
                           {log.product_name}
                         </td>
-                        <td className="py-3.5 text-slate-500 font-mono">
+                        <td className="py-3.5 px-3 text-center align-middle text-slate-500 dark:text-white font-mono">
                           {log.admin_id || "N/A"}
                         </td>
-                        <td className="py-3.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${log.action_type?.includes("Creation")
-                              ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
-                              : log.action_type?.includes("Delete")
-                                ? 'text-rose-500 bg-rose-500/10 border-rose-500/20'
-                                : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
-                            }`}>
-                            {log.action_type}
-                          </span>
+                        <td className="py-3.5 px-3 text-center align-middle">
+                          <div className="flex items-center justify-center">
+                            <span className={`inline-flex items-center justify-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-bold border w-auto ${log.action_type?.includes("Creation")
+                                ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                                : log.action_type?.includes("Delete")
+                                  ? 'text-rose-500 bg-rose-500/10 border-rose-500/20'
+                                  : 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+                              }`}>
+                              {log.action_type}
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3.5 text-slate-500">
+                        <td className="py-3.5 px-3 text-center align-middle text-slate-500 dark:text-white">
                           {log.field_name || "N/A"}
                         </td>
-                        <td className="py-3.5 text-right text-rose-500 max-w-[150px] truncate" title={log.old_value}>
+                        <td className="py-3.5 px-3 text-center align-middle text-rose-500 dark:text-rose-400 max-w-[150px] truncate mx-auto" title={log.old_value}>
                           {log.old_value || "N/A"}
                         </td>
-                        <td className="py-3.5 text-right text-emerald-500 max-w-[150px] truncate" title={log.new_value}>
+                        <td className="py-3.5 px-3 text-center align-middle text-emerald-500 dark:text-emerald-400 max-w-[150px] truncate mx-auto" title={log.new_value}>
                           {log.new_value || "N/A"}
                         </td>
                       </tr>
@@ -5688,20 +5698,10 @@ export const AdminControl = () => {
                       </div>
                     ))}
                   </div>
-
-                  {/* Chart Image */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-4 rounded-3xl flex flex-col justify-center items-center">
-                    <span className="text-xs font-bold text-slate-500 mb-2">Live Matplotlib Chart Report</span>
-                    <img
-                      src={`${SERVER_BASE_URL}${productAnalyticsData.chart_url}`}
-                      alt="Sales Trend Chart"
-                      className="max-h-[280px] w-auto object-contain rounded-xl"
-                    />
-                  </div>
                 </div>
               ) : (
                 <div className="flex-grow flex items-center justify-center py-12 text-slate-400 text-xs">
-                  Generating live Pandas & Matplotlib reports...
+                  Loading product analytics data...
                 </div>
               )}
             </div>

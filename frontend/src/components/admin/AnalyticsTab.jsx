@@ -192,26 +192,6 @@ export const AnalyticsTab = ({
               </div>
             ))}
           </div>
-
-          {/* Matplotlib Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {[
-              { title: "Revenue Trend (30 Days)", img: overviewAnalytics.charts.revenue_trend },
-              { title: "Top Selling Products", img: overviewAnalytics.charts.top_selling_products },
-              { title: "Low Stock Inventory Analytics", img: overviewAnalytics.charts.low_stock_inventory }
-            ].map(chart => (
-              <div key={chart.title} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col items-center">
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 self-start">{chart.title}</h4>
-                <div className="w-full bg-slate-50 dark:bg-slate-955/60 border border-slate-105 dark:border-slate-850 p-2 rounded-2xl flex justify-start items-center overflow-x-auto">
-                  <img 
-                    src={`${SERVER_BASE_URL}${chart.img}`}
-                    alt={chart.title}
-                    className="max-h-[220px] min-w-[500px] lg:min-w-0 w-auto object-contain rounded-lg"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -238,7 +218,7 @@ export const AnalyticsTab = ({
               getLowStockProducts().map(p => (
                 <div key={p.id} className="p-3 border border-slate-100 dark:border-slate-850 hover:border-slate-200 dark:hover:border-slate-750 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between transition-all">
                   <div className="max-w-[70%]">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-250 block truncate">{p.name}</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block truncate">{p.name}</span>
                     <span className="text-[10px] font-bold text-slate-400 block mt-0.5">{p.category} • <span className="price-amount">₹{formatPrice(p.price)}</span></span>
                   </div>
                   <div className="text-right">

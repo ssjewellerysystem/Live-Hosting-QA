@@ -32,7 +32,7 @@ builtins.print = safe_print
 
 import logging
 from backend.extensions import db, migrate, mail
-from backend.config import Config, validate_environment, FRONTEND_URL
+from backend.config import Config, validate_environment, FRONTEND_URL, get_allowed_origins
 from backend.models import TransactionModel
 from backend.routes.auth import auth_bp
 from backend.routes.products import products_bp
@@ -41,6 +41,8 @@ from backend.routes.admin import admin_bp
 from backend.routes.support import support_bp
 from backend.routes.coupons import coupons_bp
 from backend.routes.banners import banners_bp
+from backend.routes.category_banners import category_banners_bp
+from backend.routes.collection_banners import collection_banners_bp
 from backend.routes.collections import collections_bp
 from backend.routes.gold_rate import gold_rate_bp
 from backend.routes.maintenance import maintenance_bp
@@ -55,22 +57,50 @@ app = Flask(__name__)
 # Load configuration
 app.config.from_object(Config)
 
+# Enable ProxyFix for reliable environment proxy header processing (Render, Oracle Cloud, Nginx)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
 # Configure Python logging based on active environment LOGGING_LEVEL
 log_level = getattr(logging, str(Config.LOGGING_LEVEL).upper(), logging.INFO)
 logging.basicConfig(level=log_level, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 app.logger.setLevel(log_level)
 
-
-# Enable CORS for frontend requests
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Enable CORS for frontend requests with exact environment-aware origins
+allowed_origins_list = get_allowed_origins()
+CORS(app, origins=allowed_origins_list, supports_credentials=True)
 
 import gzip
 import io
 
+@app.before_request
+def handle_options_preflight():
+    if request.method == 'OPTIONS':
+        response = app.make_default_options_response()
+        origin = request.headers.get('Origin')
+        allowed = get_allowed_origins()
+        if origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
+        elif allowed:
+            response.headers['Access-Control-Allow-Origin'] = allowed[0]
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With, X-Access-Token, X-Auth-Token, X-Admin-Token'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
+
 @app.after_request
 def add_cors_and_compress(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+    origin = request.headers.get('Origin')
+    allowed = get_allowed_origins()
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+    elif allowed:
+        response.headers['Access-Control-Allow-Origin'] = allowed[0]
+
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With, X-Access-Token, X-Auth-Token, X-Admin-Token'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
 
     # Gzip response payload compression for text/JSON responses
@@ -117,10 +147,28 @@ app.register_blueprint(payments_bp, url_prefix='/api/admin/payments')
 app.register_blueprint(support_bp, url_prefix='/api/support')
 app.register_blueprint(coupons_bp, url_prefix='/api/coupons')
 app.register_blueprint(banners_bp, url_prefix='/api/banners')
+app.register_blueprint(category_banners_bp, url_prefix='/api/category-banners')
+app.register_blueprint(collection_banners_bp, url_prefix='/api/collection-banners')
 app.register_blueprint(collections_bp, url_prefix='/api/collections')
 app.register_blueprint(gold_rate_bp, url_prefix='/api/gold-rate')
 app.register_blueprint(maintenance_bp, url_prefix='/api/maintenance')
 app.register_blueprint(high_demand_bp, url_prefix='/api/high-demand')
+
+def print_registered_routes(app_instance):
+    """Prints all registered routes at app startup for production route visibility."""
+    with app_instance.app_context():
+        routes_log = ["=== REGISTERED FLASK ROUTES AT STARTUP ==="]
+        for rule in app_instance.url_map.iter_rules():
+            methods = ','.join(sorted(rule.methods - {'HEAD', 'OPTIONS'}))
+            routes_log.append(f"  {methods:10s} {rule.rule:45s} -> {rule.endpoint}")
+        routes_log.append("============================================")
+        full_log = "\n".join(routes_log)
+        app_instance.logger.info(full_log)
+        print(full_log)
+
+print_registered_routes(app)
+
+
 
 
 from flask import request
@@ -207,11 +255,31 @@ def serve_uploads(filename):
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"message": "API endpoint not found!"}), 404
+    from flask import request
+    path = request.path
+    if path.startswith('/api/'):
+        env_mode = os.getenv("CONFIG_ENV", "development").lower()
+        debug_info = {
+            "message": f"404 Route Missing: API endpoint '{path}' not found.",
+            "requested_url": path,
+            "status": 404,
+            "error_type": "Route Missing or Blueprint Not Registered"
+        }
+        if env_mode in ['dev', 'development', 'local']:
+            debug_info["dev_hint"] = "Verify blueprint registration in backend/app.py and route mappings."
+        return jsonify(debug_info), 404
+    return jsonify({"message": "API endpoint not found!", "status": 404}), 404
+
 
 @app.errorhandler(500)
 def server_error(error):
-    return jsonify({"message": f"Internal server error: {str(error)}"}), 500
+    logging.error(f"[GLOBAL 500 ERROR] Internal server error: {error}", exc_info=True)
+    return jsonify({"success": False, "message": f"Internal server error: {str(error)}"}), 500
+
+@app.errorhandler(Exception)
+def handle_uncaught_exception(error):
+    logging.error(f"[UNCAUGHT EXCEPTION] Unhandled exception occurred: {error}", exc_info=True)
+    return jsonify({"success": False, "message": "An unexpected server error occurred."}), 500
 
 def seed_database():
     """
@@ -361,6 +429,18 @@ with app.app_context():
         start_gold_rate_scheduler(app)
     except Exception as err:
         print("[APP] Gold rate scheduler error:", err)
+
+    # API Route Discovery Logger: Print registered routes during startup
+    print("\n" + "=" * 60)
+    print("[API DISCOVERY] Registered Backend API Endpoints:")
+    registered_routes = sorted(
+        [(','.join(sorted(rule.methods - {'HEAD', 'OPTIONS'})), rule.rule, rule.endpoint) for rule in app.url_map.iter_rules()],
+        key=lambda x: x[1]
+    )
+    for methods, rule, endpoint in registered_routes:
+        if methods:
+            print(f"  {methods:<10} {rule:<42} [{endpoint}]")
+    print("=" * 60 + "\n")
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 5005))

@@ -33,6 +33,13 @@ const getApiBaseUrl = () => {
   return 'http://localhost:5005/api';
 };
 
+import axios from 'axios';
+
 export const API_BASE_URL = getApiBaseUrl();
 export const SERVER_BASE_URL = API_BASE_URL.endsWith('/api') ? API_BASE_URL.slice(0, -4) : API_BASE_URL;
 export const IS_PRODUCTION = import.meta.env.PROD || import.meta.env.MODE === 'production';
+
+// Central Axios defaults for credentialed cross-origin production authentication
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = API_BASE_URL;
+

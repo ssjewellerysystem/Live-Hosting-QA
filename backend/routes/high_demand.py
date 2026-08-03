@@ -70,12 +70,12 @@ def toggle_high_demand_mode():
     # Extract admin identifier from auth header / token payload if present
     admin_identifier = "Admin"
     try:
-        from backend.middleware.auth import JWT_SECRET
+        from backend.config import Config
         import jwt
         auth_header = request.headers.get('Authorization', '')
         if auth_header.startswith('Bearer '):
             token = auth_header.split(" ")[1]
-            decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            decoded = jwt.decode(token, Config.get_jwt_secret(), algorithms=["HS256"])
             admin_identifier = decoded.get("email") or decoded.get("user_id") or "Admin"
     except Exception:
         pass

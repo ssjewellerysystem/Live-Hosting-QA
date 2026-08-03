@@ -4,7 +4,9 @@ import os
 import uuid
 import random
 import json
-from flask import Blueprint, request, jsonify, redirect
+from flask import Blueprint, request, jsonify, redirect, current_app
+import traceback
+from urllib.parse import urlparse, urlunparse
 import jwt
 import bcrypt
 from sqlalchemy import func
@@ -12,14 +14,52 @@ from backend.extensions import db
 from backend.models.user import UserModel, DeliveryAddress
 from backend.models.otp_verification import OTPVerification
 from backend.utils.helpers import generate_otp, verify_otp, is_valid_email, is_allowed_email_domain, normalize_email
-from backend.utils.email_service import send_email
+from backend.utils.email_service import send_email, send_forgot_password_otp, send_registration_otp
 from backend.utils.timezone import format_iso_datetime, get_ist_time
 from backend.utils.security import mask_email, mask_name
 
 from backend.config import Config, FRONTEND_URL
 
 auth_bp = Blueprint('auth', __name__)
-JWT_SECRET = Config.JWT_SECRET
+
+class ValidationException(Exception):
+    def __init__(self, message="Please provide your registered email or mobile number.", status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+class DatabaseException(Exception):
+    def __init__(self, message="Database error.", status_code=500):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+class SMTPException(Exception):
+    def __init__(self, message="Unable to send OTP email.", status_code=500):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+class UnexpectedException(Exception):
+    def __init__(self, message="An unexpected error occurred.", status_code=500):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+def get_safe_db_uri(uri):
+    if not uri:
+        return "None"
+    try:
+        parsed = urlparse(str(uri))
+        if parsed.password:
+            netloc = parsed.netloc.replace(f":{parsed.password}@", ":*****@")
+            return urlunparse(parsed._replace(netloc=netloc))
+        return str(uri)
+    except Exception:
+        return "Unparseable URI"
+
+def get_jwt_secret():
+    return Config.get_jwt_secret()
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -64,9 +104,9 @@ def login():
                 "username": admin_record.username,
                 "email": admin_email_str,
                 "is_admin": True,
-                "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+                "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
             }
-            token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+            token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
             return jsonify({
                 "message": "Admin login successful!",
                 "token": token,
@@ -123,10 +163,10 @@ def login():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
     
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     return jsonify({
         "message": "Login successful!",
@@ -204,13 +244,20 @@ def send_otp_route():
     db.session.add(otp_record)
     db.session.commit()
     
-    # Send email or handle development mode
-    otp_mode = os.getenv("OTP_MODE", "development").lower()
-    if otp_mode == "development":
-        email_result = {"status": "mocked", "configuration": "development"}
-    else:
-        subject = "SSJewellery Verification Code"
-        body = f"""Hello,
+    # DEV Environment: Skip SMTP and return dev_otp directly
+    if Config.IS_DEV:
+        current_app.logger.info(f"[REGISTRATION DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        print(f"[REGISTRATION DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        return jsonify({
+            "success": True,
+            "message": "DEV MODE",
+            "dev_otp": otp_code,
+            "otp": otp_code
+        }), 200
+        
+    # Send email via SMTP (QA & PRODUCTION ONLY)
+    subject = "SSJewellery Verification Code"
+    body = f"""Hello,
 
 Welcome to SSJewellery.
 
@@ -224,31 +271,24 @@ Do not share this code with anyone.
 
 Regards,
 SSJewellery Team"""
+    
+    email_result = send_email(email, subject, body)
+    if not email_result:
+        db.session.delete(otp_record)
+        db.session.commit()
+        return jsonify({
+            "message": f"SMTP transmission failed: {email_result.get('error', 'Unable to connect to SMTP server')}",
+            "success": False,
+            "smtp_status": email_result.get("status"),
+            "smtp_config": email_result.get("configuration")
+        }), 500
         
-        email_result = send_email(email, subject, body)
-        if not email_result:
-            db.session.delete(otp_record)
-            db.session.commit()
-            return jsonify({
-                "message": f"SMTP transmission failed: {email_result.get('error', 'Unable to connect to SMTP server')}",
-                "success": False,
-                "smtp_status": email_result.get("status"),
-                "smtp_config": email_result.get("configuration")
-            }), 500
-        
-    response_payload = {
+    return jsonify({
         "message": "Verification OTP sent successfully! Please check your email.",
         "success": True,
         "smtp_status": email_result.get("status") if email_result else None,
         "smtp_config": email_result.get("configuration") if email_result else None
-    }
-    if otp_mode == "development":
-        response_payload["otp"] = otp_code
-        response_payload["otp_mode"] = "development"
-    else:
-        response_payload["otp_mode"] = "production"
-
-    return jsonify(response_payload), 200
+    }), 200
 
 
 @auth_bp.route('/verify-otp', methods=['POST'])
@@ -371,13 +411,20 @@ def resend_otp_route():
     otp_record.resend_attempts += 1
     db.session.commit()
     
-    # Send email or handle development mode
-    otp_mode = os.getenv("OTP_MODE", "development").lower()
-    if otp_mode == "development":
-        email_result = {"status": "mocked", "configuration": "development"}
-    else:
-        subject = "SSJewellery Verification Code"
-        body = f"""Hello,
+    # DEV Environment: Skip SMTP and return dev_otp directly
+    if Config.IS_DEV:
+        current_app.logger.info(f"[REGISTRATION RESEND DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        print(f"[REGISTRATION RESEND DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        return jsonify({
+            "success": True,
+            "message": "DEV MODE",
+            "dev_otp": otp_code,
+            "otp": otp_code
+        }), 200
+        
+    # Send email via SMTP (QA & PRODUCTION ONLY)
+    subject = "SSJewellery Verification Code"
+    body = f"""Hello,
 
 Welcome to SSJewellery.
 
@@ -391,31 +438,24 @@ Do not share this code with anyone.
 
 Regards,
 SSJewellery Team"""
+    
+    email_result = send_email(email, subject, body)
+    if not email_result:
+        otp_record.resend_attempts = max(0, otp_record.resend_attempts - 1)
+        db.session.commit()
+        return jsonify({
+            "message": f"SMTP transmission failed: {email_result.get('error', 'Unable to connect to SMTP server')}",
+            "success": False,
+            "smtp_status": email_result.get("status"),
+            "smtp_config": email_result.get("configuration")
+        }), 500
         
-        email_result = send_email(email, subject, body)
-        if not email_result:
-            otp_record.resend_attempts = max(0, otp_record.resend_attempts - 1)
-            db.session.commit()
-            return jsonify({
-                "message": f"SMTP transmission failed: {email_result.get('error', 'Unable to connect to SMTP server')}",
-                "success": False,
-                "smtp_status": email_result.get("status"),
-                "smtp_config": email_result.get("configuration")
-            }), 500
-        
-    response_payload = {
+    return jsonify({
         "message": "Verification OTP resent successfully! Please check your email.",
         "success": True,
         "smtp_status": email_result.get("status") if email_result else None,
         "smtp_config": email_result.get("configuration") if email_result else None
-    }
-    if otp_mode == "development":
-        response_payload["otp"] = otp_code
-        response_payload["otp_mode"] = "development"
-    else:
-        response_payload["otp_mode"] = "production"
-
-    return jsonify(response_payload), 200
+    }), 200
 
 
 @auth_bp.route('/user-login', methods=['POST'])
@@ -456,9 +496,9 @@ def user_login_route():
                 "username": admin_record.username,
                 "email": admin_email_str,
                 "is_admin": True,
-                "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+                "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
             }
-            token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+            token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
             return jsonify({
                 "message": "Admin login successful!",
                 "token": token,
@@ -509,9 +549,9 @@ def user_login_route():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     return jsonify({
         "message": "Login successful!",
@@ -534,91 +574,193 @@ def user_login_route():
 
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
-    data = request.get_json() or {}
-    raw_input = data.get("email") or data.get("email_or_mobile")
-    
-    if not raw_input:
-        return jsonify({"message": "Please provide your registered email or mobile number."}), 400
-
-    email_or_mobile = normalize_email(raw_input) if is_valid_email(raw_input) else str(raw_input).strip()
+    try:
+        data = request.get_json() or {}
+        raw_input = data.get("email") or data.get("email_or_mobile") or data.get("mobile")
         
-    if is_valid_email(email_or_mobile) and not is_allowed_email_domain(email_or_mobile):
-        return jsonify({"message": "Only Gmail (@gmail.com) and Outlook (@outlook.com) email addresses are supported."}), 400
+        # Step 1: Logging Incoming Request
+        current_app.logger.info(f"[FORGOT PASSWORD LOG] Incoming request for email/mobile: '{raw_input}'")
+        print(f"[FORGOT PASSWORD LOG] Step 1: Incoming request for email/mobile: '{raw_input}'")
         
-    user_obj = UserModel.query.filter(
-        (UserModel.email == email_or_mobile) | (UserModel.phone == email_or_mobile)
-    ).first()
-    
-    if not user_obj:
-        return jsonify({"message": "Account not found. Please register first."}), 404
+        # Step 1: Logging DB Connection Status & Database URI (password masked)
+        safe_uri = get_safe_db_uri(Config.SQLALCHEMY_DATABASE_URI)
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            db_conn_status = "Connected (OK)"
+        except Exception as conn_err:
+            db_conn_status = f"Disconnected/Error: {conn_err}"
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] DB Connection Check Failed: {conn_err}\n{traceback.format_exc()}")
+            raise DatabaseException("Database error.", status_code=500)
+            
+        current_app.logger.info(f"[FORGOT PASSWORD LOG] DB URI: {safe_uri} | DB Status: {db_conn_status}")
+        print(f"[FORGOT PASSWORD LOG] DB URI: {safe_uri} | DB Status: {db_conn_status}")
+
+        if not raw_input or not str(raw_input).strip():
+            current_app.logger.warning("[FORGOT PASSWORD LOG] Empty input provided.")
+            raise ValidationException("Please provide your registered email or mobile number.", status_code=400)
+
+        clean_input = str(raw_input).strip()
+        clean_lower = clean_input.lower()
+            
+        if is_valid_email(clean_input) and not is_allowed_email_domain(clean_input):
+            current_app.logger.warning(f"[FORGOT PASSWORD LOG] Unsupported email domain: '{clean_input}'")
+            raise ValidationException("Only Gmail (@gmail.com) and Outlook (@outlook.com) email addresses are supported.", status_code=400)
+
+        # Step 2 & 3: Fix User Lookup (email == input OR mobile == input, case-insensitive, trimmed)
+        user_obj = None
+        try:
+            # Direct SQLAlchemy Query Filter
+            user_obj = UserModel.query.filter(
+                (UserModel.email == clean_lower) | 
+                (UserModel.email == clean_input) | 
+                (UserModel.phone == clean_lower) | 
+                (UserModel.phone == clean_input)
+            ).first()
+
+            # Robust fallback Python-side check across user records if direct query produces no match
+            if not user_obj:
+                all_users = UserModel.query.all()
+                clean_digits = ''.join(filter(str.isdigit, clean_input))
+                for u in all_users:
+                    u_email = (u.email or "").strip().lower()
+                    u_phone = str(u.phone or "").strip()
+                    u_mobile = str(u.mobile or "").strip()
+                    u_phone_digits = ''.join(filter(str.isdigit, u_phone))
+                    u_mobile_digits = ''.join(filter(str.isdigit, u_mobile))
+
+                    if (
+                        u_email == clean_lower or 
+                        u_phone == clean_input or 
+                        u_mobile == clean_input or
+                        (clean_digits and len(clean_digits) >= 10 and (clean_digits == u_phone_digits[-10:] or clean_digits == u_mobile_digits[-10:]))
+                    ):
+                        user_obj = u
+                        break
+        except Exception as lookup_err:
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] Exception during user lookup DB query: {lookup_err}\n{traceback.format_exc()}")
+            raise DatabaseException("Database error.", status_code=500)
         
-    current_time = get_ist_time()
-    
-    # Invalidate expired records automatically
-    OTPVerification.query.filter(OTPVerification.expires_at < current_time).delete()
-    
-    # Cleanup old verification sessions for this email
-    OTPVerification.query.filter_by(email=user_obj.email).delete()
-    db.session.commit()
-    
-    # Generate 6-digit OTP
-    otp_code = str(random.randint(100000, 999999))
-    expires_at = current_time + datetime.timedelta(minutes=5)
-    
-    otp_record = OTPVerification(
-        email=user_obj.email,
-        otp_code=otp_code,
-        expires_at=expires_at,
-        is_verified=False,
-        attempts=0,
-        resend_attempts=0,
-        user_id=user_obj.id
-    )
-    db.session.add(otp_record)
-    db.session.commit()
-    
-    # Send email or handle development mode
-    otp_mode = os.getenv("OTP_MODE", "development").lower()
-    if otp_mode == "development":
-        email_result = {"status": "mocked", "configuration": "development"}
-    else:
-        subject = "SSJewellery Password Reset Code"
-        body = f"""Hello,
-    
-We received a request to reset the password for your SSJewellery account.
+        if not user_obj:
+            current_app.logger.info(f"[FORGOT PASSWORD LOG] Matched User: None (Account not found for '{clean_input}')")
+            print(f"[FORGOT PASSWORD LOG] Matched User: None (Account not found for '{clean_input}')")
+            return jsonify({"success": False, "message": "Account not found."}), 404
+            
+        current_app.logger.info(f"[FORGOT PASSWORD LOG] Matched User ID: {user_obj.id} | Matched Email: '{user_obj.email}' | Name: '{user_obj.name}'")
+        print(f"[FORGOT PASSWORD LOG] Matched User ID: {user_obj.id} | Matched Email: '{user_obj.email}' | Name: '{user_obj.name}'")
 
-Your verification code is:
-
-{otp_code}
-
-This OTP is valid for 5 minutes.
-
-If you did not request a password reset, please ignore this email.
-
-Regards,
-SSJewellery Team"""
-        
-        email_result = send_email(user_obj.email, subject, body)
-        if not email_result:
-            db.session.delete(otp_record)
+        # Step 5: OTP Generation & Storage
+        try:
+            current_time = get_ist_time()
+            
+            # Invalidate expired records automatically
+            OTPVerification.query.filter(OTPVerification.expires_at < current_time).delete()
+            
+            # Cleanup old verification sessions for this email
+            OTPVerification.query.filter_by(email=user_obj.email).delete()
             db.session.commit()
-            return jsonify({
-                "message": "SMTP transmission failed. Unable to send password reset email.",
-                "success": False
-            }), 500
-        
-    response_payload = {
-        "message": "Verification OTP sent successfully! Please check your email.",
-        "success": True,
-        "email": user_obj.email
-    }
-    if otp_mode == "development":
-        response_payload["otp"] = otp_code
-        response_payload["otp_mode"] = "development"
-    else:
-        response_payload["otp_mode"] = "production"
+            
+            # Generate 6-digit OTP
+            otp_code = str(random.randint(100000, 999999))
+            expires_at = current_time + datetime.timedelta(minutes=5)
+            
+            otp_record = OTPVerification(
+                email=user_obj.email,
+                otp_code=otp_code,
+                expires_at=expires_at,
+                is_verified=False,
+                attempts=0,
+                resend_attempts=0,
+                user_id=user_obj.id
+            )
+            db.session.add(otp_record)
+            db.session.commit()
+            current_app.logger.info(f"[FORGOT PASSWORD LOG] OTP generation: '{otp_code}' | OTP save: Success (expires at {expires_at})")
+            print(f"[FORGOT PASSWORD LOG] OTP generation: '{otp_code}' | OTP save: Success (expires at {expires_at})")
+        except Exception as otp_save_err:
+            db.session.rollback()
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] Database failed during OTP save: {otp_save_err}\n{traceback.format_exc()}")
+            raise DatabaseException("Database error.", status_code=500)
 
-    return jsonify(response_payload), 200
+        # DEV Environment: Skip SMTP and return dev_otp in response directly
+        if Config.IS_DEV:
+            current_app.logger.info(f"[FORGOT PASSWORD DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+            print(f"[FORGOT PASSWORD DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+            return jsonify({
+                "success": True,
+                "message": "DEV MODE",
+                "dev_otp": otp_code,
+                "otp": otp_code,
+                "email": user_obj.email
+            }), 200
+        
+        # Step 4: SMTP Initialization & Transmission (QA & PRODUCTION ONLY)
+        if not user_obj.email or "@" not in str(user_obj.email):
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] User ID {user_obj.id} has invalid or missing email: '{user_obj.email}'")
+            try:
+                db.session.delete(otp_record)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            raise SMTPException("Unable to send OTP email.", status_code=500)
+
+        current_app.logger.info(f"[FORGOT PASSWORD LOG] SMTP Initialization: Preparing email to '{user_obj.email}' via {Config.SMTP_HOST}:{Config.SMTP_PORT}...")
+        print(f"[FORGOT PASSWORD LOG] SMTP Initialization: Preparing email to '{user_obj.email}' via {Config.SMTP_HOST}:{Config.SMTP_PORT}...")
+        
+        try:
+            email_result = send_forgot_password_otp(user_obj.email, otp_code, name=user_obj.name)
+            current_app.logger.info(f"[FORGOT PASSWORD LOG] SMTP Send Result: {email_result}")
+            print(f"[FORGOT PASSWORD LOG] SMTP Send Result: {email_result}")
+        except Exception as smtp_err:
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] SMTP Send Exception: {smtp_err}\n{traceback.format_exc()}")
+            try:
+                db.session.delete(otp_record)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            raise SMTPException("Unable to send OTP email.", status_code=500)
+        
+        if not email_result:
+            err_detail = email_result.get('error', 'SMTP transmission failed') if isinstance(email_result, dict) else 'SMTP transmission failed'
+            current_app.logger.error(f"[FORGOT PASSWORD ERROR] SMTP transmission returned failure: {err_detail}")
+            print(f"[FORGOT PASSWORD ERROR] SMTP transmission returned failure: {err_detail}")
+            try:
+                db.session.delete(otp_record)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            raise SMTPException("Unable to send OTP email.", status_code=500)
+            
+        current_app.logger.info(f"[FORGOT PASSWORD SUCCESS] OTP email successfully dispatched to {user_obj.email}")
+        
+        # Return 200 OK Response for QA & PRODUCTION (OTP never exposed)
+        response_payload = {
+            "success": True,
+            "message": "OTP sent successfully.",
+            "email": user_obj.email
+        }
+        return jsonify(response_payload), 200
+
+    except ValidationException as val_ex:
+        current_app.logger.warning(f"[FORGOT PASSWORD VALIDATION EXCEPTION] {val_ex.message}")
+        return jsonify({"success": False, "message": val_ex.message}), val_ex.status_code
+    except DatabaseException as db_ex:
+        current_app.logger.error(f"[FORGOT PASSWORD DATABASE EXCEPTION] {db_ex.message}")
+        return jsonify({"success": False, "message": db_ex.message}), db_ex.status_code
+    except SMTPException as smtp_ex:
+        current_app.logger.error(f"[FORGOT PASSWORD SMTP EXCEPTION] {smtp_ex.message}")
+        return jsonify({"success": False, "message": smtp_ex.message}), smtp_ex.status_code
+    except UnexpectedException as unexp_ex:
+        current_app.logger.error(f"[FORGOT PASSWORD UNEXPECTED EXCEPTION] {unexp_ex.message}")
+        return jsonify({"success": False, "message": unexp_ex.message}), unexp_ex.status_code
+    except Exception as ex:
+        err_msg = str(ex).lower()
+        current_app.logger.error(f"[FORGOT PASSWORD UNHANDLED EXCEPTION] {ex}\n{traceback.format_exc()}")
+        if "database" in err_msg or "sqlalchemy" in err_msg or "psycopg" in err_msg or "sqlite" in err_msg:
+            return jsonify({"success": False, "message": "Database error."}), 500
+        elif "smtp" in err_msg or "mail" in err_msg:
+            return jsonify({"success": False, "message": "Unable to send OTP email."}), 500
+        else:
+            return jsonify({"success": False, "message": "An unexpected error occurred."}), 500
 
 @auth_bp.route('/verify-reset-otp', methods=['POST'])
 def verify_reset_otp():
@@ -678,6 +820,7 @@ def verify_reset_otp():
 def resend_reset_otp():
     data = request.get_json() or {}
     raw_input = data.get("email") or data.get("email_or_mobile")
+    print(f"[RESEND RESET OTP] Step 1: Request received for input: '{raw_input}'")
     if not raw_input:
         return jsonify({"message": "Email is required."}), 400
 
@@ -707,48 +850,39 @@ def resend_reset_otp():
     otp_record.attempts = 0
     otp_record.resend_attempts += 1
     db.session.commit()
+    print(f"[RESEND RESET OTP] Step 2: New OTP '{otp_code}' generated for user '{user_obj.name}' ({user_obj.email})")
     
-    # Send email or handle development mode
-    otp_mode = os.getenv("OTP_MODE", "development").lower()
-    if otp_mode == "development":
-        email_result = {"status": "mocked", "configuration": "development"}
-    else:
-        subject = "SSJewellery Password Reset Code"
-        body = f"""Hello,
-    
-We received a request to reset the password for your SSJewellery account.
+    # DEV Environment: Skip SMTP and return dev_otp in response directly
+    if Config.IS_DEV:
+        current_app.logger.info(f"[RESEND RESET OTP DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        print(f"[RESEND RESET OTP DEV LOG] DEV mode active. Skipping SMTP completely. Returning dev_otp.")
+        return jsonify({
+            "success": True,
+            "message": "DEV MODE",
+            "dev_otp": otp_code,
+            "otp": otp_code,
+            "email": user_obj.email
+        }), 200
 
-Your verification code is:
-
-{otp_code}
-
-This OTP is valid for 5 minutes.
-
-If you did not request a password reset, please ignore this email.
-
-Regards,
-SSJewellery Team"""
-
-        email_result = send_email(user_obj.email, subject, body)
-        if not email_result:
-            otp_record.resend_attempts = max(0, otp_record.resend_attempts - 1)
-            db.session.commit()
-            return jsonify({
-                "message": "SMTP transmission failed. Unable to resend password reset email.",
-                "success": False
-            }), 500
+    # Send email via SMTP (QA & PRODUCTION ONLY)
+    print(f"[RESEND RESET OTP] Step 3: Initiating SMTP email dispatch to {user_obj.email}...")
+    email_result = send_forgot_password_otp(user_obj.email, otp_code, name=user_obj.name)
+    if not email_result:
+        err_detail = email_result.get('error', 'SMTP connection failed') if isinstance(email_result, dict) else 'SMTP transmission failed'
+        print(f"[RESEND RESET OTP ERROR] SMTP failure for {user_obj.email}: {err_detail}")
+        otp_record.resend_attempts = max(0, otp_record.resend_attempts - 1)
+        db.session.commit()
+        return jsonify({
+            "message": f"SMTP transmission failed: {err_detail}",
+            "success": False,
+            "error": err_detail
+        }), 500
         
-    response_payload = {
+    print(f"[RESEND RESET OTP SUCCESS] Password reset OTP email resent to {user_obj.email}")
+    return jsonify({
         "message": "Verification OTP resent successfully! Please check your email.",
         "success": True
-    }
-    if otp_mode == "development":
-        response_payload["otp"] = otp_code
-        response_payload["otp_mode"] = "development"
-    else:
-        response_payload["otp_mode"] = "production"
-
-    return jsonify(response_payload), 200
+    }), 200
 
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password():
@@ -882,9 +1016,9 @@ def checkout_login_route():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     return jsonify({
         "message": "Checkout login successful!",
@@ -1513,9 +1647,9 @@ def google_callback():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     # Redirect back to frontend
     user_json = json.dumps(user)
@@ -1707,9 +1841,9 @@ def microsoft_callback():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     # Redirect back to frontend
     user_json = json.dumps(user)
@@ -1814,10 +1948,10 @@ def microsoft_login():
     payload = {
         "user_id": user["_id"],
         "is_admin": user.get("is_admin", False),
-        "exp": datetime.datetime.now(pytz.utc) + datetime.timedelta(hours=24)
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     }
     
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
     
     return jsonify({
         "message": "Login successful via Microsoft!",
@@ -1880,6 +2014,22 @@ def transition_buy_request(request_id):
                     type="BUY_REQUEST",
                     user_id=req.user_id
                 )
+
+                if req.user and req.user.email:
+                    try:
+                        from backend.utils.email_service import send_buy_request_approval
+                        send_buy_request_approval(
+                            to_email=req.user.email,
+                            product_name=req.product_name,
+                            request_id=req.id,
+                            quantity=req.quantity,
+                            availability_date=req.expected_availability_date,
+                            delivery_date=req.expected_delivery_date,
+                            admin_note=req.admin_note,
+                            name=req.user.name
+                        )
+                    except Exception as mail_ex:
+                        print("Failed to send buy request availability email:", mail_ex)
         except Exception as ex:
             print("Error transitioning buy request to Available:", ex)
 

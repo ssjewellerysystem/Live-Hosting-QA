@@ -41,10 +41,10 @@ def get_admin_name_from_request():
     if not token:
         return "admin"
     try:
-        from backend.middleware.auth import JWT_SECRET
+        from backend.config import Config
         import jwt
         from backend.models.user import UserModel
-        data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        data = jwt.decode(token, Config.get_jwt_secret(), algorithms=["HS256"])
         if data.get("username"):
             return data.get("username")
         admin_id = data.get("admin_id") or data.get("user_id")
